@@ -1,26 +1,890 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
-@theme inline {
+@theme {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  
+  /* Festive Colors */
+  --color-maroon: var(--maroon);
+  --color-gold: var(--gold);
+  --color-saffron: var(--saffron);
+  --color-temple-red: var(--temple-red);
+
+  --font-sans: var(--font-sans);
+  --font-heading: var(--font-heading);
+  
+  /* Spacing */
+  --spacing-section: var(--section-spacing);
+  
+  /* Border Radius */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
 }
 
-@media (prefers-color-scheme: dark) {
+/* ============================================
+   LIGHT THEME (Default)
+   ============================================ */
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #FAFAF9; /* stone-50 */
+    --foreground: #1C1917; /* stone-900 */
+    --card: #FFFFFF;
+    --card-foreground: #1C1917;
+    --popover: #FFFFFF;
+    --popover-foreground: #1C1917;
+    
+    /* Temple Maroon (Rose-800 based) - Primary */
+    --primary: #9F1239; 
+    --primary-foreground: #FAFAF9;
+    
+    /* Festive Gold (Yellow-400/500 based) - Secondary */
+    --secondary: #FACC15; 
+    --secondary-foreground: #4C0519;
+    
+    --muted: #F5F5F4; /* stone-100 */
+    --muted-foreground: #78716C; /* stone-500 */
+    
+    /* Deep Saffron (Orange-100/600) - Accent */
+    --accent: #FFEDD5; 
+    --accent-foreground: #C2410C; 
+    
+    --destructive: #EF4444; /* red-500 */
+    --destructive-foreground: #FAFAF9;
+    --border: #E7E5E4; /* stone-200 */
+    --input: #E7E5E4;
+    --ring: #9F1239;
+    --radius: 0.75rem;
+    
+    /* Festive Custom Colors */
+    --maroon: #9F1239;
+    --gold: #FACC15;
+    --saffron: #F59E0B;
+    --temple-red: #B91C1C;
+    
+    /* Section Spacing */
+    --section-spacing: 5rem;
+    
+    /* Sidebar */
+    --sidebar-width: 16rem;
+    --sidebar-width-collapsed: 4rem;
+  }
+
+  /* ============================================
+     DARK THEME
+     ============================================ */
+  .dark {
+    --background: #0C0A09; /* stone-950 */
+    --foreground: #FAFAF9; /* stone-50 */
+    --card: #1C1917; /* stone-900 */
+    --card-foreground: #FAFAF9;
+    --popover: #1C1917;
+    --popover-foreground: #FAFAF9;
+    
+    /* Gold is primary in dark mode to pop */
+    --primary: #FACC15; 
+    --primary-foreground: #4C0519; 
+    
+    /* Maroon as secondary */
+    --secondary: #9F1239; 
+    --secondary-foreground: #FAFAF9;
+    
+    --muted: #292524; /* stone-800 */
+    --muted-foreground: #A8A29E; /* stone-400 */
+    
+    /* Deep Saffron for dark */
+    --accent: #7C2D12; 
+    --accent-foreground: #FFEDD5; 
+    
+    --destructive: #7F1D1D; /* red-900 */
+    --destructive-foreground: #FAFAF9;
+    --border: #292524; /* stone-800 */
+    --input: #292524;
+    --ring: #FACC15;
+    
+    /* Festive Custom Colors - Dark Mode */
+    --maroon: #E11D48;
+    --gold: #FACC15;
+    --saffron: #FBBF24;
+    --temple-red: #EF4444;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============================================
+   BASE STYLES
+   ============================================ */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading tracking-tight;
+  }
+  
+  /* Focus visible for accessibility */
+  :focus-visible {
+    @apply outline-2 outline-ring outline-offset-2;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+/* Festive Gradients */
+.gradient-festive {
+  background: linear-gradient(135deg, var(--maroon) 0%, var(--saffron) 50%, var(--gold) 100%);
+}
+
+.gradient-maroon {
+  background: linear-gradient(135deg, #9F1239 0%, #BE123C 100%);
+}
+
+.gradient-gold {
+  background: linear-gradient(135deg, #FACC15 0%, #F59E0B 100%);
+}
+
+.gradient-saffron {
+  background: linear-gradient(135deg, #F59E0B 0%, #EA580C 100%);
+}
+
+.gradient-dark {
+  background: linear-gradient(180deg, #0C0A09 0%, #1C1917 100%);
+}
+
+.gradient-hero {
+  background: 
+    radial-gradient(ellipse at top, rgba(159, 18, 57, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom, rgba(250, 204, 21, 0.1) 0%, transparent 50%),
+    linear-gradient(180deg, var(--background) 0%, var(--muted) 100%);
+}
+
+/* Text Gradients */
+.text-gradient-festive {
+  background: linear-gradient(135deg, var(--maroon) 0%, var(--gold) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #FACC15 0%, #F59E0B 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-maroon {
+  background: linear-gradient(135deg, #9F1239 0%, #BE123C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Shadow utilities */
+.shadow-festive {
+  box-shadow: 
+    0 4px 6px -1px rgba(159, 18, 57, 0.1),
+    0 2px 4px -2px rgba(159, 18, 57, 0.1);
+}
+
+.shadow-festive-lg {
+  box-shadow: 
+    0 10px 15px -3px rgba(159, 18, 57, 0.1),
+    0 4px 6px -4px rgba(159, 18, 57, 0.1);
+}
+
+.shadow-gold {
+  box-shadow: 
+    0 4px 6px -1px rgba(250, 204, 21, 0.2),
+    0 2px 4px -2px rgba(250, 204, 21, 0.2);
+}
+
+.shadow-gold-lg {
+  box-shadow: 
+    0 10px 15px -3px rgba(250, 204, 21, 0.2),
+    0 4px 6px -4px rgba(250, 204, 21, 0.2);
+}
+
+/* Ring utilities */
+.ring-festive {
+  --tw-ring-color: var(--maroon);
+}
+
+.ring-gold {
+  --tw-ring-color: var(--gold);
+}
+
+/* Border utilities */
+.border-festive {
+  border-color: var(--maroon);
+}
+
+.border-gold {
+  border-color: var(--gold);
+}
+
+/* Background utilities */
+.bg-festive {
+  background-color: var(--maroon);
+}
+
+.bg-gold {
+  background-color: var(--gold);
+}
+
+.bg-saffron {
+  background-color: var(--saffron);
+}
+
+/* ============================================
+   COMPONENT STYLES
+   ============================================ */
+
+/* Container */
+.container {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+}
+
+/* Section */
+.section {
+  @apply py-16 md:py-20 lg:py-24;
+}
+
+/* Card hover effects */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+}
+
+.card-hover-festive {
+  @apply transition-all duration-300  hover:-translate-y-1;
+}
+
+/* Link styles */
+.link-underline {
+  @apply relative;
+}
+
+.link-underline::after {
+  content: '';
+  @apply absolute bottom-0 left-0 w-0 h-0.5 bg-primary transition-all duration-300;
+}
+
+.link-underline:hover::after {
+  @apply w-full;
+}
+
+/* Status indicators */
+.status-dot {
+  @apply w-2 h-2 rounded-full;
+}
+
+.status-dot-success {
+  @apply bg-emerald-500;
+}
+
+.status-dot-warning {
+  @apply bg-amber-500;
+}
+
+.status-dot-error {
+  @apply bg-red-500;
+}
+
+.status-dot-info {
+  @apply bg-blue-500;
+}
+
+/* Scrollbar styling */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--muted) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: var(--muted);
+  border-radius: 3px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: var(--muted-foreground);
+}
+
+/* ============================================
+   ANIMATION CLASSES
+   ============================================ */
+
+/* Fade in animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Shimmer animation for loading */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--muted) 0%,
+    var(--background) 50%,
+    var(--muted) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Pulse glow animation */
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(159, 18, 57, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(159, 18, 57, 0);
+  }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s infinite;
+}
+
+/* Float animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* ============================================
+   RESPONSIVE UTILITIES
+   ============================================ */
+
+/* Hide scrollbar on mobile */
+.hide-scrollbar-mobile {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.hide-scrollbar-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+/* Text truncate */
+.truncate-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.truncate-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ============================================
+   SPECIAL OCCASION THEMES
+   ============================================ */
+
+/* Chaturthi special theme - can be toggled during festival */
+.theme-chaturthi {
+  --primary: #9F1239;
+  --secondary: #FACC15;
+  --accent: #F59E0B;
+}
+
+.theme-chaturthi .hero-glow {
+  box-shadow: 
+    0 0 100px rgba(159, 18, 57, 0.3),
+    0 0 200px rgba(250, 204, 21, 0.2);
+}
+
+/* Visarjan theme - darker, more dramatic */
+.theme-visarjan {
+  --background: #0A0A0A;
+  --card: #1A1A1A;
+  --primary: #FACC15;
+}
+
+/* ============================================
+   PRINT STYLES
+   ============================================ */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-break-before {
+    page-break-before: always;
+  }
+  
+  .print-break-after {
+    page-break-after: always;
+  }
+  
+  .print-avoid-break {
+    page-break-inside: avoid;
+  }
+}
+
+/* ============================================
+   TELUGU FONT SUPPORT
+   ============================================ */
+.font-telugu {
+  font-family: 'Noto Sans Telugu', 'Nirmala UI', 'Gautami', sans-serif;
+}
+
+/* Apply Telugu font for elements with lang="te" */
+[lang="te"] {
+  font-family: 'Noto Sans Telugu', 'Nirmala UI', 'Gautami', sans-serif;
+}
+
+
+/* ============================================
+   PREMIUM GOLDEN THEME ENHANCEMENTS
+   Custom colors that persist across light/dark modes
+   ============================================ */
+
+/* Premium Golden Accents - These colors maintain their vibrancy in both modes */
+@layer utilities {
+  /* Golden glow effect */
+  .golden-glow {
+    box-shadow: 
+      0 0 20px rgba(250, 204, 21, 0.3),
+      0 0 40px rgba(245, 158, 11, 0.2);
+  }
+
+  .golden-glow-sm {
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
+  }
+
+  /* Premium card with golden border */
+  .card-golden {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.9) 0%,
+      rgba(254, 243, 199, 0.5) 100%
+    );
+    border: 1px solid rgba(250, 204, 21, 0.3);
+    box-shadow: 
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 0 20px rgba(250, 204, 21, 0.1);
+  }
+
+  .dark .card-golden {
+    background: linear-gradient(
+      135deg,
+      rgba(28, 25, 23, 0.9) 0%,
+      rgba(41, 37, 36, 0.8) 100%
+    );
+    border: 1px solid rgba(250, 204, 21, 0.2);
+  }
+
+  /* Premium gradient backgrounds - PERSIST IN BOTH MODES */
+  .bg-premium-gradient {
+    background: linear-gradient(
+      135deg,
+      #fefce8 0%,
+      #fef3c7 25%,
+      #fde68a 50%,
+      #fcd34d 75%,
+      #fbbf24 100%
+    );
+  }
+
+  .dark .bg-premium-gradient {
+    background: linear-gradient(
+      135deg,
+      #1c1917 0%,
+      #292524 25%,
+      #44403c 50%,
+      #57534e 75%,
+      #78716c 100%
+    );
+  }
+
+  /* Text gradients that work in both modes */
+  .text-golden-gradient {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 50%, #facc15 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .text-premium-gradient {
+    background: linear-gradient(135deg, #b45309 0%, #d97706 25%, #f59e0b 50%, #fbbf24 75%, #facc15 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Amber/Orange accent backgrounds - VIBRANT IN BOTH MODES */
+  .bg-amber-accent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(251, 191, 36, 0.05) 100%);
+  }
+
+  .dark .bg-amber-accent {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(251, 191, 36, 0.08) 100%);
+  }
+
+  /* Premium border with golden tint */
+  .border-golden-tint {
+    border-color: rgba(250, 204, 21, 0.3);
+  }
+
+  .dark .border-golden-tint {
+    border-color: rgba(250, 204, 21, 0.2);
+  }
+
+  /* Glass morphism with golden tint */
+  .glass-golden {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(250, 204, 21, 0.2);
+  }
+
+  .dark .glass-golden {
+    background: rgba(28, 25, 23, 0.7);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(250, 204, 21, 0.15);
+  }
+
+  /* Animated gradient border */
+  .gradient-border-animated {
+    position: relative;
+    background: linear-gradient(white, white) padding-box,
+                linear-gradient(135deg, #f59e0b, #fbbf24, #facc15, #f59e0b) border-box;
+    border: 2px solid transparent;
+    animation: border-rotate 4s linear infinite;
+  }
+
+  .dark .gradient-border-animated {
+    background: linear-gradient(#1c1917, #1c1917) padding-box,
+                linear-gradient(135deg, #f59e0b, #fbbf24, #facc15, #f59e0b) border-box;
+  }
+
+  @keyframes border-rotate {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Premium shimmer effect */
+  .shimmer-golden {
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(250, 204, 21, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-golden 2s infinite;
+  }
+
+  @keyframes shimmer-golden {
+    0% {
+      background-position: -200% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+
+  /* Festival specific colors */
+  .bg-festival-primary {
+    background: linear-gradient(135deg, #9f1239 0%, #be123c 100%);
+  }
+
+  .bg-festival-secondary {
+    background: linear-gradient(135deg, #facc15 0%, #f59e0b 100%);
+  }
+
+  .text-festival-title {
+    font-family: var(--font-heading);
+    background: linear-gradient(135deg, #9f1239 0%, #facc15 50%, #f59e0b 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+/* ============================================
+   SUBTLE ANIMATION UTILITIES
+   ============================================ */
+
+@layer utilities {
+  /* Smooth hover transitions */
+  .hover-lift {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.15);
+  }
+
+  .dark .hover-lift:hover {
+    box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+  }
+
+  /* Scale on hover */
+  .hover-scale {
+    transition: transform 0.3s ease;
+  }
+
+  .hover-scale:hover {
+    transform: scale(1.02);
+  }
+
+  /* Fade in animation utility */
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out forwards;
+  }
+
+  .animate-fade-in-down {
+    animation: fade-in-down 0.6s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scale-in 0.5s ease-out forwards;
+  }
+
+  /* Stagger delay utilities */
+  .delay-100 {
+    animation-delay: 100ms;
+  }
+
+  .delay-200 {
+    animation-delay: 200ms;
+  }
+
+  .delay-300 {
+    animation-delay: 300ms;
+  }
+
+  .delay-400 {
+    animation-delay: 400ms;
+  }
+
+  .delay-500 {
+    animation-delay: 500ms;
+  }
+
+  /* Pulse soft animation */
+  .animate-pulse-soft {
+    animation: pulse-soft 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-soft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+
+  /* Subtle bounce */
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  /* Rotate on hover */
+  .hover-rotate {
+    transition: transform 0.4s ease;
+  }
+
+  .hover-rotate:hover {
+    transform: rotate(5deg);
+  }
+
+  /* Glow pulse */
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes glow-pulse {
+    0%, 100% {
+      box-shadow: 0 0 10px rgba(250, 204, 21, 0.2);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(250, 204, 21, 0.4);
+    }
+  }
+}
+
+/* ============================================
+   ICON ENHANCEMENTS
+   ============================================ */
+
+@layer utilities {
+  /* Icon container */
+  .icon-container {
+    @apply flex items-center justify-center rounded-xl;
+  }
+
+  .icon-container-sm {
+    @apply w-8 h-8;
+  }
+
+  .icon-container-md {
+    @apply w-10 h-10;
+  }
+
+  .icon-container-lg {
+    @apply w-12 h-12;
+  }
+
+  /* Icon backgrounds */
+  .icon-bg-gold {
+    @apply bg-gradient-to-br from-amber-400 to-yellow-500;
+  }
+
+  .icon-bg-maroon {
+    @apply bg-gradient-to-br from-rose-700 to-rose-600;
+  }
+
+  .icon-bg-saffron {
+    @apply bg-gradient-to-br from-orange-400 to-amber-500;
+  }
 }

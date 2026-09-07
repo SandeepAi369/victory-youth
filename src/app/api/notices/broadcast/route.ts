@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+import { sendTelegramBroadcast } from "@/lib/telegram";
+import { sendEmailNotification } from "@/lib/email";
+import { logAuditAction } from "@/lib/audit";
+import { db, schema } from "@/db";
+
+export async function POST(req: NextRequest) {
+  try {
+    const { title, body, channel, sentBy } = await req.json();
+
+    if (!title || !body) {
+      return NextResponse.json({ error: "Title and body are required" }, { status: 400 });
+    }
+
+    if (channel === "TELEGRAM" || channel === "BOTH") {
+      await sendTelegramBroadcast({ title, message: body });
+    }
+
+    if (channel === "EMAIL" || channel === "BOTH") {
+      await sendEmailNotification({
+        to: "committee@ganeshbns.org",
+        subject: `[VYA Notice] ${title}`,
+        html: `<h2>${title}</h2><p>${body}</p><p><i>Victory Youth Association - Gudem Gally, Banswada</i></p>`,
+      });
+    }
+
+    if (db) {
+      await db.insert(schema.notices).values({
+        id: `notice-${Date.now()}`,
+        title,
+        body,
+        channel: channel || "TELEGRAM",
+        sentBy: sentBy || "Secretary",
+      });
+    }
+
+    await logAuditAction({
+      actorMemberId: sentBy || "SECRETARY",
+      action: "CREATE",
+      entity: "system",
+      entityId: `broadcast-${Date.now()}`,
+      newValue: { title, channel },
+    });
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("[Notice Broadcast Error]:", error);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+  }
+}

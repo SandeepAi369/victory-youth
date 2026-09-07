@@ -1,0 +1,84 @@
+datasource db {
+  provider = "sqlite"
+  url     = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  SUPER_ADMIN
+  PRESIDENT
+  SECRETARY
+  TREASURER
+  EVENT_INCHARGE
+  VOLUNTEER
+  AUDITOR
+  GUEST
+}
+
+model User {
+  id        String    @id @default(cuid())
+  name      String
+  phone     String    @unique
+  pin       String
+  role      String    @default("VOLUNTEER")
+  createdAt  DateTime  @default(now())
+}
+
+model Member {
+  id        String    @id @default(cuid())
+  memberId   String    @unique
+  name      String
+  fatherName String?
+  phone     String
+  gotram    String?
+  role      String
+  bloodGroup String?
+  address   String?
+  avatar    String?
+  joinedYear Int      @default(2026)
+  createdAt  DateTime  @default(now())
+}
+
+model Donation {
+  id          String    @id @default(cuid())
+  receiptNo    String    @unique
+  donorName    String
+  phone        String?
+  gotram       String?
+  amount       Float
+  paymentMode  String
+  transactionId String?
+  purpose      String
+  date         String
+  collectedBy String
+  taxExempt80G Boolean @default(true)
+  createdAt     DateTime  @default(now())
+}
+
+model Expense {
+  id          String    @id @default(cuid())
+  voucherNo    String    @unique
+  title        String
+  category     String
+  amount       Float
+  paidTo       String
+  paymentMode  String
+  approvedBy  String
+  date         String
+  status       String    @default("APPROVED")
+  createdAt     DateTime  @default(now())
+}
+
+model AuctionItem {
+  id          String    @id @default(cuid())
+  title        String
+  description  String
+  basePrice    Float
+  currentBid   Float
+  highestBidder String?
+  status       String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+}

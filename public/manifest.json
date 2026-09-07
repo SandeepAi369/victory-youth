@@ -1,0 +1,16 @@
+{
+  "name": "Victory Youth Association - Banswada Ka Raja",
+  "short_name": "Ganesh BNS",
+  "description": "50th Golden Jubilee Mahaotsavam ERP & Public Devotee Portal (1974-2026)",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#180508",
+  "theme_color": "#d4a017",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
