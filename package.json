@@ -76,5 +76,9 @@
     "typescript": "^5",
     "undici": "^6.28.1",
     "wrangler": "^4.129.1"
+  },
+  "overrides": {
+    "@aws-sdk/nested-clients": "3.730.0",
+    "@smithy/types": "3.2.0"
   }
 }
