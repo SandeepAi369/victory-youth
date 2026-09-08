@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ganesh-bns",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-09-08",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  // Environment variables for the database - set these in Cloudflare dashboard
+  // or via wrangler secret put DATABASE_URL
+  "vars": {}
+}

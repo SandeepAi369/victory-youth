@@ -9,7 +9,10 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
-    "db:seed": "tsx src/db/seed.ts"
+    "db:seed": "tsx src/db/seed.ts",
+    "build:cloudflare": "npx opennextjs-cloudflare build",
+    "deploy": "npm run build:cloudflare && wrangler deploy",
+    "preview": "npm run build:cloudflare && wrangler dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -57,6 +60,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.20.6",
     "@tailwindcss/postcss": "^4",
     "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",

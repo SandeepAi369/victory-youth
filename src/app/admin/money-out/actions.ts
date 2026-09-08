@@ -32,3 +32,13 @@ export async function deleteExpense(id: string) {
     return { success: true };
   } catch (error: any) { return { success: false, error: error.message }; }
 }
+
+
+export async function toggleExpensePublish(id: string, publish: boolean) {
+  if (!db) return { success: false, error: "DB not connected" };
+  try {
+    await db.update(schema.transactions).set({ isPublished: publish }).where(eq(schema.transactions.id, id));
+    revalidatePath("/admin"); revalidatePath("/admin/money-out"); revalidatePath("/admin/summary");
+    return { success: true };
+  } catch (error: any) { return { success: false, error: error.message }; }
+}

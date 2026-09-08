@@ -30,3 +30,9 @@ export async function deleteGalleryItem(id: string) {
   await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
   revalidatePath("/"); revalidatePath("/admin/gallery"); revalidatePath("/gallery");
 }
+
+
+export async function toggleGalleryPublish(id: string, publish: boolean) {
+  await db.update(schema.gallery).set({ isPublished: publish }).where(eq(schema.gallery.id, id));
+  revalidatePath("/"); revalidatePath("/admin/gallery"); revalidatePath("/gallery");
+}
