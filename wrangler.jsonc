@@ -7,8 +7,5 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  },
-  // Environment variables for the database - set these in Cloudflare dashboard
-  // or via wrangler secret put DATABASE_URL
-  "vars": {}
+  }
 }
