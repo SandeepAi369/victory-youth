@@ -18,7 +18,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (body.password !== (process.env.ADMIN_PASSWORD || "ganesh2026")) {
+  const adminPassword = process.env.ADMIN_PASSWORD || "ganesh2026";
+
+  if (body.password !== adminPassword) {
     return NextResponse.json(
       { success: false, error: "Incorrect password." },
       { status: 401 }
@@ -27,12 +29,15 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ success: true, message: "Login successful." });
 
-  response.cookies.set("admin-auth", (process.env.ADMIN_PASSWORD || "ganesh2026"), {
+  // Detect if running on HTTPS (Cloudflare) or HTTP (local dev)
+  const isSecure = request.url.startsWith("https");
+
+  response.cookies.set("admin-auth", adminPassword, {
     path: "/",
     maxAge: 86400,
     httpOnly: false,
     sameSite: "lax",
-    secure: false,   // Dev/demo behind Pinggy — always false
+    secure: isSecure,
   });
 
   return response;
