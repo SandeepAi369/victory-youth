@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Eye, EyeOff } from "lucide-react";
-import { addGalleryItem, updateGalleryItem, deleteGalleryItem } from "./actions";
+import { addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish } from "./actions";
 
 export function GalleryClient({ gallery }: { gallery: any[] }) {
   const [isAdding, setIsAdding] = useState(false);
@@ -19,6 +19,13 @@ export function GalleryClient({ gallery }: { gallery: any[] }) {
       if (editingId) await updateGalleryItem(editingId, formData);
       else await addGalleryItem(formData);
       setIsAdding(false); setEditingId(null); router.refresh(); });
+  };
+
+  const handleTogglePublish = (id: string, current: boolean) => {
+    startTransition(async () => {
+      await toggleGalleryPublish(id, !current);
+      router.refresh();
+    });
   };
 
   const handleDelete = (id: string) => {
@@ -63,6 +70,7 @@ export function GalleryClient({ gallery }: { gallery: any[] }) {
             </div>
             <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button onClick={() => { setEditingId(item.id); setIsAdding(false); setFormData({ title: item.title, url: item.url, category: item.category || "General", year: item.year || 2026 }); }} className="p-1.5 bg-white text-blue-600 rounded-lg shadow"><Pencil className="w-4 h-4" /></button>
+              <button onClick={() => handleTogglePublish(item.id, !!item.isPublished)} disabled={isPending} className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-200"}`}>{item.isPublished ? "PUB" : "DRAFT"}</button>
               <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-white text-red-600 rounded-lg shadow"><Trash2 className="w-4 h-4" /></button>
             </div>
           </div>

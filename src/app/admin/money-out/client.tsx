@@ -4,10 +4,10 @@ import { useRouter } from "next/navigation";
 
 import { useState, useTransition } from "react";
 import { Plus, Search, Edit, Trash2, Loader2 } from "lucide-react";
-import { addExpense, updateExpense, deleteExpense } from "./actions";
+import { addExpense, updateExpense, deleteExpense, toggleExpensePublish } from "./actions";
 import { toast } from "sonner";
 
-type Expense = { id: string; voucherNo: string; title: string | null; category: string; amount: number; paidTo: string | null; vendorName: string | null; mode: string | null; date: string; status: string | null };
+type Expense = { id: string; voucherNo: string; title: string | null; category: string; amount: number; paidTo: string | null; vendorName: string | null; mode: string | null; date: string; status: string | null; isPublished: boolean | null };
 
 const EXP_CATEGORIES = ["Decoration", "Sound System", "Prasadam", "Electricity", "Vedic Pooja", "Transport", "Catering", "Miscellaneous"];
 
@@ -39,6 +39,14 @@ export default function MoneyOutClient({ initialData }: { initialData: Expense[]
         if (res.success) { toast.success("Expense added"); resetForm(); router.refresh(); }
         else toast.error(res.error || "Failed");
       }
+    });
+  };
+
+  const handleTogglePublish = (id: string, current: boolean) => {
+    startTransition(async () => {
+      await toggleExpensePublish(id, !current);
+      toast.success(current ? "Unpublished" : "Published");
+      router.refresh();
     });
   };
 
@@ -93,7 +101,8 @@ export default function MoneyOutClient({ initialData }: { initialData: Expense[]
 
       <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
-          <thead className="bg-muted/50"><tr className="text-left text-muted-foreground"><th className="p-3">Voucher</th><th className="p-3">Description</th><th className="p-3">Category</th><th className="p-3">Paid To</th><th className="p-3">Amount</th><th className="p-3">Date</th><th className="p-3 text-right">Actions</th></tr></thead>
+          <thead className="bg-muted/50"><tr className="text-left text-muted-foreground"><th className="p-3">Voucher</th><th className="p-3">Description</th><th className="p-3">Category</th><th className="p-3">Paid To</th><th className="p-3">Amount</th><th className="p-3">Date</th><th className="p-3">Visible</th>
+              <th className="p-3 text-right">Actions</th></tr></thead>
           <tbody className="divide-y divide-border">
             {filtered.length === 0 && <tr><td colSpan={7} className="p-8 text-center text-muted-foreground">No expenses yet</td></tr>}
             {filtered.map(e => (
@@ -104,6 +113,9 @@ export default function MoneyOutClient({ initialData }: { initialData: Expense[]
                 <td className="p-3 text-muted-foreground">{e.paidTo || e.vendorName || "-"}</td>
                 <td className="p-3 font-bold text-red-600">₹{e.amount.toLocaleString("en-IN")}</td>
                 <td className="p-3 text-muted-foreground">{e.date}</td>
+                <td className="p-3">
+                  <button onClick={() => handleTogglePublish(e.id, !!e.isPublished)} disabled={isPending} className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors border ${e.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200"}`}>{e.isPublished ? "PUBLISHED" : "DRAFT"}</button>
+                </td>
                 <td className="p-3 text-right">
                   <div className="flex items-center justify-end gap-1">
                     <button onClick={() => handleEdit(e)} className="p-1.5 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/30 text-blue-600"><Edit className="w-3.5 h-3.5" /></button>
