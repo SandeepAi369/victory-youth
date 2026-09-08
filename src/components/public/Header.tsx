@@ -71,13 +71,6 @@ export default function Header() {
             {t("donate_now", "Donate")}
           </a>
 
-          {/* Admin Login */}
-          <Link
-            href="/login"
-            className="px-3.5 py-2 rounded-xl bg-red-950/60 border border-red-800 text-zinc-200 hover:text-white hover:bg-red-900 text-xs font-bold transition-all"
-          >
-            {t("admin_login", "Admin Portal")}
-          </Link>
         </div>
       </div>
     </header>
