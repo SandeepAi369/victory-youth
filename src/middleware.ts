@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'ganesh2026';
-
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const adminPassword = process.env.ADMIN_PASSWORD || 'ganesh2026';
 
-  // Allow login page and login API through
+  // Allow login page and login API through without auth check
   if (pathname === '/login' || pathname.startsWith('/api/admin/login')) {
     const response = NextResponse.next();
     response.headers.set('x-middleware-cache', 'no-cache');
@@ -21,7 +20,7 @@ export function middleware(request: NextRequest) {
     if (!isPrefetch) {
       const authCookie = request.cookies.get('admin-auth');
 
-      if (!authCookie || authCookie.value !== ADMIN_PASSWORD) {
+      if (!authCookie || authCookie.value !== adminPassword) {
         const loginUrl = new URL('/login', request.url);
         const response = NextResponse.redirect(loginUrl);
         response.headers.set('x-middleware-cache', 'no-cache');
@@ -31,12 +30,9 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // No-cache headers for all matched responses
+  // No-cache headers
   const response = NextResponse.next();
   response.headers.set('x-middleware-cache', 'no-cache');
-  response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-  response.headers.set('Pragma', 'no-cache');
-  response.headers.set('Expires', '0');
   return response;
 }
 
