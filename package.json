@@ -78,7 +78,7 @@
     "wrangler": "^4.129.1"
   },
   "overrides": {
-    "@aws-sdk/nested-clients": "3.374.0",
+    "@aws-sdk/nested-clients": "3.730.0",
     "@smithy/types": "3.2.0"
   }
 }
