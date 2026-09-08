@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     );
   }
 
-  if (body.password !== "ganesh2026") {
+  if (body.password !== (process.env.ADMIN_PASSWORD || "ganesh2026")) {
     return NextResponse.json(
       { success: false, error: "Incorrect password." },
       { status: 401 }
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
 
   const response = NextResponse.json({ success: true, message: "Login successful." });
 
-  response.cookies.set("admin-auth", "ganesh2026", {
+  response.cookies.set("admin-auth", (process.env.ADMIN_PASSWORD || "ganesh2026"), {
     path: "/",
     maxAge: 86400,
     httpOnly: false,

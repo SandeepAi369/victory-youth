@@ -39,9 +39,6 @@ export default async function HomePage() {
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-medium text-stone-600 dark:text-stone-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
-              Admin Login
-            </Link>
             <ModeToggle />
           </div>
         </div>
