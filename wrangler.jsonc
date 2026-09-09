@@ -3,7 +3,10 @@
   "name": "ganesh-bns",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-08",
-  "compatibility_flags": ["nodejs_compat", "nodejs_compat_populate_process_env"],
+  "compatibility_flags": [
+    "nodejs_compat",
+    "nodejs_compat_populate_process_env"
+  ],
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
@@ -11,7 +14,8 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "95593a45d2c94fbba277b89914adcff1"
+      "id": "95593a45d2c94fbba277b89914adcff1",
+      "localConnectionString": "postgresql://***REMOVED***:***REMOVED***@***REMOVED***:26257/defaultdb?sslmode=require"
     }
   ]
 }
