@@ -38,7 +38,7 @@ export async function getAssociationSettings() {
 /**
  * Get public stats for homepage display
  */
-export async function getPublicStats() {
+export async function getPublicStats(existingSettings?: any) {
   if (!db) {
     return {
       totalDonations: 0,
@@ -57,7 +57,11 @@ export async function getPublicStats() {
         total: sql<number>`coalesce(sum(amount), 0)::int`,
       })
       .from(schema.donations)
-      .where(eq(schema.donations.status, "SUCCESS"));
+      .where(eq(schema.donations.status, "SUCCESS"))
+      .catch((e) => {
+        console.error("Error fetching donation stats:", e);
+        return [{ count: 0, total: 0 }];
+      });
 
     // Get member count
     const memberStats = await db
@@ -65,7 +69,11 @@ export async function getPublicStats() {
         count: sql<number>`count(*)::int`,
       })
       .from(schema.members)
-      .where(eq(schema.members.isActive, true));
+      .where(eq(schema.members.isActive, true))
+      .catch((e) => {
+        console.error("Error fetching member stats:", e);
+        return [{ count: 0 }];
+      });
 
     // Get event count
     const eventStats = await db
@@ -73,10 +81,14 @@ export async function getPublicStats() {
         count: sql<number>`count(*)::int`,
       })
       .from(schema.events)
-      .where(eq(schema.events.isPublished, true));
+      .where(eq(schema.events.isPublished, true))
+      .catch((e) => {
+        console.error("Error fetching event stats:", e);
+        return [{ count: 0 }];
+      });
 
     // Get donation target from settings
-    const settings = await getAssociationSettings();
+    const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
 
     return {
       totalDonations: donationStats[0]?.count || 0,
@@ -105,7 +117,7 @@ export async function getPublicStats() {
  * Get published events for public schedule
  */
 export async function getPublishedEvents() {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const events = await db
@@ -115,14 +127,17 @@ export async function getPublishedEvents() {
       .orderBy(schema.events.date);
 
     return events;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedEvents:", error);
+    return [];
+  }
 }
 
 /**
  * Get events by date range
  */
 export async function getEventsByDateRange(startDate: string, endDate: string) {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const events = await db
@@ -138,9 +153,11 @@ export async function getEventsByDateRange(startDate: string, endDate: string) {
       .orderBy(schema.events.date);
 
     return events;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getEventsByDateRange:", error);
+    return [];
+  }
 }
-
 
 // ============================================
 // NOTICES
@@ -150,7 +167,7 @@ export async function getEventsByDateRange(startDate: string, endDate: string) {
  * Get published notices for public display
  */
 export async function getPublishedNotices(limit: number = 5) {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const notices = await db
@@ -161,7 +178,10 @@ export async function getPublishedNotices(limit: number = 5) {
       .limit(limit);
 
     return notices;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedNotices:", error);
+    return [];
+  }
 }
 
 // ============================================
@@ -172,7 +192,7 @@ export async function getPublishedNotices(limit: number = 5) {
  * Get published sponsors for homepage
  */
 export async function getPublishedSponsors() {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const sponsors = await db
@@ -182,7 +202,10 @@ export async function getPublishedSponsors() {
       .orderBy(desc(schema.sponsors.displayOrder));
 
     return sponsors;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedSponsors:", error);
+    return [];
+  }
 }
 
 // ============================================
@@ -193,7 +216,7 @@ export async function getPublishedSponsors() {
  * Get published gallery images
  */
 export async function getPublishedGallery(limit: number = 12) {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const images = await db
@@ -204,9 +227,11 @@ export async function getPublishedGallery(limit: number = 12) {
       .limit(limit);
 
     return images;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedGallery:", error);
+    return [];
+  }
 }
-
 
 // ============================================
 // DONATION PURPOSES
@@ -216,7 +241,7 @@ export async function getPublishedGallery(limit: number = 12) {
  * Get active donation purposes for donate page
  */
 export async function getActiveDonationPurposes() {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const purposes = await db
@@ -226,7 +251,10 @@ export async function getActiveDonationPurposes() {
       .orderBy(schema.donationPurposes.sortOrder);
 
     return purposes;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getActiveDonationPurposes:", error);
+    return [];
+  }
 }
 
 // ============================================
@@ -236,19 +264,19 @@ export async function getActiveDonationPurposes() {
 /**
  * Get hero section data for homepage
  */
-export async function getHeroSection() {
-  if (!db) {
-    return {
-      title: "Victory Youth",
-      subtitleEn: "50th Golden Jubilee Celebrations",
-      subtitleTe: "50వ స్వర్ణోత్సవ వేడుకలు",
-      imageUrl: null,
-      imageAlt: "Victory Youth Association",
-    };
-  }
+export async function getHeroSection(existingSettings?: any) {
+  const defaultHero = {
+    title: "Victory Youth",
+    subtitleEn: "50th Golden Jubilee Celebrations",
+    subtitleTe: "50వ స్వర్ణోత్సవ వేడుకలు",
+    imageUrl: null,
+    imageAlt: "Victory Youth Association",
+  };
+
+  if (!db) return defaultHero;
 
   try {
-    const settings = await getAssociationSettings();
+    const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
     
     return {
       title: settings?.heroTitle || "Victory Youth",
@@ -262,26 +290,18 @@ export async function getHeroSection() {
     };
   } catch (error) {
     console.error("Error fetching hero section:", error);
-    return {
-      title: "Victory Youth",
-      subtitleEn: "50th Golden Jubilee Celebrations",
-      subtitleTe: "50వ స్వర్ణోత్సవ వేడుకలు",
-      imageUrl: null,
-      imageAlt: "Victory Youth Association",
-    };
+    return defaultHero;
   }
 }
 
 /**
  * Get featured gallery (3 photos) for homepage
  */
-export async function getFeaturedGallery() {
-  if (!db) {
-    return [];
-  }
+export async function getFeaturedGallery(existingSettings?: any) {
+  if (!db) return [];
 
   try {
-    const settings = await getAssociationSettings();
+    const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
     
     const featured: { url: string; alt: string; caption: string }[] = [];
     
@@ -310,9 +330,11 @@ export async function getFeaturedGallery() {
     }
     
     return featured;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getFeaturedGallery:", error);
+    return [];
+  }
 }
-
 
 // ============================================
 // NOTES
@@ -322,7 +344,7 @@ export async function getFeaturedGallery() {
  * Get published notes for frontend display
  */
 export async function getPublishedNotes(limit: number = 10) {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
 
   try {
     const notes = await db
@@ -333,15 +355,17 @@ export async function getPublishedNotes(limit: number = 10) {
       .limit(limit);
 
     return notes;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedNotes:", error);
+    return [];
+  }
 }
-
 
 // ============================================
 // PUBLISHED DONATIONS (for frontend display)
 // ============================================
 export async function getPublishedDonations(limit = 20) {
-  if (!db) throw new Error("Database connection not available. Check DATABASE_URL.");
+  if (!db) return [];
   try {
     const donations = await db
       .select({ donorName: schema.donations.donorName, amount: schema.donations.amount, category: schema.donations.category, date: schema.donations.date })
@@ -350,7 +374,10 @@ export async function getPublishedDonations(limit = 20) {
       .orderBy(desc(schema.donations.createdAt))
       .limit(limit);
     return donations;
-  } catch (error) { console.error("❌ DB QUERY FAILED:", error); throw error; }
+  } catch (error) {
+    console.error("❌ DB QUERY FAILED in getPublishedDonations:", error);
+    return [];
+  }
 }
 
 // ============================================
@@ -358,40 +385,63 @@ export async function getPublishedDonations(limit = 20) {
 // ============================================
 
 /**
- * Get all homepage data in a single call for SSR
+ * Get all homepage data in a single resilient call for SSR
  */
 export async function getHomepageData() {
-  const [
-    settings,
-    stats,
-    hero,
-    featuredGallery,
-    events,
-    sponsors,
-    notices,
-    notes,
-    publishedDonations,
-  ] = await Promise.all([
-    getAssociationSettings(),
-    getPublicStats(),
-    getHeroSection(),
-    getFeaturedGallery(),
-    getPublishedEvents(),
-    getPublishedSponsors(),
-    getPublishedNotices(3),
-    getPublishedNotes(5),
-    getPublishedDonations(20),
-  ]);
+  try {
+    // 1. Fetch settings first (single row, quick)
+    const settings = await getAssociationSettings();
 
-  return {
-    settings,
-    stats,
-    hero,
-    featuredGallery,
-    events,
-    sponsors,
-    notices,
-    notes,
-    publishedDonations,
-  };
+    // 2. Run other queries in parallel, passing pre-fetched settings
+    const [
+      stats,
+      hero,
+      featuredGallery,
+      events,
+      sponsors,
+      notices,
+      notes,
+      publishedDonations,
+    ] = await Promise.all([
+      getPublicStats(settings),
+      getHeroSection(settings),
+      getFeaturedGallery(settings),
+      getPublishedEvents(),
+      getPublishedSponsors(),
+      getPublishedNotices(3),
+      getPublishedNotes(5),
+      getPublishedDonations(20),
+    ]);
+
+    return {
+      settings,
+      stats,
+      hero,
+      featuredGallery,
+      events,
+      sponsors,
+      notices,
+      notes,
+      publishedDonations,
+    };
+  } catch (err) {
+    console.error("❌ getHomepageData caught top-level error:", err);
+    return {
+      settings: null,
+      stats: { totalDonations: 0, totalAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
+      hero: {
+        title: "Victory Youth",
+        subtitleEn: "50th Golden Jubilee Celebrations",
+        subtitleTe: "50వ స్వర్ణోత్సవ వేడుకలు",
+        imageUrl: null,
+        imageAlt: "Victory Youth Association",
+      },
+      featuredGallery: [],
+      events: [],
+      sponsors: [],
+      notices: [],
+      notes: [],
+      publishedDonations: [],
+    };
+  }
 }
