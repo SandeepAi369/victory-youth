@@ -1,4 +1,4 @@
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 
 export interface AuditActionParams {
   actorMemberId: string;

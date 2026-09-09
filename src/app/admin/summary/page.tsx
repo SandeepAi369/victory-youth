@@ -1,4 +1,4 @@
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { eq, count, sum } from "drizzle-orm";
 import { IndianRupee, ArrowDownLeft, ArrowUpRight, Scale } from "lucide-react";
 
@@ -6,8 +6,8 @@ export const dynamic = "force-dynamic";
 
 export default async function SummaryPage() {
   let totalIn = 0, totalOut = 0, inByCategory: any[] = [], outByCategory: any[] = [];
-  if (db) {
     try {
+      const db = getDb();
       const inResult = await db.select({ total: sum(schema.donations.amount) }).from(schema.donations);
       totalIn = Number(inResult[0]?.total || 0);
       
@@ -21,8 +21,7 @@ export default async function SummaryPage() {
       // Category breakdown - expenses
       const outCats = await db.select({ category: schema.transactions.category, total: sum(schema.transactions.amount), cnt: count() }).from(schema.transactions).where(eq(schema.transactions.type, "EXPENSE")).groupBy(schema.transactions.category);
       outByCategory = outCats.map(c => ({ category: c.category || "GENERAL", total: Number(c.total || 0), count: c.cnt }));
-    } catch (e) { console.error("Summary error:", e); }
-  }
+  } catch (e) { console.error("Summary error:", e); }
 
   const netBalance = totalIn - totalOut;
   const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);

@@ -56,26 +56,7 @@ export default function RootLayout({
             <LanguageProvider>{children}</LanguageProvider>
           </AuthProvider>
         </ThemeProvider>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                  for (let registration of registrations) {
-                    registration.unregister();
-                  }
-                });
-              }
-              if ('caches' in window) {
-                caches.keys().then(function(names) {
-                  for (let name of names) {
-                    caches.delete(name);
-                  }
-                });
-              }
-            `,
-          }}
-        />
+
       </body>
     </html>
   );

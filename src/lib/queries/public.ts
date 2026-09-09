@@ -5,7 +5,7 @@
  * and do not require authentication.
  */
 
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
 
 // ============================================
@@ -16,8 +16,7 @@ import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
  * Get association settings (single row)
  */
 export async function getAssociationSettings() {
-  if (!db) return null;
-  
+  const db = getDb();
   try {
     const settings = await db
       .select()
@@ -39,15 +38,7 @@ export async function getAssociationSettings() {
  * Get public stats for homepage display
  */
 export async function getPublicStats(existingSettings?: any) {
-  if (!db) {
-    return {
-      totalDonations: 0,
-      totalAmount: 0,
-      totalMembers: 0,
-      totalEvents: 0,
-      donationTarget: 2500000,
-    };
-  }
+  const db = getDb();
 
   try {
     // Get donation stats
@@ -117,8 +108,7 @@ export async function getPublicStats(existingSettings?: any) {
  * Get published events for public schedule
  */
 export async function getPublishedEvents() {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const events = await db
       .select()
@@ -137,8 +127,7 @@ export async function getPublishedEvents() {
  * Get events by date range
  */
 export async function getEventsByDateRange(startDate: string, endDate: string) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const events = await db
       .select()
@@ -167,8 +156,7 @@ export async function getEventsByDateRange(startDate: string, endDate: string) {
  * Get published notices for public display
  */
 export async function getPublishedNotices(limit: number = 5) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const notices = await db
       .select()
@@ -192,8 +180,7 @@ export async function getPublishedNotices(limit: number = 5) {
  * Get published sponsors for homepage
  */
 export async function getPublishedSponsors() {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const sponsors = await db
       .select()
@@ -216,8 +203,7 @@ export async function getPublishedSponsors() {
  * Get published gallery images
  */
 export async function getPublishedGallery(limit: number = 12) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const images = await db
       .select()
@@ -241,8 +227,7 @@ export async function getPublishedGallery(limit: number = 12) {
  * Get active donation purposes for donate page
  */
 export async function getActiveDonationPurposes() {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const purposes = await db
       .select()
@@ -273,8 +258,7 @@ export async function getHeroSection(existingSettings?: any) {
     imageAlt: "Victory Youth Association",
   };
 
-  if (!db) return defaultHero;
-
+  const db = getDb();
   try {
     const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
     
@@ -298,8 +282,7 @@ export async function getHeroSection(existingSettings?: any) {
  * Get featured gallery (3 photos) for homepage
  */
 export async function getFeaturedGallery(existingSettings?: any) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
     
@@ -344,8 +327,7 @@ export async function getFeaturedGallery(existingSettings?: any) {
  * Get published notes for frontend display
  */
 export async function getPublishedNotes(limit: number = 10) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const notes = await db
       .select()
@@ -365,7 +347,7 @@ export async function getPublishedNotes(limit: number = 10) {
 // PUBLISHED DONATIONS (for frontend display)
 // ============================================
 export async function getPublishedDonations(limit = 20) {
-  if (!db) return [];
+  const db = getDb();
   try {
     const donations = await db
       .select({ donorName: schema.donations.donorName, amount: schema.donations.amount, category: schema.donations.category, date: schema.donations.date })

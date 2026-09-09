@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendTelegramBroadcast } from "@/lib/telegram";
 import { sendEmailNotification } from "@/lib/email";
 import { logAuditAction } from "@/lib/audit";
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 
 export async function POST(req: NextRequest) {
   try {

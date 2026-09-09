@@ -7,7 +7,7 @@
  * - Financial reporting
  */
 
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { eq, and, sql, gte, lte, desc } from "drizzle-orm";
 
 // ============================================
@@ -51,13 +51,7 @@ export interface FinancialSummary {
  * Get total donations summary
  */
 export async function getDonationsSummary() {
-  if (!db) {
-    return {
-      count: 0,
-      totalAmount: 0,
-      byPaymentMode: {},
-      byPurpose: {},
-    };
+  const db = getDb();
   }
 
   try {
@@ -133,8 +127,7 @@ export async function getDonationsSummary() {
  * Get donations by date range
  */
 export async function getDonationsByDateRange(startDate: string, endDate: string) {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     const donations = await db
       .select()
@@ -163,15 +156,7 @@ export async function getDonationsByDateRange(startDate: string, endDate: string
  * Get total expenses summary
  */
 export async function getExpensesSummary() {
-  if (!db) {
-    return {
-      count: 0,
-      totalAmount: 0,
-      totalApproved: 0,
-      totalPending: 0,
-      totalPaid: 0,
-      byCategory: {},
-    };
+  const db = getDb();
   }
 
   try {
@@ -235,12 +220,7 @@ export async function getExpensesSummary() {
  * Get total sponsors summary
  */
 export async function getSponsorsSummary() {
-  if (!db) {
-    return {
-      count: 0,
-      totalAmount: 0,
-      byTier: {},
-    };
+  const db = getDb();
   }
 
   try {
@@ -297,13 +277,7 @@ export async function getSponsorsSummary() {
  * Get auction summary
  */
 export async function getAuctionSummary() {
-  if (!db) {
-    return {
-      itemCount: 0,
-      totalBids: 0,
-      totalRevenue: 0,
-      soldItems: 0,
-    };
+  const db = getDb();
   }
 
   try {
