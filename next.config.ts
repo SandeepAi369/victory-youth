@@ -19,12 +19,6 @@ const nextConfig: NextConfig = {
       "./node_modules/pg-cloudflare/esm/**",
     ],
   },
-  outputFileTracingExcludes: {
-    "*": [
-      "node_modules/@aws-sdk/**",
-      "node_modules/@smithy/**",
-    ],
-  },
   typescript: {
     ignoreBuildErrors: true,
   }
