@@ -3,8 +3,9 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useTransition, useEffect } from "react";
-import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Users, Clock, MapPin, Image as ImageIcon } from "lucide-react";
+import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Users, Clock, MapPin, Image as ImageIcon, X } from "lucide-react";
 import { addEvent, updateEvent, togglePublishEvent, deleteEvent, bulkPublishEvents } from "./actions";
+import { toast } from "sonner";
 
 export function EventsClient({ events: initialEvents }: { events: any[] }) {
   // Sync props to state for optimistic updates
@@ -37,21 +38,25 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      if (editingId) await updateEvent(editingId, formData);
-      else await addEvent(formData);
-      setIsAdding(false);
-      setEditingId(null); router.refresh(); });
+      const res = editingId ? await updateEvent(editingId, formData) : await addEvent(formData);
+      if (res?.success) {
+        toast.success(editingId ? "Event updated" : "Event added");
+        setIsAdding(false); setEditingId(null); router.refresh();
+      } else {
+        toast.error(res?.error || "Operation failed");
+      }
+    });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this event?")) return;
-    startTransition(async () => { await deleteEvent(id); router.refresh(); });
+    startTransition(async () => { const r = await deleteEvent(id); if (r?.success) { toast.success("Event deleted"); router.refresh(); } else { toast.error(r?.error || "Delete failed"); } });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
     // Optimistic update
     setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: !current } : ev)));
-    startTransition(async () => { await togglePublishEvent(id, !current); router.refresh(); });
+    startTransition(async () => { const r = await togglePublishEvent(id, !current); if (r?.success) { toast.success(current ? "Unpublished" : "Published"); } else { toast.error(r?.error || "Toggle failed"); setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: current } : ev))); } router.refresh(); });
   };
 
   return (
@@ -67,8 +72,12 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
       </div>
 
       {(isAdding || editingId) && (
-        <div className="bg-card border rounded-2xl p-6 shadow-sm">
-          <h2 className="text-lg font-bold mb-4">{editingId ? "Edit Event" : "New Event"}</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold">{editingId ? "Edit Event" : "New Event"}</h2>
+            <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div><label className="block text-xs font-bold text-muted-foreground mb-1">Day (1-11)</label><input type="number" min="1" max="11" required value={formData.day} onChange={(e) => setFormData({ ...formData, day: parseInt(e.target.value) })} className="w-full bg-background border rounded-lg px-3 py-2" /></div>
@@ -85,7 +94,8 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
             </div>
           </form>
         </div>
-      )}
+        </div>
+        )}
 
       <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">

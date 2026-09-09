@@ -2,8 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2, Search, Download } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Download , X } from "lucide-react";
 import { addInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
+import { toast } from "sonner";
 import { exportInventoryToExcel } from "@/lib/excel-exporter";
 
 export function InventoryClient({ items }: { items: any[] }) {
@@ -18,14 +19,19 @@ export function InventoryClient({ items }: { items: any[] }) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
-      if (editingId) await updateInventoryItem(editingId, formData);
-      else await addInventoryItem(formData);
-      setIsAdding(false); setEditingId(null); router.refresh(); });
+      const res = editingId ? await updateInventoryItem(editingId, formData) : await addInventoryItem(formData);
+      if (res?.success) {
+        toast.success(editingId ? "Item updated" : "Item added");
+        setIsAdding(false); setEditingId(null); router.refresh();
+      } else {
+        toast.error(res?.error || "Operation failed");
+      }
+    });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this item?")) return;
-    startTransition(async () => { await deleteInventoryItem(id); router.refresh(); });
+    startTransition(async () => { const r = await deleteInventoryItem(id); if (r?.success) { toast.success("Item deleted"); } else { toast.error(r?.error || "Delete failed"); } router.refresh(); });
   };
 
   const filtered = items.filter((i) =>
@@ -52,7 +58,13 @@ export function InventoryClient({ items }: { items: any[] }) {
       </div>
 
       {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="p-4 bg-card border rounded-xl space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-bold text-foreground">{editingId ? "Edit Inventory Item" : "New Inventory Item"}</h3>
+            <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+          </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <input required value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Item Name" className="px-3 py-2 border rounded-lg" />
             <input required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} placeholder="Category" className="px-3 py-2 border rounded-lg" />
@@ -66,6 +78,8 @@ export function InventoryClient({ items }: { items: any[] }) {
             <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }} className="px-4 py-2 border rounded-lg">Cancel</button>
           </div>
         </form>
+        </div>
+        </div>
       )}
 
       <div className="relative">
