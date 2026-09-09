@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 
 import { useState, useTransition } from "react";
-import { Plus, Search, Edit, Trash2, Loader2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Loader2 , X } from "lucide-react";
 import { addExpense, updateExpense, deleteExpense, toggleExpensePublish } from "./actions";
 import { toast } from "sonner";
 
@@ -71,7 +71,13 @@ export default function MoneyOutClient({ initialData }: { initialData: Expense[]
       </div>
 
       {showForm && (
-        <form onSubmit={handleSubmit} className="p-5 rounded-xl bg-card border border-border space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
+        <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-bold text-foreground">{editingId ? "Edit Expense" : "New Expense"}</h3>
+            <button type="button" onClick={resetForm} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Description *" required className="px-3 py-2 rounded-lg border border-border bg-background text-sm" />
             <input value={amount} onChange={e => setAmount(e.target.value)} type="number" placeholder="Amount *" required className="px-3 py-2 rounded-lg border border-border bg-background text-sm" />
@@ -89,7 +95,9 @@ export default function MoneyOutClient({ initialData }: { initialData: Expense[]
             <button type="button" onClick={resetForm} className="px-4 py-2 rounded-lg border border-border text-sm">Cancel</button>
           </div>
         </form>
-      )}
+        </div>
+        </div>
+        )}
 
       <div className="flex gap-3 items-center">
         <div className="relative flex-1 max-w-xs">
