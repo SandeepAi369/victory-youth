@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { IndianRupee, ArrowDownLeft, ArrowUpRight, Scale, Users, Calendar, StickyNote } from "lucide-react";
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { count, sum, eq } from "drizzle-orm";
 import Link from "next/link";
 
@@ -9,8 +9,8 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard() {
   let totalIn = 0, totalOut = 0, donorCount = 0, eventCount = 0, noteCount = 0, memberCount = 0;
 
-  if (db) {
     try {
+      const db = getDb();
       const [inRes, outRes, donors, events, notes, members] = await Promise.all([
         db.select({ total: sum(schema.donations.amount) }).from(schema.donations),
         db.select({ total: sum(schema.transactions.amount) }).from(schema.transactions).where(eq(schema.transactions.type, "EXPENSE")),
@@ -25,8 +25,7 @@ export default async function AdminDashboard() {
       eventCount = events[0]?.cnt || 0;
       noteCount = notes[0]?.cnt || 0;
       memberCount = members[0]?.cnt || 0;
-    } catch (e) { console.error("Dashboard query error:", e); }
-  }
+  } catch (e) { console.error("Dashboard query error:", e); }
 
   const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
   const netBalance = totalIn - totalOut;

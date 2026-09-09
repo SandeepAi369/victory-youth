@@ -1,4 +1,4 @@
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import { desc } from "drizzle-orm";
 import { Users } from "lucide-react";
 
@@ -6,11 +6,10 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminMembersPage() {
   let members: any[] = [];
-  if (db) {
     try {
+      const db = getDb();
       members = await db.select().from(schema.members).orderBy(desc(schema.members.createdAt));
-    } catch (e) { console.error("Error fetching members:", e); }
-  }
+  } catch (e) { console.error("Error fetching members:", e); }
 
   return (
     <div className="space-y-6">

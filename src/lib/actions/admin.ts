@@ -9,7 +9,7 @@
 
 "use server";
 
-import { db, schema } from "@/db";
+import { getDb, schema } from "@/db";
 import type { NewMemberRow, NewDonationRow, NewExpenseRow, NewEventRow, NewNoticeRow, NewSponsorRow, NewGalleryRow, NewAuctionItemRow, NewImportantNoteRow, NewAssociationSettingsRow } from "@/db/schema";
 import { eq, ilike, or, desc, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -33,8 +33,7 @@ function handleError(operation: string, error: any): { success: false; error: st
 // ============================================
 
 export async function getMembers(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -60,8 +59,7 @@ export async function getMembers(query: string = "") {
 }
 
 export async function getMemberById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const member = await db
       .select()
@@ -76,8 +74,7 @@ export async function getMemberById(id: string) {
 }
 
 export async function createMember(data: NewMemberRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("mem");
     await db.insert(schema.members).values({ ...data, id });
@@ -89,8 +86,7 @@ export async function createMember(data: NewMemberRow) {
 }
 
 export async function updateMember(id: string, data: Partial<NewMemberRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.members)
@@ -104,8 +100,7 @@ export async function updateMember(id: string, data: Partial<NewMemberRow>) {
 }
 
 export async function deleteMember(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.members).where(eq(schema.members.id, id));
     revalidatePath("/admin/members");
@@ -120,8 +115,7 @@ export async function deleteMember(id: string) {
 // ============================================
 
 export async function getDonations(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -147,8 +141,7 @@ export async function getDonations(query: string = "") {
 }
 
 export async function getDonationById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const donation = await db
       .select()
@@ -163,8 +156,7 @@ export async function getDonationById(id: string) {
 }
 
 export async function createDonation(data: NewDonationRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("don");
     const receiptNo = data.receiptNo || `REC-${Date.now()}`;
@@ -179,8 +171,7 @@ export async function createDonation(data: NewDonationRow) {
 }
 
 export async function updateDonation(id: string, data: Partial<NewDonationRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.donations)
@@ -195,8 +186,7 @@ export async function updateDonation(id: string, data: Partial<NewDonationRow>) 
 }
 
 export async function deleteDonation(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.donations).where(eq(schema.donations.id, id));
     revalidatePath("/admin/donations");
@@ -212,8 +202,7 @@ export async function deleteDonation(id: string) {
 // ============================================
 
 export async function getExpenses(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -238,8 +227,7 @@ export async function getExpenses(query: string = "") {
 }
 
 export async function getExpenseById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const expense = await db
       .select()
@@ -254,8 +242,7 @@ export async function getExpenseById(id: string) {
 }
 
 export async function createExpense(data: NewExpenseRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("exp");
     await db.insert(schema.expenses).values({ ...data, id });
@@ -267,8 +254,7 @@ export async function createExpense(data: NewExpenseRow) {
 }
 
 export async function updateExpense(id: string, data: Partial<NewExpenseRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.expenses)
@@ -282,8 +268,7 @@ export async function updateExpense(id: string, data: Partial<NewExpenseRow>) {
 }
 
 export async function deleteExpense(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.expenses).where(eq(schema.expenses.id, id));
     revalidatePath("/admin/expenses");
@@ -298,8 +283,7 @@ export async function deleteExpense(id: string) {
 // ============================================
 
 export async function getEvents(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -319,8 +303,7 @@ export async function getEvents(query: string = "") {
 }
 
 export async function getEventById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const event = await db
       .select()
@@ -335,8 +318,7 @@ export async function getEventById(id: string) {
 }
 
 export async function createEvent(data: NewEventRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("evt");
     await db.insert(schema.events).values({ ...data, id });
@@ -349,8 +331,7 @@ export async function createEvent(data: NewEventRow) {
 }
 
 export async function updateEvent(id: string, data: Partial<NewEventRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.events)
@@ -365,8 +346,7 @@ export async function updateEvent(id: string, data: Partial<NewEventRow>) {
 }
 
 export async function deleteEvent(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.events).where(eq(schema.events.id, id));
     revalidatePath("/admin/events");
@@ -382,8 +362,7 @@ export async function deleteEvent(id: string) {
 // ============================================
 
 export async function getNotices(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -403,8 +382,7 @@ export async function getNotices(query: string = "") {
 }
 
 export async function getNoticeById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const notice = await db
       .select()
@@ -419,8 +397,7 @@ export async function getNoticeById(id: string) {
 }
 
 export async function createNotice(data: NewNoticeRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("ntc");
     const now = data.status === "PUBLISHED" ? { publishedAt: new Date() } : {};
@@ -433,8 +410,7 @@ export async function createNotice(data: NewNoticeRow) {
 }
 
 export async function updateNotice(id: string, data: Partial<NewNoticeRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const now = data.status === "PUBLISHED" ? { publishedAt: new Date() } : {};
     await db
@@ -449,8 +425,7 @@ export async function updateNotice(id: string, data: Partial<NewNoticeRow>) {
 }
 
 export async function deleteNotice(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.notices).where(eq(schema.notices.id, id));
     revalidatePath("/admin/notices");
@@ -465,8 +440,7 @@ export async function deleteNotice(id: string) {
 // ============================================
 
 export async function getSponsors(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -486,8 +460,7 @@ export async function getSponsors(query: string = "") {
 }
 
 export async function getSponsorById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const sponsor = await db
       .select()
@@ -502,8 +475,7 @@ export async function getSponsorById(id: string) {
 }
 
 export async function createSponsor(data: NewSponsorRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("spn");
     await db.insert(schema.sponsors).values({ ...data, id });
@@ -515,8 +487,7 @@ export async function createSponsor(data: NewSponsorRow) {
 }
 
 export async function updateSponsor(id: string, data: Partial<NewSponsorRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.sponsors)
@@ -530,8 +501,7 @@ export async function updateSponsor(id: string, data: Partial<NewSponsorRow>) {
 }
 
 export async function deleteSponsor(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id));
     revalidatePath("/admin/sponsors");
@@ -546,8 +516,7 @@ export async function deleteSponsor(id: string) {
 // ============================================
 
 export async function getGallery(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -567,8 +536,7 @@ export async function getGallery(query: string = "") {
 }
 
 export async function getGalleryItemById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const item = await db
       .select()
@@ -583,8 +551,7 @@ export async function getGalleryItemById(id: string) {
 }
 
 export async function createGalleryItem(data: NewGalleryRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("img");
     await db.insert(schema.gallery).values({ ...data, id });
@@ -596,8 +563,7 @@ export async function createGalleryItem(data: NewGalleryRow) {
 }
 
 export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.gallery)
@@ -611,8 +577,7 @@ export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>
 }
 
 export async function deleteGalleryItem(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
     revalidatePath("/admin/gallery");
@@ -627,8 +592,7 @@ export async function deleteGalleryItem(id: string) {
 // ============================================
 
 export async function getAuctionItems(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -648,8 +612,7 @@ export async function getAuctionItems(query: string = "") {
 }
 
 export async function getAuctionItemById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const item = await db
       .select()
@@ -664,8 +627,7 @@ export async function getAuctionItemById(id: string) {
 }
 
 export async function createAuctionItem(data: NewAuctionItemRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("auc");
     await db.insert(schema.auctionItems).values({ ...data, id });
@@ -677,8 +639,7 @@ export async function createAuctionItem(data: NewAuctionItemRow) {
 }
 
 export async function updateAuctionItem(id: string, data: Partial<NewAuctionItemRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.auctionItems)
@@ -692,8 +653,7 @@ export async function updateAuctionItem(id: string, data: Partial<NewAuctionItem
 }
 
 export async function deleteAuctionItem(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.auctionItems).where(eq(schema.auctionItems.id, id));
     revalidatePath("/admin/auction");
@@ -708,8 +668,7 @@ export async function deleteAuctionItem(id: string) {
 // ============================================
 
 export async function getImportantNotes(query: string = "") {
-  if (!db) return [];
-
+  const db = getDb();
   try {
     if (query) {
       return await db
@@ -729,8 +688,7 @@ export async function getImportantNotes(query: string = "") {
 }
 
 export async function getImportantNoteById(id: string) {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const note = await db
       .select()
@@ -745,8 +703,7 @@ export async function getImportantNoteById(id: string) {
 }
 
 export async function createImportantNote(data: NewImportantNoteRow) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const id = generateId("note");
     await db.insert(schema.importantNotes).values({ ...data, id });
@@ -758,8 +715,7 @@ export async function createImportantNote(data: NewImportantNoteRow) {
 }
 
 export async function updateImportantNote(id: string, data: Partial<NewImportantNoteRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db
       .update(schema.importantNotes)
@@ -773,8 +729,7 @@ export async function updateImportantNote(id: string, data: Partial<NewImportant
 }
 
 export async function deleteImportantNote(id: string) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     await db.delete(schema.importantNotes).where(eq(schema.importantNotes.id, id));
     revalidatePath("/admin/notes");
@@ -789,8 +744,7 @@ export async function deleteImportantNote(id: string) {
 // ============================================
 
 export async function getAssociationSettings() {
-  if (!db) return null;
-
+  const db = getDb();
   try {
     const settings = await db
       .select()
@@ -804,8 +758,7 @@ export async function getAssociationSettings() {
 }
 
 export async function updateAssociationSettings(data: Partial<NewAssociationSettingsRow>) {
-  if (!db) return { success: false, error: "Database not connected" };
-
+  const db = getDb();
   try {
     const existing = await getAssociationSettings();
     
