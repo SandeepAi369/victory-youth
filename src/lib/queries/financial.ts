@@ -52,7 +52,6 @@ export interface FinancialSummary {
  */
 export async function getDonationsSummary() {
   const db = getDb();
-  }
 
   try {
     // Total donations
@@ -157,7 +156,6 @@ export async function getDonationsByDateRange(startDate: string, endDate: string
  */
 export async function getExpensesSummary() {
   const db = getDb();
-  }
 
   try {
     // Total expenses
@@ -221,7 +219,6 @@ export async function getExpensesSummary() {
  */
 export async function getSponsorsSummary() {
   const db = getDb();
-  }
 
   try {
     // Total sponsors
@@ -278,7 +275,6 @@ export async function getSponsorsSummary() {
  */
 export async function getAuctionSummary() {
   const db = getDb();
-  }
 
   try {
     // Item count
