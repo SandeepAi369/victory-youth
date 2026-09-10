@@ -362,6 +362,32 @@ export async function getPublishedDonations(limit = 20) {
   }
 }
 
+
+
+// ============================================
+// PUBLISHED CHANDA (filtered from donations)
+// ============================================
+
+export async function getPublishedChanda(limit = 100) {
+  const db = getDb();
+  try {
+    return await db
+      .select()
+      .from(schema.donations)
+      .where(
+        and(
+          eq(schema.donations.isPublished, true),
+          eq(schema.donations.category, "CHANDA")
+        )
+      )
+      .orderBy(desc(schema.donations.createdAt))
+      .limit(limit);
+  } catch (error) {
+    console.error("Error fetching published chanda:", error);
+    return [];
+  }
+}
+
 // ============================================
 // HOMEPAGE DATA AGGREGATION
 // ============================================
