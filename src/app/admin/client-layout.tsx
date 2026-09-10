@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
-  LayoutDashboard, IndianRupee, ArrowDownLeft, ArrowUpRight, BarChart3,
+  LayoutDashboard, IndianRupee, ArrowDownLeft, ArrowUpRight, BarChart3, Award,
   Users, Calendar, Image, Bell, Package, Settings, LogOut, Menu, X
 } from "lucide-react";
 import { useState } from "react";
@@ -19,6 +19,7 @@ const navItems = [
   { href: "/admin/gallery", label: "Gallery", icon: Image },
   { href: "/admin/notices", label: "Notices", icon: Bell },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
+  { href: "/admin/sponsors", label: "Sponsors", icon: Award },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
