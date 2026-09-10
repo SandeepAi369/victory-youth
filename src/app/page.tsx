@@ -3,7 +3,7 @@ import { getHomepageData } from "@/lib/queries/public";
 import { CountdownTimer } from "@/components/public/CountdownTimer";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Sparkles, Trophy, Calendar, Heart } from "lucide-react";
+import { Sparkles, Calendar, Heart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -44,32 +44,19 @@ export default async function HomePage() {
         </div>
       </nav>
 
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative pt-16 overflow-hidden">
-        <div className="bg-gradient-to-br from-orange-600 via-red-600 to-rose-700 dark:from-orange-700 dark:via-red-800 dark:to-rose-900 py-20 md:py-28 px-4">
-          <div className="absolute top-10 left-10 w-72 h-72 bg-yellow-400/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-10 w-96 h-96 bg-orange-400/15 rounded-full blur-3xl" />
-
-          <div className="relative z-10 max-w-4xl mx-auto text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/20 text-white/90 text-sm font-medium">
-              <Trophy className="w-4 h-4 text-yellow-300" />
-              50th Golden Jubilee Celebrations
-            </div>
-
-            <h1 className="text-5xl md:text-7xl lg:text-8xl font-black text-white tracking-tight drop-shadow-2xl">
-              Victory Youth
-            </h1>
-
-            <p className="text-xl md:text-2xl text-amber-100 font-medium" lang="te">
-              {hero.subtitleTe || "విక్టరీ యూత్ — 50వ స్వర్ణోత్సవ వేడుకలు"}
-            </p>
-
-            <p className="text-base md:text-lg text-white/80 max-w-2xl mx-auto">
-              {hero.descriptionEn || "Join us for 11 magnificent days of devotion, culture, and community celebration."}
-            </p>
-
-            {settings?.chatarthiDate && <CountdownTimer targetDate={settings.chatarthiDate} />}
-          </div>
+      {/* ===== HERO BANNER ===== */}
+      <section className="pt-16">
+        <div className="w-full bg-stone-950">
+          <img
+            src="/hero-banner.jpg"
+            alt="Banswada Ka Raja — Victory Youth Association, Gudem Gally — 50+ Years of Devotion & Service"
+            width={1024}
+            height={576}
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-auto object-cover"
+          />
         </div>
       </section>
 
