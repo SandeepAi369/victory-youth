@@ -1,13 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2, Search, Download , X } from "lucide-react";
+import { useState, useTransition, useEffect } from "react";
+import { Plus, Pencil, Trash2, Search, Download, X } from "lucide-react";
 import { addInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
 import { toast } from "sonner";
 import { exportInventoryToExcel } from "@/lib/excel-exporter";
 
-export function InventoryClient({ items }: { items: any[] }) {
+export function InventoryClient({ items: initialItems }: { items: any[] }) {
+  const [items, setItems] = useState<any[]>(initialItems);
+  useEffect(() => { setItems(initialItems); }, [initialItems]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -31,7 +33,13 @@ export function InventoryClient({ items }: { items: any[] }) {
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this item?")) return;
-    startTransition(async () => { const r = await deleteInventoryItem(id); if (r?.success) { toast.success("Item deleted"); } else { toast.error(r?.error || "Delete failed"); } router.refresh(); });
+    const prev = items;
+    setItems(items.filter(i => i.id !== id));
+    startTransition(async () => {
+      const r = await deleteInventoryItem(id);
+      if (r?.success) { toast.success("Item deleted"); router.refresh(); }
+      else { setItems(prev); toast.error(r?.error || "Delete failed"); }
+    });
   };
 
   const filtered = items.filter((i) =>
@@ -51,7 +59,7 @@ export function InventoryClient({ items }: { items: any[] }) {
           <button onClick={() => exportInventoryToExcel(items)} className="px-3.5 py-2 rounded-xl bg-black/60 border border-zinc-700 text-zinc-200 font-semibold text-xs flex items-center gap-1.5 hover:bg-black">
             <Download className="w-4 h-4" /> Export
           </button>
-          <button onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ name: "", category: "Silver", quantity: 1, condition: "Good", inCharge: "", unit: "pcs" }); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
+          <button onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ name: "", category: "Silver", quantity: 1, condition: "Good", inCharge: "", unit: "pcs" }); }} disabled={isPending} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
             <Plus className="w-4 h-4" /> Add Item
           </button>
         </div>
@@ -110,8 +118,8 @@ export function InventoryClient({ items }: { items: any[] }) {
                   <td className="py-3 px-4 text-muted-foreground">{item.inCharge}</td>
                   <td className="py-3 px-4 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => { setEditingId(item.id); setIsAdding(false); setFormData({ name: item.name, category: item.category, quantity: item.quantity, condition: item.condition, inCharge: item.inCharge || "", unit: item.unit || "pcs" }); }} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(item.id)} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => { setEditingId(item.id); setIsAdding(false); setFormData({ name: item.name, category: item.category, quantity: item.quantity, condition: item.condition, inCharge: item.inCharge || "", unit: item.unit || "pcs" }); }} disabled={isPending} className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(item.id)} disabled={isPending} className="p-1.5 text-red-600 hover:bg-red-100 rounded-lg disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>

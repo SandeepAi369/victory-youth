@@ -24,7 +24,6 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
-  // Track publish state independently so it doesn't flicker
   const [published, setPublished] = useState(() => initialData.length > 0 && initialData.some(m => m.isActive === true));
   useEffect(() => { setPublished(initialData.length > 0 && initialData.some(m => m.isActive === true)); }, [initialData]);
 
@@ -43,9 +42,12 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
 
   const handleDelete = (id: string) => {
     if (!confirm("Remove this member?")) return;
+    const prev = data;
+    setData(data.filter(d => d.id !== id));
     startTransition(async () => {
       const r = await deleteMember(id);
-      if (r?.success) { toast.success("Removed"); router.refresh(); } else { toast.error(r?.error || "Failed"); }
+      if (r?.success) { toast.success("Removed"); router.refresh(); }
+      else { setData(prev); toast.error(r?.error || "Failed"); }
     });
   };
 
@@ -56,18 +58,12 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
 
   const handleGlobalToggle = () => {
     const newState = !published;
-    // Optimistic: flip immediately
+    const prevPublished = published;
     setPublished(newState);
     startTransition(async () => {
       const r = await setAllMembersVisibility(newState);
-      if (r?.success) {
-        toast.success(newState ? "Members visible on frontend" : "Members hidden from frontend");
-        router.refresh();
-      } else {
-        // Rollback on failure
-        setPublished(!newState);
-        toast.error(r?.error || "Failed");
-      }
+      if (r?.success) { toast.success(newState ? "Members visible on frontend" : "Members hidden from frontend"); router.refresh(); }
+      else { setPublished(prevPublished); toast.error(r?.error || "Failed"); }
     });
   };
 
@@ -80,20 +76,15 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
         </div>
         <div className="flex items-center gap-3">
           {data.length > 0 && (
-            <button
-              onClick={handleGlobalToggle}
-              disabled={isPending}
+            <button onClick={handleGlobalToggle} disabled={isPending}
               className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " + (
-                published
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
-                  : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
-              )}
-            >
+                published ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
+              )}>
               {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               {published ? "Published" : "Unpublished"}
             </button>
           )}
-          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
+          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} disabled={isPending} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
             <Plus className="w-4 h-4" /> Add Member
           </button>
         </div>
@@ -150,7 +141,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
             </thead>
             <tbody className="divide-y divide-border">
               {data.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet. Click "Add Member" to start.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet.</td></tr>
               )}
               {data.map(m => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
@@ -161,18 +152,14 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                   <td className="px-4 py-3 text-muted-foreground">{m.phone}</td>
                   <td className="px-4 py-3 font-bold text-emerald-600">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3">
-                    <span className={"px-2 py-0.5 rounded-lg text-xs font-bold " + (
-                      (m.role || m.committeeRole) === "Special Candidate"
-                        ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-                        : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
-                    )}>
+                    <span className={"px-2 py-0.5 rounded-lg text-xs font-bold " + ((m.role || m.committeeRole) === "Special Candidate" ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400" : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400")}>
                       {m.role || m.committeeRole || "Member"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button onClick={() => handleEdit(m)} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"><Pencil className="w-4 h-4" /></button>
-                      <button onClick={() => handleDelete(m.id)} disabled={isPending} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"><Trash2 className="w-4 h-4" /></button>
+                      <button onClick={() => handleEdit(m)} disabled={isPending} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => handleDelete(m.id)} disabled={isPending} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
                     </div>
                   </td>
                 </tr>
