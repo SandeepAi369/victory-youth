@@ -1,6 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
@@ -52,14 +52,14 @@ export async function deleteMember(id: string) {
   } catch (error: any) { console.error("deleteMember error:", error); return { success: false, error: error.message }; }
 }
 
-export async function setAllMembersVisibility(publish: boolean) {
+export async function setAllMembersVisibility(publish: boolean): Promise<{ success: boolean; newState: boolean; error?: string }> {
   try {
     const db = getDb();
-    const allMembers = await db.select({ id: schema.members.id }).from(schema.members);
-    for (const m of allMembers) {
-      await db.update(schema.members).set({ isActive: publish }).where(eq(schema.members.id, m.id));
-    }
-    revalidate();
-    return { success: true };
-  } catch (error: any) { console.error("setAllMembersVisibility error:", error); return { success: false, error: error.message }; }
+    await db.execute(sql`UPDATE members SET is_active = ${publish}`);
+    // Revalidate synchronously so the next refresh gets fresh data
+    revalidatePath("/admin/members");
+    revalidatePath("/members");
+    revalidatePath("/");
+    return { success: true, newState: publish };
+  } catch (error: any) { console.error("setAllMembersVisibility error:", error); return { success: false, newState: !publish, error: error.message }; }
 }
