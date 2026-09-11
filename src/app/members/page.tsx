@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getDb, schema } from "@/db";
-import { eq, desc } from "drizzle-orm";
 import { ArrowLeft, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -9,11 +8,7 @@ export default async function MembersPage() {
   let members: any[] = [];
   try {
     const db = getDb();
-    members = await db
-      .select()
-      .from(schema.members)
-      .where(eq(schema.members.isActive, true))
-      .orderBy(desc(schema.members.createdAt));
+    members = await db.select().from(schema.members).orderBy(schema.members.name);
   } catch (e: any) {
     console.error("Members page error:", e);
   }
@@ -32,7 +27,6 @@ export default async function MembersPage() {
       </nav>
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
-        {/* Summary Card */}
         <div className="bg-gradient-to-r from-indigo-600 to-blue-700 rounded-2xl p-6 mb-8 text-white shadow-lg">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-6 h-6 text-white/80" />
@@ -43,7 +37,7 @@ export default async function MembersPage() {
         </div>
 
         {members.length === 0 && (
-          <div className="text-center py-20 text-stone-400">No committee members published yet.</div>
+          <div className="text-center py-20 text-stone-400">No committee members yet.</div>
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

@@ -27,7 +27,7 @@ export async function addMember(data: { name: string; fullName: string; phone: s
       membershipFee: data.membershipFee || 0,
       role: data.role || "Member",
       committeeRole: data.role || "Member",
-      isActive: false,
+      isActive: true,
     });
     revalidate();
     return { success: true };
@@ -50,17 +50,4 @@ export async function deleteMember(id: string) {
     revalidate();
     return { success: true };
   } catch (error: any) { console.error("deleteMember error:", error); return { success: false, error: error.message }; }
-}
-
-/**
- * Global toggle: Publish or unpublish ALL members at once.
- * Sets isActive on every row in the members table.
- */
-export async function toggleAllMembersPublish(publish: boolean) {
-  try {
-    const db = getDb();
-    await db.update(schema.members).set({ isActive: publish, updatedAt: new Date() });
-    revalidate();
-    return { success: true };
-  } catch (error: any) { console.error("toggleAllMembersPublish error:", error); return { success: false, error: error.message }; }
 }
