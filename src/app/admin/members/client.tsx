@@ -24,8 +24,11 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
 
+  // Track publish state independently so it doesn't flicker
+  const [published, setPublished] = useState(() => initialData.length > 0 && initialData.some(m => m.isActive === true));
+  useEffect(() => { setPublished(initialData.length > 0 && initialData.some(m => m.isActive === true)); }, [initialData]);
+
   const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
-  const isPublished = data.length > 0 && data.some(m => m.isActive === true);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -52,11 +55,19 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   };
 
   const handleGlobalToggle = () => {
-    const newState = !isPublished;
+    const newState = !published;
+    // Optimistic: flip immediately
+    setPublished(newState);
     startTransition(async () => {
       const r = await setAllMembersVisibility(newState);
-      if (r?.success) { toast.success(newState ? "All members are now visible on frontend" : "All members hidden from frontend"); router.refresh(); }
-      else { toast.error(r?.error || "Failed"); }
+      if (r?.success) {
+        toast.success(newState ? "Members visible on frontend" : "Members hidden from frontend");
+        router.refresh();
+      } else {
+        // Rollback on failure
+        setPublished(!newState);
+        toast.error(r?.error || "Failed");
+      }
     });
   };
 
@@ -73,13 +84,13 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
               onClick={handleGlobalToggle}
               disabled={isPending}
               className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " + (
-                isPublished
+                published
                   ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                   : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"
               )}
             >
-              {isPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isPublished ? "Published" : "Unpublished"}
+              {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {published ? "Published" : "Unpublished"}
             </button>
           )}
           <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
