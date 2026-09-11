@@ -2,18 +2,17 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, useEffect } from "react";
-import { Plus, Pencil, Trash2, X, Globe, GlobeLock } from "lucide-react";
-import { addMember, updateMember, deleteMember, toggleAllMembersPublish } from "./actions";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { addMember, updateMember, deleteMember } from "./actions";
 import { toast } from "sonner";
 
 type Member = {
   id: string; name: string; fullName: string | null; phone: string;
   membershipFee: number | null; role: string | null; committeeRole: string | null;
-  isActive: boolean | null; memberId: string;
+  memberId: string;
 };
 
 const ROLES = ["Member", "Special Candidate"];
-
 const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "Member" };
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
@@ -26,7 +25,6 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const router = useRouter();
 
   const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
-  const isGloballyPublished = data.length > 0 && data.every(m => m.isActive);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,7 +32,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     const payload = { name: form.name, fullName: form.fullName || form.name, phone: form.phone, membershipFee: parseInt(form.membershipFee) || 0, role: form.role };
     startTransition(async () => {
       const r = editingId ? await updateMember(editingId, payload) : await addMember(payload);
-      if (r?.success) { toast.success(editingId ? "Member updated" : "Member added"); resetForm(); router.refresh(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); resetForm(); router.refresh(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
@@ -52,48 +50,18 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     setForm({ name: m.name, fullName: m.fullName || m.name, phone: m.phone, membershipFee: String(m.membershipFee || 0), role: m.role || m.committeeRole || "Member" });
   };
 
-  const handleGlobalToggle = () => {
-    const newState = !isGloballyPublished;
-    const msg = newState ? "Publish all members to the public page?" : "Unpublish all members from the public page?";
-    if (!confirm(msg)) return;
-    startTransition(async () => {
-      const r = await toggleAllMembersPublish(newState);
-      if (r?.success) { toast.success(newState ? "All members published" : "All members unpublished"); router.refresh(); }
-      else { toast.error(r?.error || "Failed"); }
-    });
-  };
-
   return (
     <div className="space-y-6">
-      {/* Header with global toggle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Committee Members</h1>
-          <p className="text-muted-foreground text-sm">{data.length} members · Total Contribution: ₹{totalContribution.toLocaleString("en-IN")}</p>
+          <p className="text-muted-foreground text-sm">{data.length} members · Total: ₹{totalContribution.toLocaleString("en-IN")}</p>
         </div>
-        <div className="flex items-center gap-3">
-          {/* Global Publish Toggle */}
-          {data.length > 0 && (
-            <button
-              onClick={handleGlobalToggle}
-              disabled={isPending}
-              className={`px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 ${
-                isGloballyPublished
-                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-900/50"
-                  : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-600 dark:hover:bg-stone-700"
-              }`}
-            >
-              {isGloballyPublished ? <Globe className="w-4 h-4" /> : <GlobeLock className="w-4 h-4" />}
-              {isGloballyPublished ? "Published" : "Unpublished"}
-            </button>
-          )}
-          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Add Member
-          </button>
-        </div>
+        <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
+          <Plus className="w-4 h-4" /> Add Member
+        </button>
       </div>
 
-      {/* ===== ADD/EDIT MODAL ===== */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
@@ -108,7 +76,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">Phone Number *</label>
+                  <label className="block text-xs font-bold text-muted-foreground mb-1">Phone *</label>
                   <input type="tel" required value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="9876543210" />
                 </div>
                 <div>
@@ -131,7 +99,6 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
         </div>
       )}
 
-      {/* ===== TABLE ===== */}
       <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -146,7 +113,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
             </thead>
             <tbody className="divide-y divide-border">
               {data.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet. Click "Add Member" to get started.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet. Click "Add Member" to start.</td></tr>
               )}
               {data.map(m => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
