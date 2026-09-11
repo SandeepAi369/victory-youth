@@ -2,10 +2,9 @@
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 
 function revalidate() {
-  after(() => { revalidatePath("/"); revalidatePath("/admin/inventory"); });
+  revalidatePath("/"); revalidatePath("/admin/inventory");
 }
 
 export async function getInventory() {

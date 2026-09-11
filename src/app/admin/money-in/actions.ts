@@ -3,10 +3,9 @@
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 
 function revalidate() {
-  after(() => { revalidatePath("/"); revalidatePath("/admin/money-in"); revalidatePath("/admin"); });
+  revalidatePath("/"); revalidatePath("/admin/money-in"); revalidatePath("/admin");
 }
 
 export async function addMoneyIn(data: { donorName: string; phone: string; amount: number; category: string; purpose?: string; paymentMode: string; date: string }) {

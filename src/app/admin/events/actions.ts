@@ -4,10 +4,9 @@ import { getDb } from "@/db";
 import { events } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 
 function revalidate() {
-  after(() => { revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/"); });
+  revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/");
 }
 
 export async function getEvents() {

@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
     ],
   },
   experimental: {
+    staleTimes: {
+      dynamic: 0,
+      static: 0,
+    },
     serverActions: {
       allowedOrigins: ['localhost:3000', '*.lhr.life', '*.pinggy.net', '*.pinggy.link', '*.loca.lt', '*.pages.dev', '*.workers.dev']
     }
