@@ -27,7 +27,7 @@ export async function addMember(data: { name: string; fullName: string; phone: s
       membershipFee: data.membershipFee || 0,
       role: data.role || "Member",
       committeeRole: data.role || "Member",
-      isActive: true,
+      isActive: false,
     });
     revalidate();
     return { success: true };
@@ -50,4 +50,16 @@ export async function deleteMember(id: string) {
     revalidate();
     return { success: true };
   } catch (error: any) { console.error("deleteMember error:", error); return { success: false, error: error.message }; }
+}
+
+export async function setAllMembersVisibility(publish: boolean) {
+  try {
+    const db = getDb();
+    const allMembers = await db.select({ id: schema.members.id }).from(schema.members);
+    for (const m of allMembers) {
+      await db.update(schema.members).set({ isActive: publish }).where(eq(schema.members.id, m.id));
+    }
+    revalidate();
+    return { success: true };
+  } catch (error: any) { console.error("setAllMembersVisibility error:", error); return { success: false, error: error.message }; }
 }
