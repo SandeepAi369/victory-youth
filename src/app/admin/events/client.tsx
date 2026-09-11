@@ -56,7 +56,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   const handleTogglePublish = (id: string, current: boolean) => {
     // Optimistic update
     setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: !current } : ev)));
-    startTransition(async () => { const r = await togglePublishEvent(id, !current); if (r?.success) { toast.success(current ? "Unpublished" : "Published"); } else { toast.error(r?.error || "Toggle failed"); setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: current } : ev))); } router.refresh(); });
+    startTransition(async () => { const r = await togglePublishEvent(id, !current); if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); } else { toast.error(r?.error || "Toggle failed"); setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: current } : ev))); } });
   };
 
   return (
