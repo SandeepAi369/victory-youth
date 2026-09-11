@@ -3,10 +3,9 @@
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
 
 function revalidate() {
-  after(() => { revalidatePath("/"); revalidatePath("/admin/notices"); });
+  revalidatePath("/"); revalidatePath("/admin/notices");
 }
 
 // ===== NOTICES =====
