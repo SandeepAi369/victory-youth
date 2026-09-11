@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition, useEffect } from "react";
-import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
-import { addMember, updateMember, deleteMember, toggleMemberPublish } from "./actions";
+import { Plus, Pencil, Trash2, X, Globe, GlobeLock } from "lucide-react";
+import { addMember, updateMember, deleteMember, toggleAllMembersPublish } from "./actions";
 import { toast } from "sonner";
 
 type Member = {
@@ -12,9 +12,9 @@ type Member = {
   isActive: boolean | null; memberId: string;
 };
 
-const ROLES = ["MEMBER", "PRESIDENT", "VICE PRESIDENT", "SECRETARY", "TREASURER", "JOINT SECRETARY", "EXECUTIVE"];
+const ROLES = ["Member", "Special Candidate"];
 
-const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "MEMBER" };
+const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "Member" };
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
   const [data, setData] = useState<Member[]>(initialData);
@@ -26,6 +26,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const router = useRouter();
 
   const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
+  const isGloballyPublished = data.length > 0 && data.every(m => m.isActive);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -48,27 +49,48 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
 
   const handleEdit = (m: Member) => {
     setEditingId(m.id); setShowForm(true);
-    setForm({ name: m.name, fullName: m.fullName || m.name, phone: m.phone, membershipFee: String(m.membershipFee || 0), role: m.role || m.committeeRole || "MEMBER" });
+    setForm({ name: m.name, fullName: m.fullName || m.name, phone: m.phone, membershipFee: String(m.membershipFee || 0), role: m.role || m.committeeRole || "Member" });
   };
 
-  const handleTogglePublish = (m: Member) => {
+  const handleGlobalToggle = () => {
+    const newState = !isGloballyPublished;
+    const msg = newState ? "Publish all members to the public page?" : "Unpublish all members from the public page?";
+    if (!confirm(msg)) return;
     startTransition(async () => {
-      const r = await toggleMemberPublish(m.id, !m.isActive);
-      if (r?.success) { toast.success(m.isActive ? "Unpublished" : "Published"); router.refresh(); }
+      const r = await toggleAllMembersPublish(newState);
+      if (r?.success) { toast.success(newState ? "All members published" : "All members unpublished"); router.refresh(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
 
   return (
     <div className="space-y-6">
+      {/* Header with global toggle */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Committee Members</h1>
           <p className="text-muted-foreground text-sm">{data.length} members · Total Contribution: ₹{totalContribution.toLocaleString("en-IN")}</p>
         </div>
-        <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Add Member
-        </button>
+        <div className="flex items-center gap-3">
+          {/* Global Publish Toggle */}
+          {data.length > 0 && (
+            <button
+              onClick={handleGlobalToggle}
+              disabled={isPending}
+              className={`px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 ${
+                isGloballyPublished
+                  ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-700 dark:hover:bg-emerald-900/50"
+                  : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-600 dark:hover:bg-stone-700"
+              }`}
+            >
+              {isGloballyPublished ? <Globe className="w-4 h-4" /> : <GlobeLock className="w-4 h-4" />}
+              {isGloballyPublished ? "Published" : "Unpublished"}
+            </button>
+          )}
+          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Add Member
+          </button>
+        </div>
       </div>
 
       {/* ===== ADD/EDIT MODAL ===== */}
@@ -119,13 +141,12 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Contribution</th>
                 <th className="px-4 py-3">Role</th>
-                <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {data.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No members yet. Click "Add Member" to get started.</td></tr>
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet. Click "Add Member" to get started.</td></tr>
               )}
               {data.map(m => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
@@ -135,15 +156,14 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{m.phone}</td>
                   <td className="px-4 py-3 font-bold text-emerald-600">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</td>
-                  <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold">{m.role || m.committeeRole || "MEMBER"}</span></td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleTogglePublish(m)}
-                      disabled={isPending}
-                      className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition-colors border ${m.isActive ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-400 dark:border-stone-700"}`}
-                    >
-                      {m.isActive ? "PUBLISHED" : "DRAFT"}
-                    </button>
+                    <span className={`px-2 py-0.5 rounded-lg text-xs font-bold ${
+                      (m.role || m.committeeRole) === "Special Candidate"
+                        ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400"
+                    }`}>
+                      {m.role || m.committeeRole || "Member"}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
