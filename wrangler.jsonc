@@ -14,9 +14,8 @@
   "hyperdrive": [
     {
       "binding": "HYPERDRIVE",
-      "id": "95593a45d2c94fbba277b89914adcff1"
-      // localConnectionString intentionally removed — use DATABASE_URL in .env for local dev.
-      // Run: wrangler hyperdrive create <name> --connection-string <url> to configure for prod.
+      "id": "95593a45d2c94fbba277b89914adcff1",
+      "localConnectionString": "$DATABASE_URL"
     }
   ]
 }
