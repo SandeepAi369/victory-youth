@@ -2,8 +2,13 @@ import { cache } from "react";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
-const FALLBACK_URL = process.env.DATABASE_URL || "postgresql://***REMOVED***:***REMOVED***@***REMOVED***:26257/defaultdb?sslmode=require";
-
+/**
+ * Returns the database connection string.
+ * Priority:
+ *   1. Cloudflare Hyperdrive connectionString (production edge)
+ *   2. DATABASE_URL env variable (local dev / staging)
+ *   3. Throws a clear error — never silently fails with hardcoded credentials
+ */
 function getConnectionString(): string {
   try {
     // On Cloudflare Workers, use Hyperdrive for managed connection pooling
@@ -13,9 +18,18 @@ function getConnectionString(): string {
       return env.HYPERDRIVE.connectionString;
     }
   } catch {
-    // Local dev or build time — use direct DATABASE_URL
+    // Local dev or build time — fall through to DATABASE_URL
   }
-  return FALLBACK_URL;
+
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    throw new Error(
+      "DATABASE_URL environment variable is not set. " +
+      "For local development, add it to your .env file. " +
+      "For Cloudflare production, use the HYPERDRIVE binding."
+    );
+  }
+  return dbUrl;
 }
 
 /**
