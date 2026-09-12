@@ -1,21 +1,20 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, CheckCircle2, XCircle, Users, Clock, MapPin, Image as ImageIcon, X } from "lucide-react";
-import { addEvent, updateEvent, togglePublishEvent, deleteEvent, bulkPublishEvents } from "./actions";
+import { getEvents, addEvent, updateEvent, togglePublishEvent, deleteEvent, bulkPublishEvents } from "./actions";
 import { toast } from "sonner";
 
 export function EventsClient({ events: initialEvents }: { events: any[] }) {
   // Sync props to state for optimistic updates
   const [events, setEvents] = useState(initialEvents);
-  useEffect(() => { setEvents(initialEvents); }, [initialEvents]);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+
+  const refetch = async () => { const fresh = await getEvents(); setEvents(fresh as any); };
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [formData, setFormData] = useState({
@@ -32,7 +31,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   const handleBulkPublish = (publish: boolean) => {
     startTransition(async () => {
       await bulkPublishEvents(selectedIds, publish);
-      setSelectedIds([]); router.refresh(); });
+      setSelectedIds([]); await refetch(); });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -41,7 +40,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
       const res = editingId ? await updateEvent(editingId, formData) : await addEvent(formData);
       if (res?.success) {
         toast.success(editingId ? "Event updated" : "Event added");
-        setIsAdding(false); setEditingId(null); router.refresh();
+        setIsAdding(false); setEditingId(null); await refetch();
       } else {
         toast.error(res?.error || "Operation failed");
       }
@@ -50,13 +49,13 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
 
   const handleDelete = (id: string) => {
     if (!confirm("Are you sure you want to delete this event?")) return;
-    startTransition(async () => { const r = await deleteEvent(id); if (r?.success) { toast.success("Event deleted"); router.refresh(); } else { toast.error(r?.error || "Delete failed"); } });
+    startTransition(async () => { const r = await deleteEvent(id); if (r?.success) { toast.success("Event deleted"); await refetch(); } else { toast.error(r?.error || "Delete failed"); } });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
     // Optimistic update
     setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: !current } : ev)));
-    startTransition(async () => { const r = await togglePublishEvent(id, !current); if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); } else { toast.error(r?.error || "Toggle failed"); setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: current } : ev))); } });
+    startTransition(async () => { const r = await togglePublishEvent(id, !current); if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); } else { toast.error(r?.error || "Toggle failed"); setEvents(events.map((ev) => (ev.id === id ? { ...ev, isPublished: current } : ev))); } });
   };
 
   return (

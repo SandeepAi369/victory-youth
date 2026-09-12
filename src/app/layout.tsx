@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
 import { LanguageProvider } from "@/lib/language-context";
 import { ThemeProvider } from "@/components/theme-provider";
+import { TopLoader } from "@/components/TopLoader";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({
       <body
         className={`${jakarta.variable} ${playfair.variable} bg-background text-foreground antialiased min-h-screen selection:bg-primary/20 selection:text-primary font-sans`}
       >
+        <TopLoader />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
