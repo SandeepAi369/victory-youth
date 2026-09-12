@@ -9,8 +9,8 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     staleTimes: {
-      dynamic: 0,
-      static: 0,
+      dynamic: 0,   // No cache for dynamic routes — admin changes reflect immediately
+      static: 30,   // Next.js 16 minimum (static routes rarely change)
     },
     serverActions: {
       allowedOrigins: ['localhost:3000', '*.lhr.life', '*.pinggy.net', '*.pinggy.link', '*.loca.lt', '*.pages.dev', '*.workers.dev']
