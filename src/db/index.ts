@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
 
@@ -26,20 +27,21 @@ function getConnectionString(): string {
     throw new Error(
       "DATABASE_URL environment variable is not set. " +
       "For local development, add it to your .env file. " +
-      "For Cloudflare production, use the HYPERDRIVE binding."
+      "For Cloudflare production, configure the HYPERDRIVE binding."
     );
   }
   return dbUrl;
 }
 
 /**
- * Request-scoped database instance.
- * React.cache() ensures ONE drizzle instance per HTTP request.
- * On the next request, a fresh connection is created automatically.
- * On Cloudflare, the connection goes through Hyperdrive's pool.
+ * Request-scoped database instance via React.cache().
+ * ONE pool + drizzle instance per HTTP request.
+ * Uses pg Pool so drizzle receives a proper Client (not a raw string),
+ * which fixes the drizzle-orm RC type: drizzle(pool, { schema }) is valid.
  */
 export const getDb = cache(() => {
-  return drizzle(getConnectionString(), { schema });
+  const pool = new Pool({ connectionString: getConnectionString() });
+  return drizzle(pool, { schema });
 });
 
 // Re-export schema for convenience

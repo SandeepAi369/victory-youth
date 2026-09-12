@@ -154,69 +154,19 @@ export async function getDonationsByDateRange(startDate: string, endDate: string
 /**
  * Get total expenses summary
  */
-export async function getExpensesSummary() {
-  const db = getDb();
-
-  try {
-    // Total expenses
-    const totalResult = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
-        approved: sql<number>`coalesce(sum(case when status = 'APPROVED' then amount else 0 end), 0)::int`,
-        pending: sql<number>`coalesce(sum(case when status = 'PENDING' then amount else 0 end), 0)::int`,
-        paid: sql<number>`coalesce(sum(case when status = 'PAID' then amount else 0 end), 0)::int`,
-      })
-      .from(schema.expenses);
-
-    // By category
-    const byCategoryResult = await db
-      .select({
-        categoryId: schema.expenses.categoryId,
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
-      })
-      .from(schema.expenses)
-      .groupBy(schema.expenses.categoryId);
-
-    const byCategory: Record<string, { count: number; total: number }> = {};
-    byCategoryResult.forEach((item) => {
-      if (item.categoryId) {
-        byCategory[item.categoryId] = {
-          count: item.count,
-          total: item.total,
-        };
-      }
-    });
-
-    return {
-      count: totalResult[0]?.count || 0,
-      totalAmount: totalResult[0]?.total || 0,
-      totalApproved: totalResult[0]?.approved || 0,
-      totalPending: totalResult[0]?.pending || 0,
-      totalPaid: totalResult[0]?.paid || 0,
-      byCategory,
-    };
-  } catch (error) {
-    console.error("Error fetching expenses summary:", error);
-    return {
-      count: 0,
-      totalAmount: 0,
-      totalApproved: 0,
-      totalPending: 0,
-      totalPaid: 0,
-      byCategory: {},
-    };
-  }
+export async function getExpenseStats() {
+  // Note: The expenses table was removed from the schema.
+  // This function returns empty stats as a safe stub.
+  return {
+    count: 0,
+    totalAmount: 0,
+    totalApproved: 0,
+    totalPending: 0,
+    totalPaid: 0,
+    byCategory: {} as Record<string, { count: number; total: number }>,
+  };
 }
 
-// ============================================
-// SPONSOR QUERIES
-// ============================================
-
-/**
- * Get total sponsors summary
- */
 export async function getSponsorsSummary() {
   const db = getDb();
 
