@@ -23,8 +23,6 @@ const nextConfig: NextConfig = {
       "./node_modules/pg-cloudflare/esm/**",
     ],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  }
+  
 };
 export default nextConfig;

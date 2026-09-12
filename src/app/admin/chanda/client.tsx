@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
-import { getChandaEntries, addChanda, updateChanda, deleteChanda, toggleChandaPublish } from "./actions";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { addChanda, updateChanda, deleteChanda, toggleChandaPublish, setAllChandaVisibility } from "./actions";
 import { toast } from "sonner";
 
 type Entry = {
@@ -15,6 +16,7 @@ const PAYMENT_MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE"];
 const emptyForm = { donorName: "", phone: "", amount: "", paymentMode: "CASH", date: new Date().toISOString().split("T")[0], purpose: "" };
 
 export default function ChandaClient({ initialData }: { initialData: Entry[] }) {
+  const router = useRouter();
   const [data, setData] = useState<Entry[]>(initialData);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -22,28 +24,41 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
   const [isPending, startTransition] = useTransition();
 
   const totalAmount = data.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const publishedCount = data.filter((e) => e.isPublished).length;
+  const isAllPublished = data.length > 0 && publishedCount === data.length;
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
-  const refetch = async () => { const fresh = await getChandaEntries(); setData(fresh as Entry[]); };
+  /** Master toggle — publish or unpublish ALL chanda entries at once */
+  const handleMasterToggle = () => {
+    const newState = !isAllPublished;
+    startTransition(async () => {
+      const r = await setAllChandaVisibility(newState);
+      if (r?.success) {
+        toast.success(newState ? "All chanda entries published" : "All chanda entries unpublished");
+        router.refresh();
+      } else {
+        toast.error(r?.error || "Failed");
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "Monthly Chanda" };
     startTransition(async () => {
       const r = editingId ? await updateChanda(editingId, payload) : await addChanda(payload);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Chanda added"); resetForm(); await refetch(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Chanda added"); resetForm(); router.refresh(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Permanently delete this entry?")) return;
-    const prev = data;
-    setData(data.filter(d => d.id !== id));
+    setData((prev) => prev.filter((d) => d.id !== id));
     startTransition(async () => {
       const r = await deleteChanda(id);
-      if (r?.success) { toast.success("Deleted"); await refetch(); }
-      else { setData(prev); toast.error(r?.error || "Delete failed"); }
+      if (r?.success) { toast.success("Deleted"); router.refresh(); }
+      else { router.refresh(); toast.error(r?.error || "Delete failed"); }
     });
   };
 
@@ -53,12 +68,11 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
-    const prev = data;
-    setData(data.map(d => d.id === id ? { ...d, isPublished: !current } : d));
+    setData((prev) => prev.map((d) => d.id === id ? { ...d, isPublished: !current } : d));
     startTransition(async () => {
       const r = await toggleChandaPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); }
-      else { setData(prev); toast.error(r?.error || "Toggle failed"); }
+      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
+      else { router.refresh(); toast.error(r?.error || "Toggle failed"); }
     });
   };
 
@@ -67,15 +81,30 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Chanda (Donations)</h1>
-          <p className="text-muted-foreground text-sm">{data.length} entries · Total: ₹{totalAmount.toLocaleString("en-IN")}</p>
+          <p className="text-muted-foreground text-sm">
+            {data.length} entries · {publishedCount} published · Total: ₹{totalAmount.toLocaleString("en-IN")}
+          </p>
         </div>
-        <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} disabled={isPending} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
-          <Plus className="w-4 h-4" /> Add Chanda
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* ── MASTER TOGGLE for Chanda category ── */}
+          {data.length > 0 && (
+            <button onClick={handleMasterToggle} disabled={isPending}
+              className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
+                (isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
+              {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {isAllPublished ? "Unpublish All Chanda" : "Publish All Chanda"}
+            </button>
+          )}
+          <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} disabled={isPending}
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
+            <Plus className="w-4 h-4" /> Add Chanda
+          </button>
+        </div>
       </div>
 
       {showForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{editingId ? "Edit Chanda" : "New Chanda Entry"}</h2>
@@ -84,37 +113,39 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Donor Name *</label>
-                <input type="text" required value={form.donorName} onChange={e => setForm({ ...form, donorName: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Full name" />
+                <input type="text" required value={form.donorName} onChange={(e) => setForm({ ...form, donorName: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Full name" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Phone</label>
-                  <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="9876543210" />
+                  <input type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="9876543210" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Amount (₹) *</label>
-                  <input type="number" required value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="5000" />
+                  <input type="number" required value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="5000" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Payment Mode</label>
-                  <select value={form.paymentMode} onChange={e => setForm({ ...form, paymentMode: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2">
-                    {PAYMENT_MODES.map(m => <option key={m} value={m}>{m.replace("_", " ")}</option>)}
+                  <select value={form.paymentMode} onChange={(e) => setForm({ ...form, paymentMode: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2">
+                    {PAYMENT_MODES.map((m) => <option key={m} value={m}>{m.replace("_", " ")}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Date *</label>
-                  <input type="date" required value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" />
+                  <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Purpose</label>
-                <input type="text" value={form.purpose} onChange={e => setForm({ ...form, purpose: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="e.g. Monthly Chanda" />
+                <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="e.g. Monthly Chanda" />
               </div>
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
-                <button type="submit" disabled={isPending} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">{isPending ? "Saving..." : "Save"}</button>
+                <button type="submit" disabled={isPending} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">
+                  {isPending ? "Saving..." : "Save"}
+                </button>
               </div>
             </form>
           </div>
@@ -135,10 +166,8 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {data.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No chanda entries yet.</td></tr>
-              )}
-              {data.map(e => (
+              {data.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No chanda entries yet.</td></tr>}
+              {data.map((e) => (
                 <tr key={e.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{e.donorName}</p>

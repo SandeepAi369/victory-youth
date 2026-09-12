@@ -775,6 +775,8 @@ export async function updateAssociationSettings(data: Partial<NewAssociationSett
     }
     
     revalidatePath("/admin/settings");
+    revalidatePath("/");        // Bug #7: public homepage must update when settings change
+    revalidatePath("/donations"); // UPI/bank details shown on donations page
     return { success: true };
   } catch (error) {
     return handleError("updating settings", error);

@@ -1,92 +1,175 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Pencil, Trash2 } from "lucide-react";
-import { getGallery, addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish } from "./actions";
+import { useRouter } from "next/navigation";
+import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
+import { addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
 import { toast } from "sonner";
 
 export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
-  const [gallery, setGallery] = useState<any[]>(initialGallery);
+  const router = useRouter();
+  const [gallery, setGallery] = useState(initialGallery);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-
-  const refetch = async () => { const fresh = await getGallery(); setGallery(fresh as any); };
-
   const [formData, setFormData] = useState({ title: "", url: "", category: "General", year: 2026 });
+
+  // Master toggle state: derived from live data
+  const publishedCount = gallery.filter((g) => g.isPublished).length;
+  const isAllPublished = gallery.length > 0 && publishedCount === gallery.length;
+
+  /** Master toggle — publish or unpublish ALL gallery images */
+  const handleMasterToggle = () => {
+    const newState = !isAllPublished;
+    startTransition(async () => {
+      const r = await setAllGalleryVisibility(newState);
+      if (r?.success) {
+        toast.success(newState ? "All gallery images published" : "All gallery images unpublished");
+        router.refresh();
+      } else {
+        toast.error(r?.error || "Failed");
+      }
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     startTransition(async () => {
       const r = editingId ? await updateGalleryItem(editingId, formData) : await addGalleryItem(formData);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); setIsAdding(false); setEditingId(null); await refetch(); }
-      else { toast.error(r?.error || "Failed"); }
+      if (r?.success) {
+        toast.success(editingId ? "Updated" : "Added");
+        setIsAdding(false); setEditingId(null);
+        router.refresh();
+      } else {
+        toast.error(r?.error || "Failed");
+      }
     });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
-    const prev = gallery;
-    setGallery(gallery.map(g => g.id === id ? { ...g, isPublished: !current } : g));
+    setGallery((prev) => prev.map((g) => g.id === id ? { ...g, isPublished: !current } : g));
     startTransition(async () => {
       const r = await toggleGalleryPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); }
-      else { setGallery(prev); toast.error(r?.error || "Toggle failed"); }
+      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
+      else { router.refresh(); toast.error(r?.error || "Toggle failed"); }
     });
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Delete this photo?")) return;
-    const prev = gallery;
-    setGallery(gallery.filter(g => g.id !== id));
+    if (!confirm("Delete this image?")) return;
+    setGallery((prev) => prev.filter((g) => g.id !== id));
     startTransition(async () => {
       const r = await deleteGalleryItem(id);
-      if (r?.success) { toast.success("Deleted"); await refetch(); }
-      else { setGallery(prev); toast.error(r?.error || "Delete failed"); }
+      if (r?.success) { toast.success("Deleted"); router.refresh(); }
+      else { router.refresh(); toast.error(r?.error || "Delete failed"); }
     });
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Manage Gallery</h1>
-          <p className="text-muted-foreground text-sm">Upload photos and videos.</p>
+          <h1 className="text-2xl font-bold">Gallery</h1>
+          <p className="text-muted-foreground text-sm">{gallery.length} images · {publishedCount} published</p>
         </div>
-        <button onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ title: "", url: "", category: "General", year: 2026 }); }} disabled={isPending} className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
-          <Plus className="w-4 h-4" /> Add Photo
-        </button>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* ── MASTER TOGGLE for Gallery category ── */}
+          {gallery.length > 0 && (
+            <button onClick={handleMasterToggle} disabled={isPending}
+              className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
+                (isAllPublished
+                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
+                  : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
+              {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+              {isAllPublished ? "Unpublish All Gallery" : "Publish All Gallery"}
+            </button>
+          )}
+          <button onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ title: "", url: "", category: "General", year: 2026 }); }}
+            disabled={isPending}
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
+            <Plus className="w-4 h-4" /> Add Image
+          </button>
+        </div>
       </div>
 
       {(isAdding || editingId) && (
-        <form onSubmit={handleSubmit} className="p-4 bg-card border rounded-xl space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <input required value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} placeholder="Title" className="px-3 py-2 border rounded-lg" />
-            <input required type="url" value={formData.url} onChange={e => setFormData({...formData, url: e.target.value})} placeholder="Image URL" className="px-3 py-2 border rounded-lg" />
-            <input required type="number" value={formData.year} onChange={e => setFormData({...formData, year: parseInt(e.target.value)})} placeholder="Year" className="px-3 py-2 border rounded-lg" />
-            <input required value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} placeholder="Category" className="px-3 py-2 border rounded-lg" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
+          <div className="w-full max-w-lg bg-card rounded-2xl border border-border shadow-2xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold">{editingId ? "Edit Image" : "Add Image"}</h2>
+              <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }}
+                className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
+            </div>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">Title *</label>
+                <input type="text" required value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Image title" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">Image URL *</label>
+                <input type="url" required value={formData.url}
+                  onChange={(e) => setFormData({ ...formData, url: e.target.value })}
+                  className="w-full bg-background border rounded-lg px-3 py-2" placeholder="https://..." />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground mb-1">Category</label>
+                  <input type="text" value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full bg-background border rounded-lg px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-muted-foreground mb-1">Year</label>
+                  <input type="number" value={formData.year}
+                    onChange={(e) => setFormData({ ...formData, year: parseInt(e.target.value) })}
+                    className="w-full bg-background border rounded-lg px-3 py-2" />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end pt-4 border-t">
+                <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }}
+                  className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
+                <button type="submit" disabled={isPending}
+                  className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">
+                  {isPending ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
           </div>
-          <div className="flex gap-2">
-            <button type="submit" disabled={isPending} className="px-4 py-2 bg-primary text-white rounded-lg disabled:opacity-50">{isPending ? "Saving..." : "Save"}</button>
-            <button type="button" onClick={() => { setIsAdding(false); setEditingId(null); }} className="px-4 py-2 border rounded-lg">Cancel</button>
-          </div>
-        </form>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-        {gallery.map(item => (
-          <div key={item.id} className="relative rounded-xl border bg-card overflow-hidden group">
-            <img src={item.url} alt={item.title} className="w-full h-48 object-cover" />
-            <div className="p-3">
-              <h3 className="font-bold text-sm">{item.title}</h3>
-              <p className="text-xs text-muted-foreground">{item.year} • {item.category}</p>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+        {gallery.length === 0 && (
+          <div className="col-span-full text-center py-12 text-muted-foreground">No images yet.</div>
+        )}
+        {gallery.map((img: any) => (
+          <div key={img.id} className="group relative rounded-xl overflow-hidden border bg-card">
+            <div className="aspect-square bg-muted overflow-hidden">
+              <img src={img.url} alt={img.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             </div>
-            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <button onClick={() => { setEditingId(item.id); setIsAdding(false); setFormData({ title: item.title, url: item.url, category: item.category || "General", year: item.year || 2026 }); }} className="p-1.5 bg-white text-blue-600 rounded-lg shadow"><Pencil className="w-4 h-4" /></button>
-              <button onClick={() => handleTogglePublish(item.id, !!item.isPublished)} disabled={isPending}
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold border disabled:opacity-50 ${item.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-200"}`}>
-                {item.isPublished ? "PUB" : "DRAFT"}
-              </button>
-              <button onClick={() => handleDelete(item.id)} disabled={isPending} className="p-1.5 bg-white text-red-600 rounded-lg shadow disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
+            <div className="p-3">
+              <p className="font-bold text-sm text-foreground truncate">{img.title}</p>
+              <p className="text-xs text-muted-foreground">{img.category} · {img.year}</p>
+              <div className="flex items-center gap-1 mt-2">
+                <button onClick={() => handleTogglePublish(img.id, !!img.isPublished)} disabled={isPending}
+                  className={"flex-1 px-2 py-1 rounded-lg text-[10px] font-bold border disabled:opacity-50 " +
+                    (img.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-200")}>
+                  {img.isPublished ? "PUBLISHED" : "DRAFT"}
+                </button>
+                <button onClick={() => { setEditingId(img.id); setIsAdding(false);
+                    setFormData({ title: img.title, url: img.url, category: img.category, year: img.year }); }}
+                  disabled={isPending} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50">
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => handleDelete(img.id)} disabled={isPending}
+                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         ))}

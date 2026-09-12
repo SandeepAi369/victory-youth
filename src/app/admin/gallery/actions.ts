@@ -2,29 +2,42 @@
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { randomUUID } from "crypto";
 
 function revalidate() {
-  revalidatePath("/"); revalidatePath("/admin/gallery"); revalidatePath("/gallery");
+  revalidatePath("/");
+  revalidatePath("/admin/gallery");
+  revalidatePath("/gallery");
 }
 
 export async function getGallery() {
   try {
     const db = getDb();
     return await db.select().from(schema.gallery).orderBy(schema.gallery.year);
-  } catch (error: any) { console.error("getGallery error:", error); return []; }
+  } catch (error: any) {
+    console.error("getGallery error:", error);
+    return [];
+  }
 }
 
 export async function addGalleryItem(data: any) {
   try {
     const db = getDb();
-    await db.insert(schema.gallery).values({ 
-      id: `gal_${Date.now()}`, title: data.title, url: data.url, 
-      category: data.category || "General", year: data.year || 2026,
-      uploadedBy: "Admin", isPublished: true,
+    await db.insert(schema.gallery).values({
+      id: `gal_${randomUUID()}`,
+      title: data.title,
+      url: data.url,
+      category: data.category || "General",
+      year: data.year || 2026,
+      uploadedBy: "Admin",
+      isPublished: true,
     });
     revalidate();
     return { success: true };
-  } catch (error: any) { console.error("addGalleryItem error:", error); return { success: false, error: error.message }; }
+  } catch (error: any) {
+    console.error("addGalleryItem error:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function updateGalleryItem(id: string, data: any) {
@@ -33,7 +46,10 @@ export async function updateGalleryItem(id: string, data: any) {
     await db.update(schema.gallery).set(data).where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) { console.error("updateGalleryItem error:", error); return { success: false, error: error.message }; }
+  } catch (error: any) {
+    console.error("updateGalleryItem error:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function deleteGalleryItem(id: string) {
@@ -42,7 +58,10 @@ export async function deleteGalleryItem(id: string) {
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) { console.error("deleteGalleryItem error:", error); return { success: false, error: error.message }; }
+  } catch (error: any) {
+    console.error("deleteGalleryItem error:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function toggleGalleryPublish(id: string, publish: boolean) {
@@ -51,5 +70,23 @@ export async function toggleGalleryPublish(id: string, publish: boolean) {
     await db.update(schema.gallery).set({ isPublished: publish }).where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) { console.error("toggleGalleryPublish error:", error); return { success: false, error: error.message }; }
+  } catch (error: any) {
+    console.error("toggleGalleryPublish error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** Master toggle: publish or unpublish ALL gallery images at once */
+export async function setAllGalleryVisibility(
+  publish: boolean
+): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  try {
+    const db = getDb();
+    await db.update(schema.gallery).set({ isPublished: publish });
+    revalidate();
+    return { success: true, newState: publish };
+  } catch (error: any) {
+    console.error("setAllGalleryVisibility error:", error);
+    return { success: false, newState: !publish, error: error.message };
+  }
 }
