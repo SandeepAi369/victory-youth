@@ -349,10 +349,11 @@ export async function getPublishedNotes(limit: number = 10) {
 export async function getPublishedDonations(limit = 20) {
   const db = getDb();
   try {
+    const { and, ne } = await import("drizzle-orm");
     const donations = await db
       .select({ donorName: schema.donations.donorName, amount: schema.donations.amount, category: schema.donations.category, date: schema.donations.date })
       .from(schema.donations)
-      .where(eq(schema.donations.isPublished, true))
+      .where(and(eq(schema.donations.isPublished, true), ne(schema.donations.category, "CHANDA")))
       .orderBy(desc(schema.donations.createdAt))
       .limit(limit);
     return donations;
