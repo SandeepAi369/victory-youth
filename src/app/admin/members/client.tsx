@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
-import { addMember, updateMember, deleteMember, setAllMembersVisibility } from "./actions";
+import { addMember, updateMember, deleteMember, setAllMembersVisibility , getMembers } from "./actions";
 import { toast } from "sonner";
 
 type Member = {
@@ -17,12 +16,12 @@ const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: 
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
   const [data, setData] = useState<Member[]>(initialData);
-  useEffect(() => { setData(initialData); }, [initialData]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+
+  const refetch = async () => { const fresh = await getMembers(); setData(fresh as any); setPublished(fresh.length > 0 && fresh.some((m: any) => m.isActive === true)); };
 
   const [published, setPublished] = useState(() => initialData.length > 0 && initialData.some(m => m.isActive === true));
   useEffect(() => { setPublished(initialData.length > 0 && initialData.some(m => m.isActive === true)); }, [initialData]);
@@ -35,7 +34,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     const payload = { name: form.name, fullName: form.fullName || form.name, phone: form.phone, membershipFee: parseInt(form.membershipFee) || 0, role: form.role };
     startTransition(async () => {
       const r = editingId ? await updateMember(editingId, payload) : await addMember(payload);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); resetForm(); router.refresh(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); resetForm(); await refetch(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
@@ -46,7 +45,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     setData(data.filter(d => d.id !== id));
     startTransition(async () => {
       const r = await deleteMember(id);
-      if (r?.success) { toast.success("Removed"); router.refresh(); }
+      if (r?.success) { toast.success("Removed"); await refetch(); }
       else { setData(prev); toast.error(r?.error || "Failed"); }
     });
   };
@@ -62,7 +61,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     setPublished(newState);
     startTransition(async () => {
       const r = await setAllMembersVisibility(newState);
-      if (r?.success) { toast.success(newState ? "Members visible on frontend" : "Members hidden from frontend"); router.refresh(); }
+      if (r?.success) { toast.success(newState ? "Members visible on frontend" : "Members hidden from frontend"); await refetch(); }
       else { setPublished(prevPublished); toast.error(r?.error || "Failed"); }
     });
   };

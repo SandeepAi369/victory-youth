@@ -1,199 +1,4 @@
-/**
- * Public Data Queries for Ganesh BNS
- * 
- * These queries are used by public-facing pages (Home, Donate, Schedule)
- * and do not require authentication.
- */
 
-import { getDb, schema } from "@/db";
-import { eq, desc, and, gte, lte, sql } from "drizzle-orm";
-
-// ============================================
-// ASSOCIATION SETTINGS
-// ============================================
-
-/**
- * Get association settings (single row)
- */
-export async function getAssociationSettings() {
-  const db = getDb();
-  try {
-    const settings = await db
-      .select()
-      .from(schema.associationSettings)
-      .limit(1);
-    
-    return settings[0] || null;
-  } catch (error) {
-    console.error("Error fetching association settings:", error);
-    return null;
-  }
-}
-
-// ============================================
-// PUBLIC STATS
-// ============================================
-
-/**
- * Get public stats for homepage display
- */
-export async function getPublicStats(existingSettings?: any) {
-  const db = getDb();
-
-  try {
-    // Get donation stats
-    const donationStats = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
-      })
-      .from(schema.donations)
-      .where(eq(schema.donations.status, "SUCCESS"))
-      .catch((e) => {
-        console.error("Error fetching donation stats:", e);
-        return [{ count: 0, total: 0 }];
-      });
-
-    // Get member count
-    const memberStats = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(schema.members)
-      .where(eq(schema.members.isActive, true))
-      .catch((e) => {
-        console.error("Error fetching member stats:", e);
-        return [{ count: 0 }];
-      });
-
-    // Get event count
-    const eventStats = await db
-      .select({
-        count: sql<number>`count(*)::int`,
-      })
-      .from(schema.events)
-      .where(eq(schema.events.isPublished, true))
-      .catch((e) => {
-        console.error("Error fetching event stats:", e);
-        return [{ count: 0 }];
-      });
-
-    // Get donation target from settings
-    const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
-
-    return {
-      totalDonations: donationStats[0]?.count || 0,
-      totalAmount: donationStats[0]?.total || 0,
-      totalMembers: memberStats[0]?.count || 0,
-      totalEvents: eventStats[0]?.count || 0,
-      donationTarget: settings?.donationTarget || 2500000,
-    };
-  } catch (error) {
-    console.error("Error fetching public stats:", error);
-    return {
-      totalDonations: 0,
-      totalAmount: 0,
-      totalMembers: 0,
-      totalEvents: 0,
-      donationTarget: 2500000,
-    };
-  }
-}
-
-// ============================================
-// EVENTS / SCHEDULE
-// ============================================
-
-/**
- * Get published events for public schedule
- */
-export async function getPublishedEvents() {
-  const db = getDb();
-  try {
-    const events = await db
-      .select()
-      .from(schema.events)
-      .where(eq(schema.events.isPublished, true))
-      .orderBy(schema.events.date);
-
-    return events;
-  } catch (error) {
-    console.error("❌ DB QUERY FAILED in getPublishedEvents:", error);
-    return [];
-  }
-}
-
-/**
- * Get events by date range
- */
-export async function getEventsByDateRange(startDate: string, endDate: string) {
-  const db = getDb();
-  try {
-    const events = await db
-      .select()
-      .from(schema.events)
-      .where(
-        and(
-          eq(schema.events.isPublished, true),
-          gte(schema.events.date, startDate),
-          lte(schema.events.date, endDate)
-        )
-      )
-      .orderBy(schema.events.date);
-
-    return events;
-  } catch (error) {
-    console.error("❌ DB QUERY FAILED in getEventsByDateRange:", error);
-    return [];
-  }
-}
-
-// ============================================
-// NOTICES
-// ============================================
-
-/**
- * Get published notices for public display
- */
-export async function getPublishedNotices(limit: number = 5) {
-  const db = getDb();
-  try {
-    const notices = await db
-      .select()
-      .from(schema.notices)
-      .where(eq(schema.notices.status, "PUBLISHED"))
-      .orderBy(desc(schema.notices.createdAt))
-      .limit(limit);
-
-    return notices;
-  } catch (error) {
-    console.error("❌ DB QUERY FAILED in getPublishedNotices:", error);
-    return [];
-  }
-}
-
-// ============================================
-// SPONSORS
-// ============================================
-
-/**
- * Get published sponsors for homepage
- */
-export async function getPublishedSponsors() {
-  const db = getDb();
-  try {
-    const sponsors = await db
-      .select()
-      .from(schema.sponsors)
-      .where(eq(schema.sponsors.isPublished, true))
-      .orderBy(desc(schema.sponsors.displayOrder));
-
-    return sponsors;
-  } catch (error) {
-    console.error("❌ DB QUERY FAILED in getPublishedSponsors:", error);
-    return [];
-  }
-}
 
 // ============================================
 // GALLERY
@@ -407,7 +212,6 @@ export async function getHomepageData() {
       hero,
       featuredGallery,
       events,
-      sponsors,
       notices,
       notes,
       publishedDonations,
@@ -415,9 +219,7 @@ export async function getHomepageData() {
       getPublicStats(settings),
       getHeroSection(settings),
       getFeaturedGallery(settings),
-      getPublishedEvents(),
-      getPublishedSponsors(),
-      getPublishedNotices(3),
+      getPublishedEvents(),      getPublishedNotices(3),
       getPublishedNotes(5),
       getPublishedDonations(20),
     ]);
@@ -428,7 +230,6 @@ export async function getHomepageData() {
       hero,
       featuredGallery,
       events,
-      sponsors,
       notices,
       notes,
       publishedDonations,
@@ -447,7 +248,6 @@ export async function getHomepageData() {
       },
       featuredGallery: [],
       events: [],
-      sponsors: [],
       notices: [],
       notes: [],
       publishedDonations: [],

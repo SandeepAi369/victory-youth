@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
-import { addDonation, updateDonation, deleteDonation, toggleDonationPublish } from "./actions";
+import { getDonationEntries, addDonation, updateDonation, deleteDonation, toggleDonationPublish } from "./actions";
 import { toast } from "sonner";
 
 type Entry = {
@@ -18,12 +17,12 @@ const emptyForm = { donorName: "", phone: "", amount: "", category: "DONATION", 
 
 export default function DonationsClient({ initialData }: { initialData: Entry[] }) {
   const [data, setData] = useState<Entry[]>(initialData);
-  useEffect(() => { setData(initialData); }, [initialData]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+
+  const refetch = async () => { const fresh = await getDonationEntries(); setData(fresh as any); };
 
   const totalAmount = data.reduce((sum, e) => sum + (e.amount || 0), 0);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
@@ -33,7 +32,7 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
     const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, category: form.category, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "General Donation" };
     startTransition(async () => {
       const r = editingId ? await updateDonation(editingId, payload) : await addDonation(payload);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Donation added"); resetForm(); router.refresh(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Donation added"); resetForm(); await refetch(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
@@ -44,7 +43,7 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
     setData(data.filter(d => d.id !== id));
     startTransition(async () => {
       const r = await deleteDonation(id);
-      if (r?.success) { toast.success("Deleted"); router.refresh(); }
+      if (r?.success) { toast.success("Deleted"); await refetch(); }
       else { setData(prev); toast.error(r?.error || "Delete failed"); }
     });
   };
@@ -59,7 +58,7 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
     setData(data.map(d => d.id === id ? { ...d, isPublished: !current } : d));
     startTransition(async () => {
       const r = await toggleDonationPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
+      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); }
       else { setData(prev); toast.error(r?.error || "Toggle failed"); }
     });
   };

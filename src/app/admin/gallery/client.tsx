@@ -1,18 +1,17 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish } from "./actions";
+import { getGallery, addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish } from "./actions";
 import { toast } from "sonner";
 
 export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const [gallery, setGallery] = useState<any[]>(initialGallery);
-  useEffect(() => { setGallery(initialGallery); }, [initialGallery]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+
+  const refetch = async () => { const fresh = await getGallery(); setGallery(fresh as any); };
 
   const [formData, setFormData] = useState({ title: "", url: "", category: "General", year: 2026 });
 
@@ -20,7 +19,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
     e.preventDefault();
     startTransition(async () => {
       const r = editingId ? await updateGalleryItem(editingId, formData) : await addGalleryItem(formData);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); setIsAdding(false); setEditingId(null); router.refresh(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Added"); setIsAdding(false); setEditingId(null); await refetch(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
@@ -30,7 +29,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
     setGallery(gallery.map(g => g.id === id ? { ...g, isPublished: !current } : g));
     startTransition(async () => {
       const r = await toggleGalleryPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
+      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); }
       else { setGallery(prev); toast.error(r?.error || "Toggle failed"); }
     });
   };
@@ -41,7 +40,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
     setGallery(gallery.filter(g => g.id !== id));
     startTransition(async () => {
       const r = await deleteGalleryItem(id);
-      if (r?.success) { toast.success("Deleted"); router.refresh(); }
+      if (r?.success) { toast.success("Deleted"); await refetch(); }
       else { setGallery(prev); toast.error(r?.error || "Delete failed"); }
     });
   };

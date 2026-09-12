@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
-import { addChanda, updateChanda, deleteChanda, toggleChandaPublish } from "./actions";
+import { getChandaEntries, addChanda, updateChanda, deleteChanda, toggleChandaPublish } from "./actions";
 import { toast } from "sonner";
 
 type Entry = {
@@ -17,33 +16,33 @@ const emptyForm = { donorName: "", phone: "", amount: "", paymentMode: "CASH", d
 
 export default function ChandaClient({ initialData }: { initialData: Entry[] }) {
   const [data, setData] = useState<Entry[]>(initialData);
-  useEffect(() => { setData(initialData); }, [initialData]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
 
   const totalAmount = data.reduce((sum, e) => sum + (e.amount || 0), 0);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
+  const refetch = async () => { const fresh = await getChandaEntries(); setData(fresh as Entry[]); };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "Chanda" };
+    const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "Monthly Chanda" };
     startTransition(async () => {
       const r = editingId ? await updateChanda(editingId, payload) : await addChanda(payload);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Chanda added"); resetForm(); router.refresh(); }
+      if (r?.success) { toast.success(editingId ? "Updated" : "Chanda added"); resetForm(); await refetch(); }
       else { toast.error(r?.error || "Failed"); }
     });
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Permanently delete this chanda entry?")) return;
+    if (!confirm("Permanently delete this entry?")) return;
     const prev = data;
     setData(data.filter(d => d.id !== id));
     startTransition(async () => {
       const r = await deleteChanda(id);
-      if (r?.success) { toast.success("Deleted"); router.refresh(); }
+      if (r?.success) { toast.success("Deleted"); await refetch(); }
       else { setData(prev); toast.error(r?.error || "Delete failed"); }
     });
   };
@@ -58,7 +57,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
     setData(data.map(d => d.id === id ? { ...d, isPublished: !current } : d));
     startTransition(async () => {
       const r = await toggleChandaPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
+      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); await refetch(); }
       else { setData(prev); toast.error(r?.error || "Toggle failed"); }
     });
   };

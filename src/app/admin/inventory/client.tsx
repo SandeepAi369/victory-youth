@@ -1,20 +1,19 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState, useTransition, useEffect } from "react";
+import { useState, useTransition } from "react";
 import { Plus, Pencil, Trash2, Search, Download, X } from "lucide-react";
-import { addInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
+import { getInventory, addInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
 import { toast } from "sonner";
 import { exportInventoryToExcel } from "@/lib/excel-exporter";
 
 export function InventoryClient({ items: initialItems }: { items: any[] }) {
   const [items, setItems] = useState<any[]>(initialItems);
-  useEffect(() => { setItems(initialItems); }, [initialItems]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [isPending, startTransition] = useTransition();
-  const router = useRouter();
+
+  const refetch = async () => { const fresh = await getInventory(); setItems(fresh as any); };
 
   const [formData, setFormData] = useState({ name: "", category: "Silver", quantity: 1, condition: "Good", inCharge: "", unit: "pcs" });
 
@@ -24,7 +23,7 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
       const res = editingId ? await updateInventoryItem(editingId, formData) : await addInventoryItem(formData);
       if (res?.success) {
         toast.success(editingId ? "Item updated" : "Item added");
-        setIsAdding(false); setEditingId(null); router.refresh();
+        setIsAdding(false); setEditingId(null); await refetch();
       } else {
         toast.error(res?.error || "Operation failed");
       }
@@ -37,7 +36,7 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
     setItems(items.filter(i => i.id !== id));
     startTransition(async () => {
       const r = await deleteInventoryItem(id);
-      if (r?.success) { toast.success("Item deleted"); router.refresh(); }
+      if (r?.success) { toast.success("Item deleted"); await refetch(); }
       else { setItems(prev); toast.error(r?.error || "Delete failed"); }
     });
   };

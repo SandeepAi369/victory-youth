@@ -1,7 +1,7 @@
 "use server";
 
 import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
 function revalidate() {
@@ -9,6 +9,21 @@ function revalidate() {
 }
 
 // ===== NOTICES =====
+
+export async function getNotices() {
+  try {
+    const db = getDb();
+    return await db.select().from(schema.notices).orderBy(desc(schema.notices.createdAt));
+  } catch (error: any) { console.error("getNotices error:", error); return []; }
+}
+
+export async function getNotes() {
+  try {
+    const db = getDb();
+    return await db.select().from(schema.importantNotes).orderBy(desc(schema.importantNotes.createdAt));
+  } catch (error: any) { console.error("getNotes error:", error); return []; }
+}
+
 export async function addNotice(data: { title: string; body: string }) {
   try {
     const db = getDb();
