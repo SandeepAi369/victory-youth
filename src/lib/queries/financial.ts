@@ -154,7 +154,7 @@ export async function getDonationsByDateRange(startDate: string, endDate: string
 /**
  * Get total expenses summary
  */
-export async function getExpenseStats() {
+export async function getExpensesSummary() {
   // Note: The expenses table was removed from the schema.
   // This function returns empty stats as a safe stub.
   return {
