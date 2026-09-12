@@ -7,7 +7,7 @@ import * as schema from "./schema";
  * Priority:
  *   1. Cloudflare Hyperdrive connectionString (production edge)
  *   2. DATABASE_URL env variable (local dev / staging)
- *   3. Throws a clear error — never silently fails with hardcoded credentials
+ *   3. Throws a clear error — never silently falls back to hardcoded credentials
  */
 function getConnectionString(): string {
   try {
@@ -34,12 +34,13 @@ function getConnectionString(): string {
 
 /**
  * Request-scoped database instance via React.cache().
- * Uses the drizzle object-config form which correctly accepts { connection, schema }.
- * ONE instance per HTTP request; refreshed on the next request automatically.
+ *
+ * Note on schema: This drizzle-orm RC version does not expose a typed
+ * overload for drizzle(connectionString, { schema }). The schema is
+ * passed directly in every query (db.select().from(schema.table)) which
+ * is how this entire codebase works — no relational query API used.
  */
-export const getDb = cache(() =>
-  drizzle({ connection: getConnectionString(), schema })
-);
+export const getDb = cache(() => drizzle(getConnectionString()));
 
-// Re-export schema for convenience
+// Re-export schema so callers can do: import { getDb, schema } from "@/db"
 export { schema };
