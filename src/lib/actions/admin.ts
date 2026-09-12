@@ -10,7 +10,7 @@
 "use server";
 
 import { getDb, schema } from "@/db";
-import type { NewMemberRow, NewDonationRow, NewExpenseRow, NewEventRow, NewNoticeRow, NewSponsorRow, NewGalleryRow, NewAuctionItemRow, NewImportantNoteRow, NewAssociationSettingsRow } from "@/db/schema";
+import type { NewMemberRow, NewDonationRow, NewEventRow, NewNoticeRow, NewSponsorRow, NewGalleryRow, NewAuctionItemRow, NewImportantNoteRow, NewAssociationSettingsRow } from "@/db/schema";
 import { eq, ilike, or, desc, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -54,7 +54,7 @@ export async function getMembers(query: string = "") {
       .from(schema.members)
       .orderBy(desc(schema.members.createdAt));
   } catch (error) {
-    return handleError("fetching members", error) as any[];
+    return handleError("fetching members", error) as any;
   }
 }
 
@@ -136,7 +136,7 @@ export async function getDonations(query: string = "") {
       .from(schema.donations)
       .orderBy(desc(schema.donations.createdAt));
   } catch (error) {
-    return handleError("fetching donations", error) as any[];
+    return handleError("fetching donations", error) as any;
   }
 }
 
@@ -198,87 +198,6 @@ export async function deleteDonation(id: string) {
 }
 
 // ============================================
-// EXPENSES CRUD
-// ============================================
-
-export async function getExpenses(query: string = "") {
-  const db = getDb();
-  try {
-    if (query) {
-      return await db
-        .select()
-        .from(schema.expenses)
-        .where(
-          or(
-            ilike(schema.expenses.title, `%${query}%`),
-            ilike(schema.expenses.description, `%${query}%`)
-          )
-        )
-        .orderBy(desc(schema.expenses.createdAt));
-    }
-
-    return await db
-      .select()
-      .from(schema.expenses)
-      .orderBy(desc(schema.expenses.createdAt));
-  } catch (error) {
-    return handleError("fetching expenses", error) as any[];
-  }
-}
-
-export async function getExpenseById(id: string) {
-  const db = getDb();
-  try {
-    const expense = await db
-      .select()
-      .from(schema.expenses)
-      .where(eq(schema.expenses.id, id))
-      .limit(1);
-    return expense[0] || null;
-  } catch (error) {
-    console.error("Error fetching expense:", error);
-    return null;
-  }
-}
-
-export async function createExpense(data: NewExpenseRow) {
-  const db = getDb();
-  try {
-    const id = generateId("exp");
-    await db.insert(schema.expenses).values({ ...data, id });
-    revalidatePath("/admin/expenses");
-    return { success: true, id };
-  } catch (error) {
-    return handleError("creating expense", error);
-  }
-}
-
-export async function updateExpense(id: string, data: Partial<NewExpenseRow>) {
-  const db = getDb();
-  try {
-    await db
-      .update(schema.expenses)
-      .set({ ...data, updatedAt: new Date() })
-      .where(eq(schema.expenses.id, id));
-    revalidatePath("/admin/expenses");
-    return { success: true };
-  } catch (error) {
-    return handleError("updating expense", error);
-  }
-}
-
-export async function deleteExpense(id: string) {
-  const db = getDb();
-  try {
-    await db.delete(schema.expenses).where(eq(schema.expenses.id, id));
-    revalidatePath("/admin/expenses");
-    return { success: true };
-  } catch (error) {
-    return handleError("deleting expense", error);
-  }
-}
-
-// ============================================
 // EVENTS CRUD
 // ============================================
 
@@ -298,7 +217,7 @@ export async function getEvents(query: string = "") {
       .from(schema.events)
       .orderBy(desc(schema.events.date));
   } catch (error) {
-    return handleError("fetching events", error) as any[];
+    return handleError("fetching events", error) as any;
   }
 }
 
@@ -377,7 +296,7 @@ export async function getNotices(query: string = "") {
       .from(schema.notices)
       .orderBy(desc(schema.notices.createdAt));
   } catch (error) {
-    return handleError("fetching notices", error) as any[];
+    return handleError("fetching notices", error) as any;
   }
 }
 
@@ -447,15 +366,15 @@ export async function getSponsors(query: string = "") {
         .select()
         .from(schema.sponsors)
         .where(ilike(schema.sponsors.name, `%${query}%`))
-        .orderBy(desc(schema.sponsors.sortOrder));
+        .orderBy(desc(schema.sponsors.displayOrder));
     }
 
     return await db
       .select()
       .from(schema.sponsors)
-      .orderBy(desc(schema.sponsors.sortOrder));
+      .orderBy(desc(schema.sponsors.displayOrder));
   } catch (error) {
-    return handleError("fetching sponsors", error) as any[];
+    return handleError("fetching sponsors", error) as any;
   }
 }
 
@@ -523,15 +442,15 @@ export async function getGallery(query: string = "") {
         .select()
         .from(schema.gallery)
         .where(ilike(schema.gallery.title, `%${query}%`))
-        .orderBy(desc(schema.gallery.createdAt));
+        .orderBy(desc(schema.gallery.uploadedAt));
     }
 
     return await db
       .select()
       .from(schema.gallery)
-      .orderBy(desc(schema.gallery.createdAt));
+      .orderBy(desc(schema.gallery.uploadedAt));
   } catch (error) {
-    return handleError("fetching gallery", error) as any[];
+    return handleError("fetching gallery", error) as any;
   }
 }
 
@@ -607,7 +526,7 @@ export async function getAuctionItems(query: string = "") {
       .from(schema.auctionItems)
       .orderBy(desc(schema.auctionItems.createdAt));
   } catch (error) {
-    return handleError("fetching auction items", error) as any[];
+    return handleError("fetching auction items", error) as any;
   }
 }
 
@@ -683,7 +602,7 @@ export async function getImportantNotes(query: string = "") {
       .from(schema.importantNotes)
       .orderBy(desc(schema.importantNotes.isPinned), desc(schema.importantNotes.updatedAt));
   } catch (error) {
-    return handleError("fetching notes", error) as any[];
+    return handleError("fetching notes", error) as any;
   }
 }
 

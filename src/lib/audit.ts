@@ -25,11 +25,11 @@ export async function logAuditAction(params: AuditActionParams): Promise<void> {
 
   console.log(`[AUDIT LOG] ${params.action} on ${params.entity}:${params.entityId} by ${params.actorMemberId}`);
 
-  if (db) {
-    try {
-      await db.insert(schema.auditLog).values(logItem);
-    } catch (err) {
-      console.warn("[Audit Log] Database write error:", err);
-    }
+  try {
+    const db = getDb();
+    await db.insert(schema.auditLog).values(logItem);
+  } catch (err) {
+    // Audit log failure must never crash the main operation
+    console.warn("[Audit Log] Database write error:", err);
   }
 }

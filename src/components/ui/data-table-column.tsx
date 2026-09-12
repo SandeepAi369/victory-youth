@@ -144,7 +144,6 @@ export function StatusCell({ status, variantMap }: { status: string; variantMap?
     
     // Events
     PUBLISHED: "success",
-    DRAFT: "secondary",
     
     // Auction
     DRAFT: "secondary",

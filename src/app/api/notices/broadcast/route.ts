@@ -3,6 +3,7 @@ import { sendTelegramBroadcast } from "@/lib/telegram";
 import { sendEmailNotification } from "@/lib/email";
 import { logAuditAction } from "@/lib/audit";
 import { getDb, schema } from "@/db";
+import { randomUUID } from "crypto";
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,15 +25,14 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    if (db) {
-      await db.insert(schema.notices).values({
-        id: `notice-${Date.now()}`,
-        title,
-        body,
-        channel: channel || "TELEGRAM",
-        sentBy: sentBy || "Secretary",
-      });
-    }
+    const db = getDb();
+    await db.insert(schema.notices).values({
+      id: `notice-${randomUUID()}`,
+      title,
+      body,
+      channel: channel || "TELEGRAM",
+      sentBy: sentBy || "Secretary",
+    });
 
     await logAuditAction({
       actorMemberId: sentBy || "SECRETARY",

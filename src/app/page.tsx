@@ -179,9 +179,9 @@ export default async function HomePage() {
       {/* ===== FOOTER ===== */}
       <Footer
         associationName="Victory Youth Association"
-        address={settings?.address}
-        email={settings?.contactEmail}
-        phone={settings?.contactPhone}
+        address={settings?.address ?? undefined}
+        email={settings?.contactEmail ?? undefined}
+        phone={settings?.contactPhone ?? undefined}
       />
     </main>
   );
