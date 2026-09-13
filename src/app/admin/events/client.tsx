@@ -97,7 +97,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
         <div>
           <h1 className="text-2xl font-bold">Manage Events</h1>
           <p className="text-muted-foreground text-sm">
-            {events.length} events · {publishedCount} published
+            Festival Schedule
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
@@ -107,10 +107,12 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
               onClick={handleMasterToggle}
               disabled={isPending}
               className={
-                "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
-                (isAllPublished
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
-                  : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
+                "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
+                (isPending
+                  ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 animate-pulse text-stone-400 cursor-not-allowed pointer-events-none border-stone-200"
+                  : isAllPublished
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
+                    : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
               }
             >
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
@@ -126,21 +128,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
         </div>
       </div>
 
-      {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-muted border">
-          <span className="text-sm font-medium">{selectedIds.length} selected</span>
-          <button onClick={() => handleBulkPublish(true)} disabled={isPending}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200 disabled:opacity-50">
-            Publish Selected
-          </button>
-          <button onClick={() => handleBulkPublish(false)} disabled={isPending}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg bg-red-100 text-red-700 hover:bg-red-200 disabled:opacity-50">
-            Unpublish Selected
-          </button>
-        </div>
-      )}
-
-      {(isAdding || editingId) && (
+            {(isAdding || editingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">

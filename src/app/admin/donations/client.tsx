@@ -12,7 +12,7 @@ type Entry = {
   paymentMode: string | null; date: string | null; isPublished: boolean | null;
 };
 
-const CATEGORIES = ["DONATION", "SPONSORSHIP", "GRANT", "OTHER"];
+const CATEGORIES = ["DONATION", "OTHER"];
 const PAYMENT_MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE"];
 const emptyForm = { donorName: "", phone: "", amount: "", category: "DONATION", paymentMode: "CASH", date: new Date().toISOString().split("T")[0], purpose: "" };
 
@@ -83,21 +83,22 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
         <div>
           <h1 className="text-2xl font-bold">Donations</h1>
           <p className="text-muted-foreground text-sm">
-            {data.length} entries · {publishedCount} published · Total: ₹{totalAmount.toLocaleString("en-IN")}
+            Total: ₹{totalAmount.toLocaleString("en-IN")}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* ── MASTER TOGGLE for Donations category ── */}
           {data.length > 0 && (
             <button onClick={handleMasterToggle} disabled={isPending}
-              className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
-                (isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
+              className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
+                (isPending ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 animate-pulse text-stone-400 cursor-not-allowed pointer-events-none border-stone-200" : isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               {isAllPublished ? "Unpublish All Donations" : "Publish All Donations"}
             </button>
           )}
+          <div className="w-px h-6 bg-border" />
           <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} disabled={isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50">
+            className={"px-4 py-2 font-medium text-sm rounded-xl flex items-center gap-2 transition-all " + (isPending ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 animate-pulse text-stone-400 cursor-not-allowed pointer-events-none" : "bg-primary text-primary-foreground hover:opacity-90")}>
             <Plus className="w-4 h-4" /> Add Donation
           </button>
         </div>

@@ -107,7 +107,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
         <div>
           <h1 className="text-2xl font-bold">Committee Members</h1>
           <p className="text-muted-foreground text-sm">
-            {data.length} members · Total: ₹{totalContribution.toLocaleString("en-IN")}
+            Committee Members
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -116,20 +116,23 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
               onClick={handleGlobalToggle}
               disabled={isPending}
               className={
-                "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
-                (published
-                  ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
-                  : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
+                "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
+                (isPending
+                  ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 bg-[length:200%_100%] animate-[shimmer_1.2s_ease-in-out_infinite] text-transparent cursor-not-allowed pointer-events-none border-stone-200"
+                  : published
+                    ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
+                    : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
               }
             >
               {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               {published ? "Published (All Visible)" : "Unpublished (All Hidden)"}
             </button>
           )}
+          <div className="w-px h-6 bg-border" />
           <button
             onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
             disabled={isPending}
-            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50"
+            className={"px-4 py-2 font-medium text-sm rounded-xl flex items-center gap-2 transition-all " + (isPending ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 animate-pulse text-stone-400 cursor-not-allowed pointer-events-none" : "bg-primary text-primary-foreground hover:opacity-90")}
           >
             <Plus className="w-4 h-4" /> Add Member
           </button>
