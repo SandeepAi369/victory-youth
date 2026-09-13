@@ -33,9 +33,22 @@ export default async function HomePage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-default select-none">
-            <button className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Menu">
-              <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
-            </button>
+            <details className="relative group">
+              <summary className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer list-none" aria-label="Menu">
+                <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
+              </summary>
+              <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-xl py-2 z-50">
+                <Link href="/notices" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                  📢 Notices & Updates
+                </Link>
+                <Link href="/members" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                  👥 Committee Members
+                </Link>
+                <Link href="/gallery" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
+                  🖼️ Gallery
+                </Link>
+              </div>
+            </details>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>

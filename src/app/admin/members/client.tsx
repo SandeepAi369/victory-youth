@@ -185,7 +185,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
 
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{m.phone}</td>
-                  <td className="px-4 py-3 font-bold text-emerald-600">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</td>
+                  <td className="px-4 py-3 font-bold text-emerald-600">₹{Math.round(Number(m.membershipFee) || 0).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3">
                     <span className={"px-2 py-0.5 rounded-lg text-xs font-bold " +
                       ((m.role || m.committeeRole) === "Special Candidate"
