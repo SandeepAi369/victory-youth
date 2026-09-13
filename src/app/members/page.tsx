@@ -1,20 +1,29 @@
 import Link from "next/link";
 import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { ArrowLeft, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
+
+function formatAmount(val: any): string {
+  const num = parseInt(String(val || 0), 10);
+  return num.toLocaleString("en-IN");
+}
 
 export default async function MembersPage() {
   let members: any[] = [];
   try {
     const db = getDb();
-    members = await db.select().from(schema.members).where(eq(schema.members.isActive, true)).orderBy(schema.members.name);
+    members = await db.select().from(schema.members)
+      .where(eq(schema.members.isActive, true))
+      .orderBy(schema.members.name);
   } catch (e: any) {
     console.error("Members page error:", e);
   }
 
-  const totalContribution = members.reduce((sum: number, m: any) => sum + (m.membershipFee || 0), 0);
+  const totalContribution = members.reduce(
+    (sum: number, m: any) => sum + parseInt(String(m.membershipFee || 0), 10), 0
+  );
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -34,7 +43,7 @@ export default async function MembersPage() {
             <p className="text-sm font-medium text-white/80">Victory Youth Committee</p>
           </div>
           <p className="text-3xl font-black">{members.length} Members</p>
-          <p className="text-sm text-white/70 mt-1">Total Contribution: ₹{Math.round(totalContribution).toLocaleString("en-IN")}</p>
+          <p className="text-sm text-white/70 mt-1">Total Contribution: ₹{formatAmount(totalContribution)}</p>
         </div>
 
         {members.length === 0 && (
@@ -53,7 +62,7 @@ export default async function MembersPage() {
                   <p className="text-xs text-stone-500 dark:text-stone-400">{m.role || m.committeeRole || "Member"}</p>
                 </div>
               </div>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₹{Math.round(Number(m.membershipFee) || 0).toLocaleString("en-IN")}</span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₹{formatAmount(m.membershipFee)}</span>
             </div>
           ))}
         </div>
