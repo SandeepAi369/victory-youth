@@ -118,7 +118,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 md:h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 shrink-0">
-          <h1 className="font-semibold text-lg text-foreground">Admin Panel</h1>
+          <h1 className="font-semibold text-lg text-foreground capitalize">
+            {pathname === "/admin" ? "Dashboard" : pathname.split("/").pop()?.replace(/-/g, " ") || "Admin Panel"}
+          </h1>
           <ModeToggle />
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
