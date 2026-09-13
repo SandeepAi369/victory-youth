@@ -6,13 +6,8 @@ export default async function AdminLayoutWrapper({ children }: { children: React
   const cookieStore = await cookies();
   const authCookie = cookieStore.get("admin-auth");
 
-  // Bug #6 fix: NEVER hardcode a fallback password in source code.
-  // If ADMIN_PASSWORD is not set in the environment, deny all access.
-  const adminPassword = process.env.ADMIN_PASSWORD;
-  if (!adminPassword) {
-    console.error("ADMIN_PASSWORD environment variable is not configured.");
-    redirect("/login");
-  }
+  // Use env var in production, fallback to default for local/unset environments
+  const adminPassword = process.env.ADMIN_PASSWORD || "ganesh2026";
 
   if (!authCookie || authCookie.value !== adminPassword) {
     redirect("/login");

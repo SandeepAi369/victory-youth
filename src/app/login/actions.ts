@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 
 export async function loginAction(formData: FormData) {
   const password = formData.get("password");
-  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  // Use env var in production, fallback to default for local/unset environments
+  const adminPassword = process.env.ADMIN_PASSWORD || "ganesh2026";
 
   if (!password || password !== adminPassword) {
     redirect("/login?error=Incorrect+password.+Please+try+again.");
