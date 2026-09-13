@@ -3,12 +3,13 @@ import { getHomepageData } from "@/lib/queries/public";
 import { CountdownTimer } from "@/components/public/CountdownTimer";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Sparkles, Calendar, Heart, Menu } from "lucide-react";
+import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
+import { Sparkles, Calendar, Heart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { settings, stats, hero, events, publishedDonations } = await getHomepageData();
+  const { settings, stats, hero, events, publishedDonations, notes } = await getHomepageData();
 
   const progressPercentage = stats.donationTarget > 0
     ? Math.min(Math.round((stats.totalAmount / stats.donationTarget) * 100), 100)
@@ -33,22 +34,7 @@ export default async function HomePage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-default select-none">
-            <details className="relative group">
-              <summary className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors cursor-pointer list-none" aria-label="Menu">
-                <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
-              </summary>
-              <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-stone-900 rounded-xl border border-stone-200 dark:border-stone-700 shadow-xl py-2 z-50">
-                <Link href="/notices" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
-                  📢 Notices & Updates
-                </Link>
-                <Link href="/members" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
-                  👥 Committee Members
-                </Link>
-                <Link href="/gallery" className="flex items-center gap-2 px-4 py-2.5 text-sm text-stone-700 dark:text-stone-200 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors">
-                  🖼️ Gallery
-                </Link>
-              </div>
-            </details>
+            <HamburgerNotesPanel notes={notes as any} />
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
