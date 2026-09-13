@@ -171,7 +171,7 @@ export default async function HomePage() {
                       <p className="text-xs text-stone-500 dark:text-stone-400">{d.category || "General"} · {d.date}</p>
                     </div>
                   </div>
-                  <span className="font-black text-emerald-600 dark:text-emerald-400">₹{d.amount?.toLocaleString("en-IN")}</span>
+                  <span className="font-black text-emerald-600 dark:text-emerald-400">₹{Math.round(Number(d.amount) || 0).toLocaleString("en-IN")}</span>
                 </div>
               ))}
             </div>

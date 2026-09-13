@@ -1,6 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq , sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -12,7 +12,7 @@ function revalidate() {
 export async function getInventory() {
   try {
     const db = getDb();
-    return await db.select().from(schema.inventoryItems).orderBy(schema.inventoryItems.name);
+    return await db.select({ id: schema.inventoryItems.id, name: schema.inventoryItems.name, category: schema.inventoryItems.category, quantity: schema.inventoryItems.quantity, condition: schema.inventoryItems.condition, inCharge: schema.inventoryItems.inCharge, unit: schema.inventoryItems.unit, _now: sql`NOW()` }).from(schema.inventoryItems).orderBy(schema.inventoryItems.name);
   } catch (error: any) {
     console.error("getInventory error:", error);
     return [];

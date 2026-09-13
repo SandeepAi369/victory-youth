@@ -1,5 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
+import { sql } from "drizzle-orm";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -22,7 +23,7 @@ export async function getChandaEntries() {
   try {
     const db = getDb();
     const { desc } = await import("drizzle-orm");
-    return await db.select().from(schema.donations)
+    return await db.select({ id: schema.donations.id, receiptNo: schema.donations.receiptNo, donorName: schema.donations.donorName, phone: schema.donations.phone, amount: schema.donations.amount, category: schema.donations.category, purpose: schema.donations.purpose, paymentMode: schema.donations.paymentMode, date: schema.donations.date, isPublished: schema.donations.isPublished, createdAt: schema.donations.createdAt, _now: sql`NOW()` }).from(schema.donations)
       .where(eq(schema.donations.category, "CHANDA"))
       .orderBy(desc(schema.donations.createdAt));
   } catch (error: any) {

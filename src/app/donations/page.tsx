@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPublishedDonations } from "@/lib/queries/public";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Heart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +14,8 @@ export default async function DonationsPage() {
     console.error("Donations page error:", e);
   }
 
+  const totalAmount = donations.reduce((sum: number, d: any) => sum + (Number(d.amount) || 0), 0);
+
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
@@ -26,6 +28,16 @@ export default async function DonationsPage() {
       </nav>
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
+        {/* Summary Card */}
+        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <Heart className="w-6 h-6 text-white/80" />
+            <p className="text-sm font-medium text-white/80">Total Donations Received</p>
+          </div>
+          <p className="text-3xl font-black mt-1">₹{Math.round(totalAmount).toLocaleString("en-IN")}</p>
+          <p className="text-sm text-white/70 mt-1">{donations.length} generous donors</p>
+        </div>
+
         {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 text-red-700 dark:text-red-400">{error}</div>}
 
         {donations.length === 0 && !error && (
@@ -44,7 +56,7 @@ export default async function DonationsPage() {
                   <p className="text-xs text-stone-500 dark:text-stone-400">{d.category || "General"} · {d.date}</p>
                 </div>
               </div>
-              <span className="font-black text-emerald-600 dark:text-emerald-400">₹{d.amount?.toLocaleString("en-IN")}</span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400">₹{Math.round(Number(d.amount) || 0).toLocaleString("en-IN")}</span>
             </div>
           ))}
         </div>
