@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addChanda, updateChanda, deleteChanda, toggleChandaPublish, setAllChandaVisibility } from "./actions";
@@ -22,6 +22,16 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [isPending, startTransition] = useTransition();
+
+  // Fire YouTube-style top loading bar in admin layout
+  useEffect(() => {
+    if (isPending) {
+      window.dispatchEvent(new Event("admin-loading-start"));
+    } else {
+      window.dispatchEvent(new Event("admin-loading-end"));
+    }
+  }, [isPending]);
+
 
   const totalAmount = data.reduce((sum, e) => sum + (e.amount || 0), 0);
   const publishedCount = data.filter((e) => e.isPublished).length;
@@ -92,7 +102,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
               className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
                 (isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllPublished ? "Unpublish All Chanda" : "Publish All Chanda"}
+              {isAllPublished ? "✓ Published" : "Unpublished"}
             </button>
           )}
           <button onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }} disabled={isPending}

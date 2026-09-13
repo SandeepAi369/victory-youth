@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addGalleryItem, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
@@ -12,6 +12,16 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // Fire YouTube-style top loading bar in admin layout
+  useEffect(() => {
+    if (isPending) {
+      window.dispatchEvent(new Event("admin-loading-start"));
+    } else {
+      window.dispatchEvent(new Event("admin-loading-end"));
+    }
+  }, [isPending]);
+
   const [formData, setFormData] = useState({ title: "", url: "", category: "General", year: 2026 });
 
   // Master toggle state: derived from live data
@@ -81,7 +91,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                   ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                   : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllPublished ? "Unpublish All Gallery" : "Publish All Gallery"}
+              {isAllPublished ? "✓ Published" : "Unpublished"}
             </button>
           )}
           <button onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ title: "", url: "", category: "General", year: 2026 }); }}

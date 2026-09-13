@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Bell, StickyNote, Trash2, Edit, Eye, EyeOff } from "lucide-react";
 import {
@@ -27,6 +27,16 @@ export default function NoticesClient({
   const [category, setCategory] = useState("general");
   const [author, setAuthor] = useState("");
   const [isPending, startTransition] = useTransition();
+
+  // Fire YouTube-style top loading bar in admin layout
+  useEffect(() => {
+    if (isPending) {
+      window.dispatchEvent(new Event("admin-loading-start"));
+    } else {
+      window.dispatchEvent(new Event("admin-loading-end"));
+    }
+  }, [isPending]);
+
 
   // Master toggle state — derived from live data, per tab
   const noticesPublishedCount = notices.filter((n) => n.status === "PUBLISHED").length;
@@ -121,7 +131,7 @@ export default function NoticesClient({
                   ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                   : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllNoticesPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllNoticesPublished ? "Unpublish All Notices" : "Publish All Notices"}
+              {isAllNoticesPublished ? "✓ Published" : "Unpublished"}
             </button>
           )}
           {tab === "notes" && notes.length > 0 && (
@@ -131,7 +141,7 @@ export default function NoticesClient({
                   ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                   : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllNotesPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllNotesPublished ? "Unpublish All Notes" : "Publish All Notes"}
+              {isAllNotesPublished ? "✓ Published" : "Unpublished"}
             </button>
           )}
           <button onClick={() => { resetForm(); setShowForm(true); }} disabled={isPending}

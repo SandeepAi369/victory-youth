@@ -7,7 +7,7 @@ import {
   LayoutDashboard, IndianRupee, HandCoins, BarChart3,
   Users, Calendar, Image, Bell, Package, Settings, LogOut, Menu, X
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -26,10 +26,36 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  // Listen for loading events fired by child pages
+  useEffect(() => {
+    const onStart = () => {
+      setLoading(true);
+      setProgress(20);
+      // Smoothly animate to 80% while waiting
+      const t1 = setTimeout(() => setProgress(50), 200);
+      const t2 = setTimeout(() => setProgress(75), 700);
+      const t3 = setTimeout(() => setProgress(85), 1400);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    };
+    const onEnd = () => {
+      setProgress(100);
+      const t = setTimeout(() => { setLoading(false); setProgress(0); }, 400);
+      return () => clearTimeout(t);
+    };
+    window.addEventListener("admin-loading-start", onStart);
+    window.addEventListener("admin-loading-end", onEnd);
+    return () => {
+      window.removeEventListener("admin-loading-start", onStart);
+      window.removeEventListener("admin-loading-end", onEnd);
+    };
+  }, []);
 
   const handleLogout = () => {
     document.cookie = "admin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    router.push("/admin/login");
+    router.push("/login");
   };
 
   const isActive = (href: string) => {
@@ -39,6 +65,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen bg-muted/20 flex flex-col md:flex-row">
+      {/* ── YouTube-style top loading bar ── */}
+      {loading && (
+        <div
+          className="fixed top-0 left-0 z-[9999] h-[3px] bg-gradient-to-r from-orange-500 via-red-500 to-orange-400 transition-all duration-300 ease-out shadow-[0_0_8px_rgba(249,115,22,0.7)]"
+          style={{ width: `${progress}%` }}
+        />
+      )}
+
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border">
         <span className="font-bold text-lg">Victory Youth Admin</span>
@@ -48,7 +82,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Sidebar */}
-      <aside className={`${sidebarOpen ? 'block' : 'hidden'} md:block w-full md:w-60 bg-card border-r border-border flex-shrink-0`}>
+      <aside className={`${sidebarOpen ? "block" : "hidden"} md:block w-full md:w-60 bg-card border-r border-border flex-shrink-0`}>
         <div className="hidden md:flex h-16 items-center px-5 border-b border-border">
           <span className="font-bold text-lg text-foreground">Victory Youth Admin</span>
         </div>
