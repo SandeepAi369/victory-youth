@@ -1,34 +1,20 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Plus, Pencil, Trash2, Clock, MapPin, X, Eye, EyeOff } from "lucide-react";
 import {
   addEvent, updateEvent, togglePublishEvent, deleteEvent,
   bulkPublishEvents, setAllEventsVisibility,
 } from "./actions";
-import { toast } from "sonner";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
 export function EventsClient({ events: initialEvents }: { events: any[] }) {
-  const router = useRouter();
-  const [events, setEvents] = useState(initialEvents);
+  const { data: events, isPending, execute } = useAdminAction(initialEvents);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
-
-  // Fire YouTube-style top loading bar in admin layout
-  useEffect(() => {
-    if (isPending) {
-      window.dispatchEvent(new Event("admin-loading-start"));
-    } else {
-      window.dispatchEvent(new Event("admin-loading-end"));
-    }
-  }, [isPending]);
-
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Master toggle state: derived from live data
-  const publishedCount = events.filter((e) => e.isPublished).length;
+  const publishedCount = events.filter((e: any) => e.isPublished).length;
   const isAllPublished = events.length > 0 && publishedCount === events.length;
 
   const [formData, setFormData] = useState({
@@ -37,67 +23,53 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   });
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedIds(e.target.checked ? events.map((evt) => evt.id) : []);
+    setSelectedIds(e.target.checked ? events.map((evt: any) => evt.id) : []);
   };
   const handleSelect = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
   };
 
   const handleBulkPublish = (publish: boolean) => {
-    startTransition(async () => {
-      await bulkPublishEvents(selectedIds, publish);
-      setSelectedIds([]);
-      router.refresh();
+    execute({
+      optimisticUpdate: (prev) => prev.map((e: any) => selectedIds.includes(e.id) ? { ...e, isPublished: publish } : e),
+      serverAction: async () => { await bulkPublishEvents(selectedIds, publish); return { success: true }; },
+      successMsg: publish ? "Selected events published" : "Selected events unpublished",
+      onSuccess: () => setSelectedIds([]),
     });
   };
 
-  /** Master toggle — publish or unpublish ALL events in this module */
   const handleMasterToggle = () => {
     const newState = !isAllPublished;
-    startTransition(async () => {
-      const r = await setAllEventsVisibility(newState);
-      if (r?.success) {
-        toast.success(
-          newState ? "All events published on frontend" : "All events unpublished"
-        );
-        router.refresh();
-      } else {
-        toast.error(r?.error || "Failed");
-      }
+    execute({
+      optimisticUpdate: (prev) => prev.map((e: any) => ({ ...e, isPublished: newState })),
+      serverAction: () => setAllEventsVisibility(newState),
+      successMsg: newState ? "All events published" : "All events unpublished",
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(async () => {
-      const res = editingId
-        ? await updateEvent(editingId, formData)
-        : await addEvent(formData);
-      if (res?.success) {
-        toast.success(editingId ? "Event updated" : "Event added");
-        setIsAdding(false); setEditingId(null);
-        router.refresh();
-      } else {
-        toast.error(res?.error || "Operation failed");
-      }
+    execute({
+      serverAction: () => editingId ? updateEvent(editingId, formData) : addEvent(formData),
+      successMsg: editingId ? "Event updated" : "Event added",
+      onSuccess: () => { setIsAdding(false); setEditingId(null); },
     });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this event?")) return;
-    startTransition(async () => {
-      const r = await deleteEvent(id);
-      if (r?.success) { toast.success("Event deleted"); router.refresh(); }
-      else { toast.error(r?.error || "Delete failed"); }
+    execute({
+      optimisticUpdate: (prev) => prev.filter((e: any) => e.id !== id),
+      serverAction: () => deleteEvent(id),
+      successMsg: "Event deleted",
     });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
-    setEvents((prev) => prev.map((ev) => ev.id === id ? { ...ev, isPublished: !current } : ev));
-    startTransition(async () => {
-      const r = await togglePublishEvent(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
-      else { router.refresh(); toast.error(r?.error || "Toggle failed"); }
+    execute({
+      optimisticUpdate: (prev) => prev.map((ev: any) => ev.id === id ? { ...ev, isPublished: !current } : ev),
+      serverAction: () => togglePublishEvent(id, !current),
+      successMsg: current ? "Unpublished" : "Published",
     });
   };
 
@@ -106,39 +78,27 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Manage Events</h1>
-          <p className="text-muted-foreground text-sm">
-            Festival Schedule
-          </p>
+          <p className="text-muted-foreground text-sm">Festival Schedule</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* ── MASTER TOGGLE for Events category ── */}
           {events.length > 0 && (
-            <button
-              onClick={handleMasterToggle}
-              disabled={isPending}
-              className={
-                "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
-                (isPending
-                  ? "opacity-50 cursor-not-allowed pointer-events-none"
-                  : isAllPublished
-                    ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
-                    : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
-              }
-            >
+            <button onClick={handleMasterToggle} disabled={isPending}
+              className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
+                (isPending ? "opacity-50 cursor-not-allowed pointer-events-none"
+                  : isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
+                    : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               {isAllPublished ? "✓ Published" : "Unpublished"}
             </button>
           )}
-          <button
-            onClick={() => { setIsAdding(true); setEditingId(null); }}
-            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2"
-          >
+          <button onClick={() => { setIsAdding(true); setEditingId(null); }}
+            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
             <Plus className="w-4 h-4" /> Add Event
           </button>
         </div>
       </div>
 
-            {(isAdding || editingId) && (
+      {(isAdding || editingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
@@ -238,9 +198,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
             </thead>
             <tbody className="divide-y divide-border">
               {events.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">
-                  No events yet.
-                </td></tr>
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No events yet.</td></tr>
               )}
               {events.map((evt: any) => (
                 <tr key={evt.id} className="hover:bg-muted/50 transition-colors">

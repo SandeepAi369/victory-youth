@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addMember, updateMember, deleteMember, setAllMembersVisibility } from "./actions";
-import { toast } from "sonner";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
 type Member = {
   id: string;
@@ -22,24 +21,11 @@ const ROLES = ["Member", "Special Candidate"];
 const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "Member" };
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
-  const router = useRouter();
-  const [data, setData] = useState<Member[]>(initialData);
+  const { data, isPending, execute } = useAdminAction<Member>(initialData);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [isPending, startTransition] = useTransition();
 
-  // Fire YouTube-style top loading bar in admin layout
-  useEffect(() => {
-    if (isPending) {
-      window.dispatchEvent(new Event("admin-loading-start"));
-    } else {
-      window.dispatchEvent(new Event("admin-loading-end"));
-    }
-  }, [isPending]);
-
-
-  // Bug #8 fix: derive published from live data state, not from a stale useEffect
   const published = data.length > 0 && data.some((m) => m.isActive === true);
   const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
@@ -47,41 +33,23 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = {
-      name: form.fullName,
-      fullName: form.fullName,
-      phone: form.phone,
-      membershipFee: parseInt(form.membershipFee) || 0,
-      role: form.role,
+      name: form.fullName, fullName: form.fullName, phone: form.phone,
+      membershipFee: parseInt(form.membershipFee) || 0, role: form.role,
     };
-    startTransition(async () => {
-      const r = editingId
-        ? await updateMember(editingId, payload)
-        : await addMember(payload);
-      if (r?.success) {
-        toast.success(editingId ? "Updated" : "Added");
-        resetForm();
-        // Bug #2 fix: single round-trip via router.refresh() — re-renders server component
-        router.refresh();
-      } else {
-        toast.error(r?.error || "Failed");
-      }
+    execute({
+      // No optimistic for add/edit — we don't have the server-generated ID yet
+      serverAction: () => editingId ? updateMember(editingId, payload) : addMember(payload),
+      successMsg: editingId ? "Updated" : "Added",
+      onSuccess: resetForm,
     });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Remove this member?")) return;
-    // Optimistic update
-    setData((prev) => prev.filter((d) => d.id !== id));
-    startTransition(async () => {
-      const r = await deleteMember(id);
-      if (r?.success) {
-        toast.success("Removed");
-        router.refresh();
-      } else {
-        // Rollback optimistic update on failure
-        router.refresh();
-        toast.error(r?.error || "Failed");
-      }
+    execute({
+      optimisticUpdate: (prev) => prev.filter((d) => d.id !== id),
+      serverAction: () => deleteMember(id),
+      successMsg: "Removed",
     });
   };
 
@@ -89,25 +57,18 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     setEditingId(m.id);
     setShowForm(true);
     setForm({
-      name: m.name,
-      fullName: m.fullName || m.name,
-      phone: m.phone,
+      name: m.name, fullName: m.fullName || m.name, phone: m.phone,
       membershipFee: String(m.membershipFee || 0),
       role: m.role || m.committeeRole || "Member",
     });
   };
 
-  // Bug #9 fix: single global toggle for all members visibility — no per-person toggle
   const handleGlobalToggle = () => {
     const newState = !published;
-    startTransition(async () => {
-      const r = await setAllMembersVisibility(newState);
-      if (r?.success) {
-        toast.success(newState ? "All members are now visible on frontend" : "All members are now hidden from frontend");
-        router.refresh();
-      } else {
-        toast.error(r?.error || "Failed");
-      }
+    execute({
+      optimisticUpdate: (prev) => prev.map((m) => ({ ...m, isActive: newState })),
+      serverAction: () => setAllMembersVisibility(newState),
+      successMsg: newState ? "All members visible on frontend" : "All members hidden from frontend",
     });
   };
 
@@ -164,58 +125,35 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Full Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={form.fullName}
+                <input type="text" required value={form.fullName}
                   onChange={(e) => setForm({ ...form, fullName: e.target.value, name: e.target.value })}
-                  className="w-full bg-background border rounded-lg px-3 py-2"
-                  placeholder="Enter full name"
-                />
+                  className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Enter full name" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Phone *</label>
-                  <input
-                    type="tel"
-                    required
-                    value={form.phone}
+                  <input type="tel" required value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full bg-background border rounded-lg px-3 py-2"
-                    placeholder="9876543210"
-                  />
+                    className="w-full bg-background border rounded-lg px-3 py-2" placeholder="9876543210" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Contribution (₹) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={form.membershipFee}
+                  <input type="number" required value={form.membershipFee}
                     onChange={(e) => setForm({ ...form, membershipFee: e.target.value })}
-                    className="w-full bg-background border rounded-lg px-3 py-2"
-                    placeholder="5000"
-                  />
+                    className="w-full bg-background border rounded-lg px-3 py-2" placeholder="5000" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Role</label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value })}
-                  className="w-full bg-background border rounded-lg px-3 py-2"
-                >
+                <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}
+                  className="w-full bg-background border rounded-lg px-3 py-2">
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div className="flex gap-2 justify-end pt-4 border-t">
-                <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50"
-                >
+                <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
+                <button type="submit" disabled={isPending}
+                  className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">
                   {isPending ? "Saving..." : "Save"}
                 </button>
               </div>
@@ -238,11 +176,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
             </thead>
             <tbody className="divide-y divide-border">
               {data.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">
-                    No members yet.
-                  </td>
-                </tr>
+                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet.</td></tr>
               )}
               {data.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
@@ -251,35 +185,23 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                     <p className="text-[10px] text-muted-foreground font-mono">{m.memberId}</p>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{m.phone}</td>
-                  <td className="px-4 py-3 font-bold text-emerald-600">
-                    ₹{(m.membershipFee || 0).toLocaleString("en-IN")}
-                  </td>
+                  <td className="px-4 py-3 font-bold text-emerald-600">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3">
-                    <span
-                      className={
-                        "px-2 py-0.5 rounded-lg text-xs font-bold " +
-                        ((m.role || m.committeeRole) === "Special Candidate"
-                          ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
-                          : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400")
-                      }
-                    >
+                    <span className={"px-2 py-0.5 rounded-lg text-xs font-bold " +
+                      ((m.role || m.committeeRole) === "Special Candidate"
+                        ? "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400"
+                        : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400")}>
                       {m.role || m.committeeRole || "Member"}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        onClick={() => handleEdit(m)}
-                        disabled={isPending}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"
-                      >
+                      <button onClick={() => handleEdit(m)} disabled={isPending}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50">
                         <Pencil className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(m.id)}
-                        disabled={isPending}
-                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"
-                      >
+                      <button onClick={() => handleDelete(m.id)} disabled={isPending}
+                        className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50">
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>

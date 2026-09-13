@@ -28,7 +28,11 @@ export default function NoticesClient({
   const [author, setAuthor] = useState("");
   const [isPending, startTransition] = useTransition();
 
-  // Fire YouTube-style top loading bar in admin layout
+  // Sync with server re-renders
+  useEffect(() => { setNotices(initialNotices); }, [initialNotices]);
+  useEffect(() => { setNotes(initialNotes); }, [initialNotes]);
+
+  // YouTube-style top loading bar
   useEffect(() => {
     if (isPending) {
       window.dispatchEvent(new Event("admin-loading-start"));
@@ -37,111 +41,105 @@ export default function NoticesClient({
     }
   }, [isPending]);
 
-
-  // Master toggle state — derived from live data, per tab
-  const noticesPublishedCount = notices.filter((n) => n.status === "PUBLISHED").length;
-  const isAllNoticesPublished = notices.length > 0 && noticesPublishedCount === notices.length;
-
-  const notesPublishedCount = notes.filter((n) => n.isPublished).length;
-  const isAllNotesPublished = notes.length > 0 && notesPublishedCount === notes.length;
+  const isAllNoticesPublished = notices.length > 0 && notices.every((n: any) => n.status === "PUBLISHED");
+  const isAllNotesPublished = notes.length > 0 && notes.every((n: any) => n.isPublished);
 
   const resetForm = () => {
     setShowForm(false); setEditingId(null);
     setTitle(""); setBody(""); setCategory("general"); setAuthor("");
   };
 
-  /** Master toggle for ALL notices */
+  /** Helper: execute with optimistic update + background server call */
+  const run = (opts: {
+    optimisticUpdate?: () => void;
+    serverAction: () => Promise<{ success: boolean; error?: string } | undefined>;
+    successMsg?: string;
+    onSuccess?: () => void;
+  }) => {
+    if (opts.optimisticUpdate) opts.optimisticUpdate();
+    startTransition(async () => {
+      try {
+        const r = await opts.serverAction();
+        if (r?.success) {
+          if (opts.successMsg) toast.success(opts.successMsg);
+          if (opts.onSuccess) opts.onSuccess();
+          router.refresh();
+        } else {
+          toast.error(r?.error || "Operation failed");
+          router.refresh(); // revert
+        }
+      } catch (err: any) {
+        toast.error(err?.message || "Network error");
+        router.refresh();
+      }
+    });
+  };
+
+  // ── MASTER TOGGLES ──
   const handleNoticesMasterToggle = () => {
     const newState = !isAllNoticesPublished;
-    // Optimistic — flip all notices immediately
-    setNotices((prev) => prev.map((n) => ({ ...n, status: newState ? "PUBLISHED" : "DRAFT" })));
-    startTransition(async () => {
-      const r = await setAllNoticesVisibility(newState);
-      if (r?.success) {
-        toast.success(newState ? "All notices published" : "All notices unpublished");
-        router.refresh();
-      } else {
-        // Revert on failure
-        setNotices((prev) => prev.map((n) => ({ ...n, status: newState ? "DRAFT" : "PUBLISHED" })));
-        toast.error(r?.error || "Failed");
-      }
+    run({
+      optimisticUpdate: () => setNotices((prev: any[]) => prev.map((n) => ({ ...n, status: newState ? "PUBLISHED" : "DRAFT" }))),
+      serverAction: () => setAllNoticesVisibility(newState),
+      successMsg: newState ? "All notices published" : "All notices unpublished",
     });
   };
 
-  /** Master toggle for ALL notes */
   const handleNotesMasterToggle = () => {
     const newState = !isAllNotesPublished;
-    // Optimistic — flip all notes immediately
-    setNotes((prev) => prev.map((n) => ({ ...n, isPublished: newState })));
-    startTransition(async () => {
-      const r = await setAllNotesVisibility(newState);
-      if (r?.success) {
-        toast.success(newState ? "All notes published" : "All notes unpublished");
-        router.refresh();
-      } else {
-        // Revert on failure
-        setNotes((prev) => prev.map((n) => ({ ...n, isPublished: !newState })));
-        toast.error(r?.error || "Failed");
-      }
+    run({
+      optimisticUpdate: () => setNotes((prev: any[]) => prev.map((n) => ({ ...n, isPublished: newState }))),
+      serverAction: () => setAllNotesVisibility(newState),
+      successMsg: newState ? "All notes published" : "All notes unpublished",
     });
   };
 
+  // ── SUBMIT ──
   const handleSubmitNotice = (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(async () => {
-      const r = editingId ? await updateNotice(editingId, { title, body }) : await addNotice({ title, body });
-      if (r?.success) { toast.success(editingId ? "Updated" : "Notice added"); resetForm(); router.refresh(); }
-      else { toast.error(r?.error || "Failed"); }
+    run({
+      serverAction: () => editingId ? updateNotice(editingId, { title, body }) : addNotice({ title, body }),
+      successMsg: editingId ? "Updated" : "Notice added",
+      onSuccess: resetForm,
     });
   };
 
   const handleSubmitNote = (e: React.FormEvent) => {
     e.preventDefault();
-    startTransition(async () => {
-      const r = editingId
-        ? await updateNote(editingId, { title, content: body, category })
-        : await addNote({ title, content: body, category, authorName: author || "Admin" });
-      if (r?.success) { toast.success(editingId ? "Updated" : "Note added"); resetForm(); router.refresh(); }
-      else { toast.error(r?.error || "Failed"); }
+    run({
+      serverAction: () => editingId
+        ? updateNote(editingId, { title, content: body, category })
+        : addNote({ title, content: body, category, authorName: author || "Admin" }),
+      successMsg: editingId ? "Updated" : "Note added",
+      onSuccess: resetForm,
     });
   };
 
+  // ── DELETE ──
   const handleDelete = (type: "notice" | "note", id: string) => {
     if (!confirm("Delete this item?")) return;
-    startTransition(async () => {
-      const r = type === "notice" ? await deleteNotice(id) : await deleteNote(id);
-      if (r?.success) { toast.success("Deleted"); router.refresh(); }
-      else { toast.error(r?.error || "Delete failed"); }
+    run({
+      optimisticUpdate: () => {
+        if (type === "notice") setNotices((prev: any[]) => prev.filter((n) => n.id !== id));
+        else setNotes((prev: any[]) => prev.filter((n) => n.id !== id));
+      },
+      serverAction: () => type === "notice" ? deleteNotice(id) : deleteNote(id),
+      successMsg: "Deleted",
     });
   };
 
+  // ── TOGGLE INDIVIDUAL ──
   const handleToggle = (type: "notice" | "note", id: string, current: boolean) => {
-    // Optimistic update — flip state immediately so UI reacts instantly
-    if (type === "notice") {
-      setNotices((prev) =>
-        prev.map((n) => n.id === id ? { ...n, status: current ? "DRAFT" : "PUBLISHED" } : n)
-      );
-    } else {
-      setNotes((prev) =>
-        prev.map((n) => n.id === id ? { ...n, isPublished: !current } : n)
-      );
-    }
-    startTransition(async () => {
-      const r = type === "notice" ? await toggleNoticePublish(id, !current) : await toggleNotePublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
-      else {
-        // Revert optimistic update on failure
+    run({
+      optimisticUpdate: () => {
         if (type === "notice") {
-          setNotices((prev) =>
-            prev.map((n) => n.id === id ? { ...n, status: current ? "PUBLISHED" : "DRAFT" } : n)
-          );
+          setNotices((prev: any[]) => prev.map((n) => n.id === id ? { ...n, status: current ? "DRAFT" : "PUBLISHED" } : n));
         } else {
-          setNotes((prev) =>
-            prev.map((n) => n.id === id ? { ...n, isPublished: current } : n)
-          );
+          setNotes((prev: any[]) => prev.map((n) => n.id === id ? { ...n, isPublished: !current } : n));
         }
-        toast.error(r?.error || "Toggle failed");
-      }
+      },
+      serverAction: () => type === "notice" ? toggleNoticePublish(id, !current) : toggleNotePublish(id, !current),
+      successMsg: current ? "Unpublished" : "Published",
     });
   };
 
@@ -153,7 +151,6 @@ export default function NoticesClient({
           <p className="text-sm text-muted-foreground">Announcements and committee updates — publish to frontend</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap justify-end">
-          {/* ── MASTER TOGGLE — changes based on current active tab ── */}
           {tab === "notices" && notices.length > 0 && (
             <button onClick={handleNoticesMasterToggle} disabled={isPending}
               className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all disabled:opacity-50 " +
@@ -229,7 +226,7 @@ export default function NoticesClient({
       {tab === "notices" && (
         <div className="space-y-3">
           {notices.length === 0 && <p className="text-center text-muted-foreground py-8">No notices yet.</p>}
-          {notices.map((n) => {
+          {notices.map((n: any) => {
             const isPublished = n.status === "PUBLISHED";
             return (
               <div key={n.id}
@@ -267,7 +264,7 @@ export default function NoticesClient({
       {tab === "notes" && (
         <div className="space-y-3">
           {notes.length === 0 && <p className="text-center text-muted-foreground py-8">No notes yet.</p>}
-          {notes.map((note) => (
+          {notes.map((note: any) => (
             <div key={note.id}
               className={`p-4 rounded-xl border flex items-start justify-between ${note.isPublished ? "bg-card border-emerald-200 dark:border-emerald-800" : "bg-muted/30 border-border"}`}>
               <div className="flex-1">

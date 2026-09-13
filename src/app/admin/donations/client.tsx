@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useTransition, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addDonation, updateDonation, deleteDonation, toggleDonationPublish, setAllDonationsVisibility } from "./actions";
-import { toast } from "sonner";
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
 type Entry = {
   id: string; receiptNo: string | null; donorName: string; phone: string | null;
@@ -17,59 +16,40 @@ const PAYMENT_MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE"];
 const emptyForm = { donorName: "", phone: "", amount: "", category: "DONATION", paymentMode: "CASH", date: new Date().toISOString().split("T")[0], purpose: "" };
 
 export default function DonationsClient({ initialData }: { initialData: Entry[] }) {
-  const router = useRouter();
-  const [data, setData] = useState<Entry[]>(initialData);
+  const { data, isPending, execute } = useAdminAction<Entry>(initialData);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const [isPending, startTransition] = useTransition();
-
-  // Fire YouTube-style top loading bar in admin layout
-  useEffect(() => {
-    if (isPending) {
-      window.dispatchEvent(new Event("admin-loading-start"));
-    } else {
-      window.dispatchEvent(new Event("admin-loading-end"));
-    }
-  }, [isPending]);
-
 
   const totalAmount = data.reduce((sum, e) => sum + (e.amount || 0), 0);
-  const publishedCount = data.filter((e) => e.isPublished).length;
-  const isAllPublished = data.length > 0 && publishedCount === data.length;
+  const isAllPublished = data.length > 0 && data.every((e) => e.isPublished);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
-  /** Master toggle — publish or unpublish ALL donations at once */
   const handleMasterToggle = () => {
     const newState = !isAllPublished;
-    startTransition(async () => {
-      const r = await setAllDonationsVisibility(newState);
-      if (r?.success) {
-        toast.success(newState ? "All donations published" : "All donations unpublished");
-        router.refresh();
-      } else {
-        toast.error(r?.error || "Failed");
-      }
+    execute({
+      optimisticUpdate: (prev) => prev.map((d) => ({ ...d, isPublished: newState })),
+      serverAction: () => setAllDonationsVisibility(newState),
+      successMsg: newState ? "All donations published" : "All donations unpublished",
     });
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, category: form.category, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "General Donation" };
-    startTransition(async () => {
-      const r = editingId ? await updateDonation(editingId, payload) : await addDonation(payload);
-      if (r?.success) { toast.success(editingId ? "Updated" : "Donation added"); resetForm(); router.refresh(); }
-      else { toast.error(r?.error || "Failed"); }
+    execute({
+      serverAction: () => editingId ? updateDonation(editingId, payload) : addDonation(payload),
+      successMsg: editingId ? "Updated" : "Donation added",
+      onSuccess: resetForm,
     });
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Permanently delete this donation?")) return;
-    setData((prev) => prev.filter((d) => d.id !== id));
-    startTransition(async () => {
-      const r = await deleteDonation(id);
-      if (r?.success) { toast.success("Deleted"); router.refresh(); }
-      else { router.refresh(); toast.error(r?.error || "Delete failed"); }
+    execute({
+      optimisticUpdate: (prev) => prev.filter((d) => d.id !== id),
+      serverAction: () => deleteDonation(id),
+      successMsg: "Deleted",
     });
   };
 
@@ -79,11 +59,10 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
-    setData((prev) => prev.map((d) => d.id === id ? { ...d, isPublished: !current } : d));
-    startTransition(async () => {
-      const r = await toggleDonationPublish(id, !current);
-      if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
-      else { router.refresh(); toast.error(r?.error || "Toggle failed"); }
+    execute({
+      optimisticUpdate: (prev) => prev.map((d) => d.id === id ? { ...d, isPublished: !current } : d),
+      serverAction: () => toggleDonationPublish(id, !current),
+      successMsg: current ? "Unpublished" : "Published",
     });
   };
 
@@ -92,12 +71,9 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Donations</h1>
-          <p className="text-muted-foreground text-sm">
-            Total: ₹{totalAmount.toLocaleString("en-IN")}
-          </p>
+          <p className="text-muted-foreground text-sm">Total: ₹{totalAmount.toLocaleString("en-IN")}</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {/* ── MASTER TOGGLE for Donations category ── */}
           {data.length > 0 && (
             <button onClick={handleMasterToggle} disabled={isPending}
               className={"px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
