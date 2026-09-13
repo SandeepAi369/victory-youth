@@ -34,7 +34,7 @@ export default async function MembersPage() {
             <p className="text-sm font-medium text-white/80">Victory Youth Committee</p>
           </div>
           <p className="text-3xl font-black">{members.length} Members</p>
-          <p className="text-sm text-white/70 mt-1">Total Contribution: ₹{totalContribution.toLocaleString("en-IN")}</p>
+          <p className="text-sm text-white/70 mt-1">Total Contribution: ₹{Math.round(totalContribution).toLocaleString("en-IN")}</p>
         </div>
 
         {members.length === 0 && (
@@ -53,7 +53,7 @@ export default async function MembersPage() {
                   <p className="text-xs text-stone-500 dark:text-stone-400">{m.role || m.committeeRole || "Member"}</p>
                 </div>
               </div>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">₹{Math.round(Number(m.membershipFee) || 0).toLocaleString("en-IN")}</span>
             </div>
           ))}
         </div>

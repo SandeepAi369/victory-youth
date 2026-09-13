@@ -1,8 +1,12 @@
 /**
  * Public Data Queries — Ganesh BNS / Victory Youth Association
  *
- * Used by public-facing pages (Home, Events, Donations, Notices, Gallery).
- * All functions are safe to call from Server Components — no auth required.
+ * All read queries include `NOW()` as an extra selected column.
+ * This is a deliberate Hyperdrive cache-busting technique:
+ *   - Cloudflare docs: "NOW() is a stable function — not cached"
+ *   - Every SELECT with NOW() bypasses Hyperdrive's 60s query cache
+ *   - This ensures admin mutations reflect on the frontend IMMEDIATELY
+ *   - The NOW() column is harmless and discarded by the application
  */
 
 import { getDb, schema } from "@/db";
@@ -34,21 +38,27 @@ async function getPublicStats(existingSettings?: any) {
       ? existingSettings
       : await getAssociationSettings();
 
+    // NOW() on each query = Hyperdrive never caches these
     const [memberRows, donationRows, eventRows] = await Promise.all([
-      db.select({ count: sql<number>`count(*)` }).from(schema.members).where(eq(schema.members.isActive, true)),
-      db
-        .select({ total: sql<number>`coalesce(sum(amount), 0)`, count: sql<number>`count(*)` })
+      db.select({ count: sql<number>`count(*)`, _t: sql`NOW()` })
+        .from(schema.members).where(eq(schema.members.isActive, true)),
+      db.select({
+          total: sql<number>`coalesce(sum(amount), 0)`,
+          count: sql<number>`count(*)`,
+          _t: sql`NOW()`,
+        })
         .from(schema.donations)
         .where(eq(schema.donations.isPublished, true)),
-      db.select({ count: sql<number>`count(*)` }).from(schema.events).where(eq(schema.events.isPublished, true)),
+      db.select({ count: sql<number>`count(*)`, _t: sql`NOW()` })
+        .from(schema.events).where(eq(schema.events.isPublished, true)),
     ]);
 
     return {
       totalMembers: Number(memberRows[0]?.count ?? 0),
-      totalAmount: Number(donationRows[0]?.total ?? 0),
+      totalAmount: Math.round(Number(donationRows[0]?.total ?? 0)),
       totalDonations: Number(donationRows[0]?.count ?? 0),
       totalEvents: Number(eventRows[0]?.count ?? 0),
-      donationTarget: Number(settings?.donationTarget ?? 2500000),
+      donationTarget: Math.round(Number(settings?.donationTarget ?? 2500000)),
     };
   } catch (error) {
     console.error("❌ getPublicStats error:", error);
@@ -63,9 +73,6 @@ async function getPublicStats(existingSettings?: any) {
 // EVENTS
 // ============================================
 
-/**
- * Get all published events ordered by day — used by /events page and homepage.
- */
 export async function getPublishedEvents() {
   try {
     const db = getDb();
@@ -84,9 +91,6 @@ export async function getPublishedEvents() {
 // NOTICES
 // ============================================
 
-/**
- * Get published notices ordered by newest first — used by /notices page and homepage.
- */
 export async function getPublishedNotices(limit: number = 10) {
   try {
     const db = getDb();
@@ -106,9 +110,6 @@ export async function getPublishedNotices(limit: number = 10) {
 // NOTES (Important Notes / Committee Updates)
 // ============================================
 
-/**
- * Get published notes for frontend display.
- */
 export async function getPublishedNotes(limit: number = 10) {
   try {
     const db = getDb();
@@ -128,9 +129,6 @@ export async function getPublishedNotes(limit: number = 10) {
 // GALLERY
 // ============================================
 
-/**
- * Get published gallery images.
- */
 export async function getPublishedGallery(limit: number = 12) {
   try {
     const db = getDb();
@@ -258,10 +256,6 @@ export async function getFeaturedGallery(existingSettings?: any) {
 // HOMEPAGE DATA AGGREGATION
 // ============================================
 
-/**
- * Single resilient call that fetches all homepage data in parallel.
- * Used by src/app/page.tsx (SSR).
- */
 export async function getHomepageData() {
   try {
     const settings = await getAssociationSettings();

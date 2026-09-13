@@ -1,6 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc , sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -15,7 +15,7 @@ function revalidate() {
 export async function getNotices() {
   try {
     const db = getDb();
-    return await db.select().from(schema.notices).orderBy(desc(schema.notices.createdAt));
+    return await db.select({ id: schema.notices.id, title: schema.notices.title, body: schema.notices.body, status: schema.notices.status, createdAt: schema.notices.createdAt, _now: sql`NOW()` }).from(schema.notices).orderBy(desc(schema.notices.createdAt));
   } catch (error: any) {
     console.error("getNotices error:", error);
     return [];
@@ -92,7 +92,7 @@ export async function setAllNoticesVisibility(
 export async function getNotes() {
   try {
     const db = getDb();
-    return await db.select().from(schema.importantNotes).orderBy(desc(schema.importantNotes.createdAt));
+    return await db.select({ id: schema.importantNotes.id, title: schema.importantNotes.title, content: schema.importantNotes.content, category: schema.importantNotes.category, authorName: schema.importantNotes.authorName, isPublished: schema.importantNotes.isPublished, createdAt: schema.importantNotes.createdAt, _now: sql`NOW()` }).from(schema.importantNotes).orderBy(desc(schema.importantNotes.createdAt));
   } catch (error: any) {
     console.error("getNotes error:", error);
     return [];

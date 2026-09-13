@@ -12,7 +12,7 @@ export default async function ChandaPage() {
     console.error("Chanda page error:", e);
   }
 
-  const totalAmount = chandas.reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
+  const totalAmount = chandas.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0);
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -29,7 +29,7 @@ export default async function ChandaPage() {
         {/* Summary Card */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
           <p className="text-sm font-medium text-white/80">Total Chanda Collected</p>
-          <p className="text-3xl font-black mt-1">₹{totalAmount.toLocaleString("en-IN")}</p>
+          <p className="text-3xl font-black mt-1">₹{Math.round(totalAmount).toLocaleString("en-IN")}</p>
           <p className="text-sm text-white/70 mt-1">{chandas.length} contributions</p>
         </div>
 
@@ -49,7 +49,7 @@ export default async function ChandaPage() {
                   <p className="text-xs text-stone-500 dark:text-stone-400">{d.purpose || "Chanda"} · {d.date}</p>
                 </div>
               </div>
-              <span className="font-black text-emerald-600 dark:text-emerald-400">₹{d.amount?.toLocaleString("en-IN")}</span>
+              <span className="font-black text-emerald-600 dark:text-emerald-400">₹{Math.round(Number(d.amount) || 0).toLocaleString("en-IN")}</span>
             </div>
           ))}
         </div>

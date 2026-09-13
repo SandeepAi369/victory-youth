@@ -1,6 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
-import { eq } from "drizzle-orm";
+import { eq , sql} from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -13,7 +13,7 @@ function revalidate() {
 export async function getGallery() {
   try {
     const db = getDb();
-    return await db.select().from(schema.gallery).orderBy(schema.gallery.year);
+    return await db.select({ id: schema.gallery.id, title: schema.gallery.title, url: schema.gallery.url, category: schema.gallery.category, year: schema.gallery.year, isPublished: schema.gallery.isPublished, uploadedAt: schema.gallery.uploadedAt, _now: sql`NOW()` }).from(schema.gallery).orderBy(schema.gallery.year);
   } catch (error: any) {
     console.error("getGallery error:", error);
     return [];

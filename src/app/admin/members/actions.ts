@@ -13,7 +13,7 @@ function revalidate() {
 export async function getMembers() {
   try {
     const db = getDb();
-    return await db.select().from(schema.members).orderBy(schema.members.name);
+    return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive, _now: sql`NOW()` }).from(schema.members).orderBy(schema.members.name);
   } catch (error: any) {
     console.error("getMembers error:", error);
     return [];
