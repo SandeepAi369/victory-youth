@@ -82,7 +82,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
         <div>
           <h1 className="text-2xl font-bold">Chanda (Donations)</h1>
           <p className="text-muted-foreground text-sm">
-            {data.length} entries · {publishedCount} published · Total: ₹{totalAmount.toLocaleString("en-IN")}
+            Chanda Collections
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">

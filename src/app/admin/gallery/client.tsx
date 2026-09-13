@@ -70,7 +70,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Gallery</h1>
-          <p className="text-muted-foreground text-sm">{gallery.length} images · {publishedCount} published</p>
+          <p className="text-muted-foreground text-sm">Gallery</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {/* ── MASTER TOGGLE for Gallery category ── */}
