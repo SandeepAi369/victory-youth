@@ -24,7 +24,7 @@ export default async function HomePage() {
     { emoji: "💰", title: "Donations", desc: "Our Generous Donors", href: "/donations", gradient: "from-amber-500 to-orange-600" },
     { emoji: "🪙", title: "Chanda", desc: "Member Contributions", href: "/chanda", gradient: "from-yellow-500 to-amber-600" },
     { emoji: "👥", title: "Committee", desc: "Youth Members", href: "/members", gradient: "from-indigo-500 to-blue-600" },
-    { emoji: "📢", title: "Notes & Notices", desc: "Updates & Announcements", href: "/notices", gradient: "from-teal-500 to-cyan-600" },
+    { emoji: "📢", title: "Notices", desc: "Updates & Announcements", href: "/notices", gradient: "from-teal-500 to-cyan-600" },
     { emoji: "🖼️", title: "Gallery", desc: "Festival Memories", href: "/gallery", gradient: "from-purple-500 to-violet-600" },
   ];
 
