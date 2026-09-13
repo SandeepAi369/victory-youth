@@ -1,6 +1,6 @@
 "use client";
 
-import { useTransition, useEffect, useCallback, useState } from "react";
+import { useTransition, useEffect, useCallback, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -11,18 +11,15 @@ import { toast } from "sonner";
  * 3. YouTube-style top loading bar via window events
  * 4. Auto-revert on server failure
  * 5. Auto-sync with server truth via router.refresh()
- *
- * @param initialData - Data passed from Server Component (source of truth)
- * @returns [data, helpers] where helpers has all the action methods
+ * 6. Click debounce — prevents rapid-fire accidental clicks (300ms)
  */
 export function useAdminAction<T extends { id: string }>(initialData: T[]) {
   const router = useRouter();
   const [data, setData] = useState<T[]>(initialData);
   const [isPending, startTransition] = useTransition();
+  const lastClickRef = useRef<number>(0);
 
   // Sync local state when server re-renders with fresh data
-  // (after router.refresh() completes, the Server Component re-fetches from DB
-  //  and passes new initialData — this effect picks it up)
   useEffect(() => {
     setData(initialData);
   }, [initialData]);
@@ -38,11 +35,7 @@ export function useAdminAction<T extends { id: string }>(initialData: T[]) {
 
   /**
    * Execute a server action with optimistic UI update.
-   *
-   * @param optimisticUpdate - Function to apply to data IMMEDIATELY (before server responds)
-   * @param serverAction - Async function that calls the actual server action
-   * @param successMsg - Toast message on success
-   * @param revertOnFail - If true, calls router.refresh() to revert to server state on failure
+   * Includes a 300ms debounce to prevent accidental rapid clicks.
    */
   const execute = useCallback(
     (opts: {
@@ -52,6 +45,14 @@ export function useAdminAction<T extends { id: string }>(initialData: T[]) {
       onSuccess?: () => void;
       revertOnFail?: boolean;
     }) => {
+      // Debounce: ignore clicks within 300ms of last click
+      const now = Date.now();
+      if (now - lastClickRef.current < 300) return;
+      lastClickRef.current = now;
+
+      // Also skip if already processing
+      if (isPending) return;
+
       // 1. Apply optimistic update INSTANTLY (0ms)
       if (opts.optimisticUpdate) {
         setData(opts.optimisticUpdate);
@@ -79,7 +80,7 @@ export function useAdminAction<T extends { id: string }>(initialData: T[]) {
         }
       });
     },
-    [router, startTransition]
+    [router, startTransition, isPending]
   );
 
   return {

@@ -888,3 +888,40 @@
     @apply bg-gradient-to-br from-orange-400 to-amber-500;
   }
 }
+
+/* ── Admin Button Animations ─────────────────────────────────── */
+/* Smooth press effect for all admin action buttons */
+.admin-btn {
+  @apply transition-all duration-200 ease-out;
+}
+.admin-btn:active:not(:disabled) {
+  @apply scale-95;
+}
+.admin-btn:disabled {
+  @apply pointer-events-none;
+}
+
+/* Processing animation for pending buttons */
+@keyframes btn-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.btn-processing {
+  background-size: 200% 100%;
+  background-image: linear-gradient(
+    90deg,
+    transparent 25%,
+    rgba(255,255,255,0.15) 50%,
+    transparent 75%
+  );
+  animation: btn-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Smooth fade for optimistic updates */
+@keyframes fade-out {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-8px); }
+}
+.optimistic-remove {
+  animation: fade-out 0.2s ease-out forwards;
+}

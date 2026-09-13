@@ -3,7 +3,7 @@ import { getHomepageData } from "@/lib/queries/public";
 import { CountdownTimer } from "@/components/public/CountdownTimer";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
-import { Sparkles, Calendar, Heart } from "lucide-react";
+import { Sparkles, Calendar, Heart, Menu } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,10 @@ export default async function HomePage() {
       {/* ===== STICKY NAV ===== */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-default select-none">
+          <div className="flex items-center gap-3 cursor-default select-none">
+            <button className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors" aria-label="Menu">
+              <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
+            </button>
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>

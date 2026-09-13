@@ -182,7 +182,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{m.fullName || m.name}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{m.memberId}</p>
+
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{m.phone}</td>
                   <td className="px-4 py-3 font-bold text-emerald-600">₹{(m.membershipFee || 0).toLocaleString("en-IN")}</td>

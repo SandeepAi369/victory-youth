@@ -159,7 +159,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
                 <tr key={e.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{e.donorName}</p>
-                    <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo || e.id}</p>
+                    {e.receiptNo && <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo}</p>}
                   </td>
                   <td className="px-4 py-3 font-bold text-emerald-600">₹{e.amount?.toLocaleString("en-IN")}</td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">{e.date || "-"}</td>
