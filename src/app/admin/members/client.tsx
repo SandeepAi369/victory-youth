@@ -29,6 +29,16 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
   const [form, setForm] = useState(emptyForm);
   const [isPending, startTransition] = useTransition();
 
+  // Fire YouTube-style top loading bar in admin layout
+  useEffect(() => {
+    if (isPending) {
+      window.dispatchEvent(new Event("admin-loading-start"));
+    } else {
+      window.dispatchEvent(new Event("admin-loading-end"));
+    }
+  }, [isPending]);
+
+
   // Bug #8 fix: derive published from live data state, not from a stale useEffect
   const published = data.length > 0 && data.some((m) => m.isActive === true);
   const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
@@ -118,21 +128,21 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
               className={
                 "px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 border transition-all " +
                 (isPending
-                  ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 bg-[length:200%_100%] animate-[shimmer_1.2s_ease-in-out_infinite] text-transparent cursor-not-allowed pointer-events-none border-stone-200"
+                  ? "opacity-50 cursor-not-allowed pointer-events-none"
                   : published
                     ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                     : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")
               }
             >
               {published ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {published ? "Published (All Visible)" : "Unpublished (All Hidden)"}
+              {published ? "✓ Published" : "Unpublished"}
             </button>
           )}
           <div className="w-px h-6 bg-border" />
           <button
             onClick={() => { setShowForm(true); setEditingId(null); setForm(emptyForm); }}
             disabled={isPending}
-            className={"px-4 py-2 font-medium text-sm rounded-xl flex items-center gap-2 transition-all " + (isPending ? "bg-gradient-to-r from-stone-200 via-stone-100 to-stone-200 animate-pulse text-stone-400 cursor-not-allowed pointer-events-none" : "bg-primary text-primary-foreground hover:opacity-90")}
+            className={"px-4 py-2 font-medium text-sm rounded-xl flex items-center gap-2 transition-all " + (isPending ? "opacity-50 cursor-not-allowed pointer-events-none" : "bg-primary text-primary-foreground hover:opacity-90")}
           >
             <Plus className="w-4 h-4" /> Add Member
           </button>
