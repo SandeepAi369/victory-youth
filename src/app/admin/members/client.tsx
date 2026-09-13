@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addMember, updateMember, deleteMember, setAllMembersVisibility } from "./actions";
