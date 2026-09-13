@@ -53,12 +53,16 @@ export default function NoticesClient({
   /** Master toggle for ALL notices */
   const handleNoticesMasterToggle = () => {
     const newState = !isAllNoticesPublished;
+    // Optimistic — flip all notices immediately
+    setNotices((prev) => prev.map((n) => ({ ...n, status: newState ? "PUBLISHED" : "DRAFT" })));
     startTransition(async () => {
       const r = await setAllNoticesVisibility(newState);
       if (r?.success) {
         toast.success(newState ? "All notices published" : "All notices unpublished");
         router.refresh();
       } else {
+        // Revert on failure
+        setNotices((prev) => prev.map((n) => ({ ...n, status: newState ? "DRAFT" : "PUBLISHED" })));
         toast.error(r?.error || "Failed");
       }
     });
@@ -67,12 +71,16 @@ export default function NoticesClient({
   /** Master toggle for ALL notes */
   const handleNotesMasterToggle = () => {
     const newState = !isAllNotesPublished;
+    // Optimistic — flip all notes immediately
+    setNotes((prev) => prev.map((n) => ({ ...n, isPublished: newState })));
     startTransition(async () => {
       const r = await setAllNotesVisibility(newState);
       if (r?.success) {
         toast.success(newState ? "All notes published" : "All notes unpublished");
         router.refresh();
       } else {
+        // Revert on failure
+        setNotes((prev) => prev.map((n) => ({ ...n, isPublished: !newState })));
         toast.error(r?.error || "Failed");
       }
     });
@@ -108,10 +116,32 @@ export default function NoticesClient({
   };
 
   const handleToggle = (type: "notice" | "note", id: string, current: boolean) => {
+    // Optimistic update — flip state immediately so UI reacts instantly
+    if (type === "notice") {
+      setNotices((prev) =>
+        prev.map((n) => n.id === id ? { ...n, status: current ? "DRAFT" : "PUBLISHED" } : n)
+      );
+    } else {
+      setNotes((prev) =>
+        prev.map((n) => n.id === id ? { ...n, isPublished: !current } : n)
+      );
+    }
     startTransition(async () => {
       const r = type === "notice" ? await toggleNoticePublish(id, !current) : await toggleNotePublish(id, !current);
       if (r?.success) { toast.success(current ? "Unpublished" : "Published"); router.refresh(); }
-      else { toast.error(r?.error || "Toggle failed"); }
+      else {
+        // Revert optimistic update on failure
+        if (type === "notice") {
+          setNotices((prev) =>
+            prev.map((n) => n.id === id ? { ...n, status: current ? "PUBLISHED" : "DRAFT" } : n)
+          );
+        } else {
+          setNotes((prev) =>
+            prev.map((n) => n.id === id ? { ...n, isPublished: current } : n)
+          );
+        }
+        toast.error(r?.error || "Toggle failed");
+      }
     });
   };
 
