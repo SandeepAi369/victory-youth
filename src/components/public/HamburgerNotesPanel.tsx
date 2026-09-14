@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Menu, X, StickyNote, ChevronRight, ChevronDown } from "lucide-react";
 
 type Note = {
@@ -15,29 +16,27 @@ type Note = {
 export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
   const [open, setOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const safeNotes = Array.isArray(notes) ? notes : [];
 
-  return (
-    <>
-      {/* ☰ Trigger */}
-      <button
-        onClick={() => setOpen(true)}
-        className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all"
-        aria-label="Menu"
-      >
-        <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
-      </button>
+  // Required for createPortal — only render portal after client hydration
+  useEffect(() => { setMounted(true); }, []);
 
-      {/* ──── FULL-SCREEN MENU OVERLAY ──── */}
-      <div
-        className={
-          "fixed inset-0 z-[200] bg-white dark:bg-stone-950 " +
-          "flex flex-col " +
-          "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] " +
-          (open ? "translate-x-0" : "-translate-x-full")
-        }
-      >
-        {/* ── Top Bar: "Menu" + X ── */}
+  const overlay = (
+    <div
+      className={
+        "fixed inset-0 z-[9999] " +
+        "transition-opacity duration-300 " +
+        (open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")
+      }
+    >
+      {/* Full-screen solid background */}
+      <div className="absolute inset-0 bg-white dark:bg-stone-950" />
+
+      {/* Content on top */}
+      <div className="relative z-10 flex flex-col h-full">
+
+        {/* Top Bar: "Menu" + X */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-stone-200 dark:border-stone-800">
           <h2 className="text-lg font-black text-stone-900 dark:text-white">Menu</h2>
           <button
@@ -49,7 +48,7 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
           </button>
         </div>
 
-        {/* ── Menu Items ── */}
+        {/* Menu Items */}
         <nav className="flex-1 overflow-y-auto px-4 pt-6">
 
           {/* Notes — always visible */}
@@ -77,7 +76,7 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
               : <ChevronRight className="w-4 h-4 text-stone-400" />}
           </button>
 
-          {/* Notes content — expand on click */}
+          {/* Notes expanded content */}
           <div className={
             "overflow-hidden transition-all duration-300 " +
             (notesOpen ? "max-h-[3000px] opacity-100 mt-2" : "max-h-0 opacity-0")
@@ -108,6 +107,22 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
 
         </nav>
       </div>
+    </div>
+  );
+
+  return (
+    <>
+      {/* ☰ Trigger — stays inside the nav */}
+      <button
+        onClick={() => setOpen(true)}
+        className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all"
+        aria-label="Menu"
+      >
+        <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
+      </button>
+
+      {/* Portal — renders overlay into document.body, escaping the nav stacking context */}
+      {mounted && createPortal(overlay, document.body)}
     </>
   );
 }
