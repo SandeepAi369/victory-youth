@@ -2,25 +2,24 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Menu, X, StickyNote, ChevronRight, ChevronDown } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Menu, X, BookOpen, ChevronRight } from "lucide-react";
 
-type Note = {
-  id: string;
-  title: string;
-  content: any;
-  category?: string | null;
-  authorName: string;
-  createdAt?: Date | null;
-};
-
-export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
+export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) {
   const [open, setOpen] = useState(false);
-  const [notesOpen, setNotesOpen] = useState(false);
+  const [navigating, setNavigating] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const safeNotes = Array.isArray(notes) ? notes : [];
+  const router = useRouter();
 
-  // Required for createPortal — only render portal after client hydration
   useEffect(() => { setMounted(true); }, []);
+
+  const handleNotesClick = () => {
+    setNavigating(true);
+    setTimeout(() => {
+      setOpen(false);
+      router.push("/notes");
+    }, 400);
+  };
 
   const overlay = (
     <div
@@ -30,17 +29,22 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
         (open ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")
       }
     >
-      {/* Full-screen solid background */}
+      {/* Solid background */}
       <div className="absolute inset-0 bg-white dark:bg-stone-950" />
 
-      {/* Content on top */}
-      <div className="relative z-10 flex flex-col h-full">
+      {/* Gradient loading bar during navigation */}
+      {navigating && (
+        <div className="absolute top-0 left-0 right-0 z-50 h-1">
+          <div className="h-full bg-gradient-to-r from-orange-500 via-red-500 to-orange-500 animate-pulse rounded-full" />
+        </div>
+      )}
 
-        {/* Top Bar: "Menu" + X */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Top Bar */}
         <div className="flex items-center justify-between px-5 h-16 border-b border-stone-200 dark:border-stone-800">
           <h2 className="text-lg font-black text-stone-900 dark:text-white">Menu</h2>
           <button
-            onClick={() => setOpen(false)}
+            onClick={() => { setOpen(false); setNavigating(false); }}
             className="w-10 h-10 rounded-full flex items-center justify-center bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 active:scale-90 transition-all"
             aria-label="Close menu"
           >
@@ -50,61 +54,42 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
 
         {/* Menu Items */}
         <nav className="flex-1 overflow-y-auto px-4 pt-6">
-
-          {/* Notes — always visible */}
           <button
-            onClick={() => setNotesOpen(!notesOpen)}
+            onClick={handleNotesClick}
+            disabled={navigating}
             className={
-              "w-full flex items-center justify-between px-4 py-3 rounded-xl text-left transition-colors " +
-              (notesOpen
-                ? "bg-orange-50 dark:bg-orange-950/40"
-                : "hover:bg-stone-100 dark:hover:bg-stone-900")
+              "w-full flex items-center justify-between px-4 py-4 rounded-2xl text-left transition-all duration-200 " +
+              (navigating
+                ? "bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/30 dark:to-amber-950/30 scale-[0.98]"
+                : "hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-[0.98]")
             }
           >
-            <div className="flex items-center gap-3">
-              <StickyNote className={
-                "w-5 h-5 " +
-                (notesOpen ? "text-orange-600 dark:text-orange-400" : "text-stone-400 dark:text-stone-500")
-              } />
-              <span className={
-                "text-sm font-semibold " +
-                (notesOpen ? "text-orange-700 dark:text-orange-400" : "text-stone-700 dark:text-stone-200")
-              }>Notes</span>
+            <div className="flex items-center gap-4">
+              {/* Premium colorful icon */}
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center shadow-md shadow-orange-300/30 dark:shadow-orange-900/30">
+                <BookOpen className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="text-[15px] font-bold text-stone-800 dark:text-stone-100 block">
+                  Notes
+                </span>
+                <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                  {navigating ? "Opening..." : "Committee updates"}
+                </span>
+              </div>
             </div>
-            {notesOpen
-              ? <ChevronDown className="w-4 h-4 text-stone-400" />
-              : <ChevronRight className="w-4 h-4 text-stone-400" />}
-          </button>
-
-          {/* Notes expanded content */}
-          <div className={
-            "overflow-hidden transition-all duration-300 " +
-            (notesOpen ? "max-h-[3000px] opacity-100 mt-2" : "max-h-0 opacity-0")
-          }>
-            <div className="ml-6 pl-4 border-l-2 border-orange-200 dark:border-orange-800 space-y-2.5 pb-2">
-              {safeNotes.length === 0 ? (
-                <p className="text-xs text-stone-400 dark:text-stone-500 py-6 text-center">
-                  No published notes available at the moment.
-                </p>
-              ) : (
-                safeNotes.map((note) => (
-                  <div key={note.id} className="p-3.5 rounded-xl bg-stone-50 dark:bg-stone-900 border border-stone-200 dark:border-stone-800">
-                    {note.category && (
-                      <span className="inline-block px-2 py-0.5 rounded-md bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[9px] font-bold uppercase mb-2">
-                        {note.category}
-                      </span>
-                    )}
-                    <h4 className="font-bold text-[13px] text-stone-900 dark:text-white">{note.title}</h4>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1.5 leading-relaxed">
-                      {typeof note.content === "string" ? note.content : JSON.stringify(note.content)}
-                    </p>
-                    <p className="text-[9px] text-stone-400 dark:text-stone-600 mt-2 font-medium">— {note.authorName}</p>
-                  </div>
-                ))
+            <div className="flex items-center gap-2">
+              {notesCount > 0 && (
+                <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                  {notesCount}
+                </span>
               )}
+              <ChevronRight className={
+                "w-4 h-4 text-stone-300 dark:text-stone-600 transition-transform " +
+                (navigating ? "translate-x-1" : "")
+              } />
             </div>
-          </div>
-
+          </button>
         </nav>
       </div>
     </div>
@@ -112,7 +97,6 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
 
   return (
     <>
-      {/* ☰ Trigger — stays inside the nav */}
       <button
         onClick={() => setOpen(true)}
         className="p-2 -ml-2 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 active:scale-95 transition-all"
@@ -120,8 +104,6 @@ export function HamburgerNotesPanel({ notes = [] }: { notes: Note[] }) {
       >
         <Menu className="w-5 h-5 text-stone-600 dark:text-stone-300" />
       </button>
-
-      {/* Portal — renders overlay into document.body, escaping the nav stacking context */}
       {mounted && createPortal(overlay, document.body)}
     </>
   );

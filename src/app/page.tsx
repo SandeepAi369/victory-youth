@@ -34,7 +34,7 @@ export default async function HomePage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-default select-none">
-            <HamburgerNotesPanel notes={notes as any} />
+            <HamburgerNotesPanel notesCount={(notes as any[])?.length || 0} />
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
