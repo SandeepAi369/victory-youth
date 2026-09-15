@@ -4,9 +4,36 @@ import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
-const CF_ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID || "3599fd84a57a8884da174cd015d96e1e";
-const CF_IMAGES_TOKEN = process.env.CLOUDFLARE_IMAGES_TOKEN || "";
 const CF_IMAGES_HASH = "g0kMHlYRsoNb1rbpdz3L7g";
+
+/** Get Cloudflare secrets — works in both Workers (via bindings) and local dev (via process.env) */
+function getCfCredentials(): { accountId: string; imagesToken: string } {
+  let accountId = "";
+  let imagesToken = "";
+
+  // Try Cloudflare Workers bindings first (production)
+  try {
+    const { getCloudflareContext } = require("@opennextjs/cloudflare");
+    const { env } = getCloudflareContext();
+    accountId = env?.CLOUDFLARE_ACCOUNT_ID || "";
+    imagesToken = env?.CLOUDFLARE_IMAGES_TOKEN || "";
+  } catch {
+    // Not in Cloudflare context — fall through to process.env
+  }
+
+  // Fallback to process.env (local dev)
+  if (!accountId) accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "3599fd84a57a8884da174cd015d96e1e";
+  if (!imagesToken) imagesToken = process.env.CLOUDFLARE_IMAGES_TOKEN || "";
+
+  if (!imagesToken) {
+    throw new Error("CLOUDFLARE_IMAGES_TOKEN is not configured. Add it as a Worker secret or in .env");
+  }
+  if (!accountId) {
+    throw new Error("CLOUDFLARE_ACCOUNT_ID is not configured. Add it as a Worker secret or in .env");
+  }
+
+  return { accountId, imagesToken };
+}
 
 function revalidate() {
   revalidatePath("/");
@@ -29,12 +56,14 @@ export async function getDirectUploadUrl(): Promise<{
   error?: string;
 }> {
   try {
+    const { accountId, imagesToken } = getCfCredentials();
+
     const res = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v2/direct_upload`,
+      `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`,
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${CF_IMAGES_TOKEN}`,
+          Authorization: `Bearer ${imagesToken}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ requireSignedURLs: false }),
@@ -98,11 +127,12 @@ export async function replaceGalleryImage(galleryId: string, newCfImageId: strin
     const oldCfId = rows[0]?.cfId;
 
     // Delete old image from CF (non-fatal if it fails)
-    if (oldCfId && CF_IMAGES_TOKEN) {
+    if (oldCfId) {
       try {
+        const { accountId, imagesToken } = getCfCredentials();
         await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1/${oldCfId}`,
-          { method: "DELETE", headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` } }
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${oldCfId}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${imagesToken}` } }
         );
       } catch (_) {}
     }
@@ -150,11 +180,12 @@ export async function deleteGalleryItem(id: string) {
     const cfId = rows[0]?.cfId;
 
     // Delete from CF Images
-    if (cfId && CF_IMAGES_TOKEN) {
+    if (cfId) {
       try {
+        const { accountId, imagesToken } = getCfCredentials();
         await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1/${cfId}`,
-          { method: "DELETE", headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` } }
+          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${cfId}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${imagesToken}` } }
         );
       } catch (_) {}
     }
