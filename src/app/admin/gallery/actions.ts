@@ -6,33 +6,11 @@ import { randomUUID } from "crypto";
 
 const CF_IMAGES_HASH = "g0kMHlYRsoNb1rbpdz3L7g";
 
-/** Get Cloudflare secrets — works in both Workers (via bindings) and local dev (via process.env) */
 function getCfCredentials(): { accountId: string; imagesToken: string } {
-  let accountId = "";
-  let imagesToken = "";
-
-  // Try Cloudflare Workers bindings first (production)
-  try {
-    const { getCloudflareContext } = require("@opennextjs/cloudflare");
-    const { env } = getCloudflareContext();
-    accountId = env?.CLOUDFLARE_ACCOUNT_ID || "";
-    imagesToken = env?.CLOUDFLARE_IMAGES_TOKEN || "";
-  } catch {
-    // Not in Cloudflare context — fall through to process.env
-  }
-
-  // Fallback to process.env (local dev)
-  if (!accountId) accountId = process.env.CLOUDFLARE_ACCOUNT_ID || "3599fd84a57a8884da174cd015d96e1e";
-  if (!imagesToken) imagesToken = process.env.CLOUDFLARE_IMAGES_TOKEN || "";
-
-  if (!imagesToken) {
-    throw new Error("CLOUDFLARE_IMAGES_TOKEN is not configured. Add it as a Worker secret or in .env");
-  }
-  if (!accountId) {
-    throw new Error("CLOUDFLARE_ACCOUNT_ID is not configured. Add it as a Worker secret or in .env");
-  }
-
-  return { accountId, imagesToken };
+  return {
+    accountId: "3599fd84a57a8884da174cd015d96e1e",
+    imagesToken: "***REMOVED***",
+  };
 }
 
 function revalidate() {
