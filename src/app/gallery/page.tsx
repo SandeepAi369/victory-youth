@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getPublishedGallery } from "@/lib/queries/public";
-import { ArrowLeft, ImageIcon } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -32,21 +32,16 @@ export default async function GalleryPage() {
           <div className="text-center py-20 text-stone-400">No photos in the gallery yet.</div>
         )}
 
-        {/* Masonry-style grid — images render at original aspect ratio */}
+        {/* Clean masonry grid — original quality, no titles */}
         <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
           {gallery.map((photo: any) => (
             <div key={photo.id} className="break-inside-avoid rounded-xl overflow-hidden bg-stone-200 dark:bg-stone-800 shadow-sm hover:shadow-lg transition-shadow">
               <img
                 src={photo.url}
-                alt={photo.title || "Gallery photo"}
+                alt="Gallery photo"
                 className="w-full h-auto block"
                 loading="lazy"
               />
-              {photo.title && (
-                <div className="px-3 py-2">
-                  <p className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">{photo.title}</p>
-                </div>
-              )}
             </div>
           ))}
         </div>

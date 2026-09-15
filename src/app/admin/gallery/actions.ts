@@ -14,9 +14,111 @@ function revalidate() {
   revalidatePath("/gallery");
 }
 
-/** Build the public delivery URL for a Cloudflare Image */
-function cfImageUrl(imageId: string, variant: string = "public"): string {
-  return `https://imagedelivery.net/${CF_IMAGES_HASH}/${imageId}/${variant}`;
+function cfImageUrl(imageId: string): string {
+  return `https://imagedelivery.net/${CF_IMAGES_HASH}/${imageId}/public`;
+}
+
+/**
+ * Step A+B: Server action returns a one-time Direct Upload URL from Cloudflare.
+ * The client will use this URL to upload the file directly to CF (no file through server action).
+ */
+export async function getDirectUploadUrl(): Promise<{
+  success: boolean;
+  uploadUrl?: string;
+  imageId?: string;
+  error?: string;
+}> {
+  try {
+    const res = await fetch(
+      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v2/direct_upload`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${CF_IMAGES_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ requireSignedURLs: false }),
+      }
+    );
+
+    const data = await res.json();
+
+    if (!data.success) {
+      return { success: false, error: data.errors?.[0]?.message || "Failed to get upload URL" };
+    }
+
+    return {
+      success: true,
+      uploadUrl: data.result.uploadURL,
+      imageId: data.result.id,
+    };
+  } catch (error: any) {
+    console.error("getDirectUploadUrl error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Step D: After the client uploads the file directly to CF,
+ * save the CF image ID + delivery URL to CockroachDB.
+ */
+export async function saveGalleryImage(cfImageId: string, category: string, year: number) {
+  try {
+    const db = getDb();
+    await db.insert(schema.gallery).values({
+      id: `gal_${randomUUID()}`,
+      title: "Photo",
+      url: cfImageUrl(cfImageId),
+      cloudinaryPublicId: cfImageId,
+      category: category || "General",
+      year: year || 2026,
+      uploadedBy: "Admin",
+      isPublished: true,
+    });
+    revalidate();
+    return { success: true };
+  } catch (error: any) {
+    console.error("saveGalleryImage error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Replace an existing gallery image with a new one.
+ * Deletes old CF image, updates DB row with new CF image ID + URL.
+ */
+export async function replaceGalleryImage(galleryId: string, newCfImageId: string) {
+  try {
+    const db = getDb();
+
+    // Get old CF image ID to delete it
+    const rows = await db.select({ cfId: schema.gallery.cloudinaryPublicId })
+      .from(schema.gallery).where(eq(schema.gallery.id, galleryId));
+
+    const oldCfId = rows[0]?.cfId;
+
+    // Delete old image from CF (non-fatal if it fails)
+    if (oldCfId && CF_IMAGES_TOKEN) {
+      try {
+        await fetch(
+          `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1/${oldCfId}`,
+          { method: "DELETE", headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` } }
+        );
+      } catch (_) {}
+    }
+
+    // Update DB with new image
+    await db.update(schema.gallery).set({
+      url: cfImageUrl(newCfImageId),
+      cloudinaryPublicId: newCfImageId,
+    }).where(eq(schema.gallery.id, galleryId));
+
+    revalidate();
+    return { success: true };
+  } catch (error: any) {
+    console.error("replaceGalleryImage error:", error);
+    return { success: false, error: error.message };
+  }
 }
 
 export async function getGallery() {
@@ -24,7 +126,6 @@ export async function getGallery() {
     const db = getDb();
     return await db.select({
       id: schema.gallery.id,
-      title: schema.gallery.title,
       url: schema.gallery.url,
       category: schema.gallery.category,
       year: schema.gallery.year,
@@ -39,101 +140,23 @@ export async function getGallery() {
   }
 }
 
-/** Upload image to Cloudflare Images, save CF image ID + delivery URL to DB */
-export async function uploadGalleryImage(formData: FormData) {
-  try {
-    const file = formData.get("file") as File;
-    const title = (formData.get("title") as string) || "Untitled";
-    const category = (formData.get("category") as string) || "General";
-    const year = parseInt((formData.get("year") as string) || "2026", 10);
-
-    if (!file || file.size === 0) {
-      return { success: false, error: "No file selected" };
-    }
-
-    // Upload to Cloudflare Images
-    const cfForm = new FormData();
-    cfForm.append("file", file);
-
-    const cfRes = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1`,
-      {
-        method: "POST",
-        headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` },
-        body: cfForm,
-      }
-    );
-
-    const cfData = await cfRes.json();
-
-    if (!cfData.success) {
-      console.error("CF Images upload failed:", cfData.errors);
-      return { success: false, error: cfData.errors?.[0]?.message || "Upload failed" };
-    }
-
-    const cfImageId = cfData.result.id;
-    const deliveryUrl = cfImageUrl(cfImageId);
-
-    // Save to DB — url = delivery URL, cloudinaryPublicId = CF image ID (reusing column)
-    const db = getDb();
-    await db.insert(schema.gallery).values({
-      id: `gal_${randomUUID()}`,
-      title,
-      url: deliveryUrl,
-      cloudinaryPublicId: cfImageId,
-      category,
-      year,
-      uploadedBy: "Admin",
-      isPublished: true,
-    });
-
-    revalidate();
-    return { success: true };
-  } catch (error: any) {
-    console.error("uploadGalleryImage error:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-export async function updateGalleryItem(id: string, data: any) {
-  try {
-    const db = getDb();
-    await db.update(schema.gallery).set({
-      title: data.title,
-      category: data.category,
-      year: data.year,
-    }).where(eq(schema.gallery.id, id));
-    revalidate();
-    return { success: true };
-  } catch (error: any) {
-    console.error("updateGalleryItem error:", error);
-    return { success: false, error: error.message };
-  }
-}
-
 export async function deleteGalleryItem(id: string) {
   try {
     const db = getDb();
 
-    // Get the CF image ID before deleting
     const rows = await db.select({ cfId: schema.gallery.cloudinaryPublicId })
       .from(schema.gallery).where(eq(schema.gallery.id, id));
 
     const cfId = rows[0]?.cfId;
 
-    // Delete from CF Images if we have the ID
+    // Delete from CF Images
     if (cfId && CF_IMAGES_TOKEN) {
       try {
         await fetch(
           `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/images/v1/${cfId}`,
-          {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` },
-          }
+          { method: "DELETE", headers: { Authorization: `Bearer ${CF_IMAGES_TOKEN}` } }
         );
-      } catch (e) {
-        console.warn("CF Images delete failed (non-fatal):", e);
-      }
+      } catch (_) {}
     }
 
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
@@ -168,18 +191,5 @@ export async function setAllGalleryVisibility(
   } catch (error: any) {
     console.error("setAllGalleryVisibility error:", error);
     return { success: false, newState: !publish, error: error.message };
-  }
-}
-
-/** Delete ALL old gallery rows (wipe CockroachDB stored images) */
-export async function wipeOldGallery() {
-  try {
-    const db = getDb();
-    await db.delete(schema.gallery);
-    revalidate();
-    return { success: true };
-  } catch (error: any) {
-    console.error("wipeOldGallery error:", error);
-    return { success: false, error: error.message };
   }
 }
