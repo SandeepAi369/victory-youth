@@ -58,15 +58,17 @@ export async function getDirectUploadUrl(): Promise<{
   try {
     const { accountId, imagesToken } = getCfCredentials();
 
+    const form = new FormData();
+    form.append("requireSignedURLs", "false");
+
     const res = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`,
       {
         method: "POST",
         headers: {
           Authorization: `Bearer ${imagesToken}`,
-          "Content-Type": "application/json",
         },
-        body: JSON.stringify({ requireSignedURLs: false }),
+        body: form,
       }
     );
 
