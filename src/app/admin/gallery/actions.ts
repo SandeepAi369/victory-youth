@@ -15,7 +15,7 @@ function revalidate() {
 }
 
 /** Build the public delivery URL for a Cloudflare Image */
-export function cfImageUrl(imageId: string, variant: string = "public"): string {
+function cfImageUrl(imageId: string, variant: string = "public"): string {
   return `https://imagedelivery.net/${CF_IMAGES_HASH}/${imageId}/${variant}`;
 }
 
