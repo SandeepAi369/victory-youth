@@ -1,19 +1,18 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Pencil, Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2 } from "lucide-react";
-import { uploadGalleryImage, updateGalleryItem, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
+import { Plus, Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
+import { getDirectUploadUrl, saveGalleryImage, replaceGalleryImage, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
 export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const { data: gallery, isPending, execute } = useAdminAction(initialGallery);
   const [isAdding, setIsAdding] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [replacingId, setReplacingId] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
 
-  // Upload form state
-  const [title, setTitle] = useState("");
   const [category, setCategory] = useState("General");
   const [year, setYear] = useState(2026);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -21,9 +20,9 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const isAllPublished = gallery.length > 0 && gallery.every((g: any) => g.isPublished);
 
   const resetForm = () => {
-    setTitle(""); setCategory("General"); setYear(2026); setPreview(null);
+    setCategory("General"); setYear(2026); setPreview(null);
+    setIsAdding(false); setReplacingId(null); setUploadProgress("");
     if (fileRef.current) fileRef.current.value = "";
-    setIsAdding(false); setEditingId(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,41 +34,63 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
     }
   };
 
+  /**
+   * Direct Upload Flow:
+   * 1. Get one-time upload URL from server (server calls CF API securely)
+   * 2. Upload file directly from browser to CF
+   * 3. Save CF image ID to DB via server action
+   */
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     const file = fileRef.current?.files?.[0];
     if (!file) return alert("Please select an image file.");
 
     setUploading(true);
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("title", title || "Untitled");
-      formData.append("category", category);
-      formData.append("year", String(year));
 
-      const result = await uploadGalleryImage(formData);
-      if (result.success) {
-        resetForm();
-        window.location.reload();
-      } else {
-        alert("Upload failed: " + (result.error || "Unknown error"));
+    try {
+      // Step 1: Get direct upload URL from server
+      setUploadProgress("Getting upload URL...");
+      const urlResult = await getDirectUploadUrl();
+      if (!urlResult.success || !urlResult.uploadUrl || !urlResult.imageId) {
+        throw new Error(urlResult.error || "Failed to get upload URL");
       }
+
+      // Step 2: Upload file directly from browser to Cloudflare
+      setUploadProgress("Uploading to Cloudflare...");
+      const cfForm = new FormData();
+      cfForm.append("file", file);
+
+      const cfRes = await fetch(urlResult.uploadUrl, {
+        method: "POST",
+        body: cfForm,
+      });
+
+      if (!cfRes.ok) {
+        const errText = await cfRes.text();
+        throw new Error("Cloudflare upload failed: " + errText);
+      }
+
+      // Step 3: Save CF image ID to DB
+      setUploadProgress("Saving to database...");
+
+      if (replacingId) {
+        // Replacing an existing image
+        const saveResult = await replaceGalleryImage(replacingId, urlResult.imageId);
+        if (!saveResult.success) throw new Error(saveResult.error || "Failed to replace image");
+      } else {
+        // New image
+        const saveResult = await saveGalleryImage(urlResult.imageId, category, year);
+        if (!saveResult.success) throw new Error(saveResult.error || "Failed to save");
+      }
+
+      resetForm();
+      window.location.reload();
     } catch (err: any) {
       alert("Upload error: " + err.message);
     } finally {
       setUploading(false);
+      setUploadProgress("");
     }
-  };
-
-  const handleEditSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingId) return;
-    execute({
-      serverAction: () => updateGalleryItem(editingId, { title, category, year }),
-      successMsg: "Updated",
-      onSuccess: resetForm,
-    });
   };
 
   const handleMasterToggle = () => {
@@ -90,7 +111,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Delete this image? This will also remove it from Cloudflare.")) return;
+    if (!confirm("Delete this image permanently? It will be removed from Cloudflare too.")) return;
     execute({
       optimisticUpdate: (prev) => prev.filter((g: any) => g.id !== id),
       serverAction: () => deleteGalleryItem(id),
@@ -103,7 +124,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Gallery</h1>
-          <p className="text-muted-foreground text-sm">Upload & manage event photos via Cloudflare Images</p>
+          <p className="text-muted-foreground text-sm">Upload & manage photos via Cloudflare Images</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {gallery.length > 0 && (
@@ -113,82 +134,83 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                   isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"
                     : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200")}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllPublished ? "✓ Published" : "Unpublished"}
+              {isAllPublished ? "Published" : "Unpublished"}
             </button>
           )}
-          <button onClick={() => { setIsAdding(true); setEditingId(null); resetForm(); setIsAdding(true); }}
+          <button onClick={() => { resetForm(); setIsAdding(true); }}
             className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2">
             <Upload className="w-4 h-4" /> Upload Image
           </button>
         </div>
       </div>
 
-      {/* ── Upload / Edit Modal ── */}
-      {(isAdding || editingId) && (
+      {/* ── Upload / Replace Modal ── */}
+      {(isAdding || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
+          onClick={(e: any) => e.target === e.currentTarget && !uploading && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">{editingId ? "Edit Image Details" : "Upload New Image"}</h2>
-              <button type="button" onClick={resetForm}
+              <h2 className="text-lg font-bold">{replacingId ? "Replace Image" : "Upload New Image"}</h2>
+              <button type="button" onClick={() => !uploading && resetForm()}
                 className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
             </div>
 
-            <form onSubmit={editingId ? handleEditSubmit : handleUpload} className="space-y-4">
-              {/* File picker — only for new uploads */}
-              {!editingId && (
-                <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">Image File *</label>
-                  <div className="border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl p-6 text-center hover:border-orange-400 transition-colors">
-                    {preview ? (
-                      <div className="space-y-3">
-                        <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
-                        <p className="text-xs text-muted-foreground">Click below to change</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        <ImageIcon className="w-10 h-10 text-stone-300 dark:text-stone-600 mx-auto" />
-                        <p className="text-sm text-muted-foreground">Click to select an image</p>
-                      </div>
-                    )}
-                    <input
-                      ref={fileRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="mt-3 w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
-                    />
+            <form onSubmit={handleUpload} className="space-y-4">
+              {/* File Picker */}
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  {replacingId ? "New Image *" : "Image File *"}
+                </label>
+                <div className="border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl p-6 text-center hover:border-orange-400 transition-colors">
+                  {preview ? (
+                    <div className="space-y-3">
+                      <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
+                      <p className="text-xs text-muted-foreground">Click below to change</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <ImageIcon className="w-10 h-10 text-stone-300 dark:text-stone-600 mx-auto" />
+                      <p className="text-sm text-muted-foreground">Click to select an image</p>
+                    </div>
+                  )}
+                  <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange}
+                    className="mt-3 w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+                </div>
+              </div>
+
+              {/* Category + Year — only for new uploads */}
+              {!replacingId && (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-muted-foreground mb-1">Category</label>
+                    <input type="text" value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      className="w-full bg-background border rounded-lg px-3 py-2" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-muted-foreground mb-1">Year</label>
+                    <input type="number" value={year}
+                      onChange={(e) => setYear(parseInt(e.target.value))}
+                      className="w-full bg-background border rounded-lg px-3 py-2" />
                   </div>
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Title *</label>
-                <input type="text" required value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Image title" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">Category</label>
-                  <input type="text" value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-background border rounded-lg px-3 py-2" />
+              {/* Upload Progress */}
+              {uploadProgress && (
+                <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-3 py-2">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  {uploadProgress}
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-muted-foreground mb-1">Year</label>
-                  <input type="number" value={year}
-                    onChange={(e) => setYear(parseInt(e.target.value))}
-                    className="w-full bg-background border rounded-lg px-3 py-2" />
-                </div>
-              </div>
+              )}
+
               <div className="flex gap-2 justify-end pt-4 border-t">
-                <button type="button" onClick={resetForm}
-                  className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
-                <button type="submit" disabled={uploading || isPending}
+                <button type="button" onClick={() => !uploading && resetForm()} disabled={uploading}
+                  className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl disabled:opacity-50">Cancel</button>
+                <button type="submit" disabled={uploading}
                   className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50 flex items-center gap-2">
-                  {(uploading || isPending) && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {editingId ? "Save Changes" : uploading ? "Uploading..." : "Upload"}
+                  {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {uploading ? "Uploading..." : replacingId ? "Replace" : "Upload"}
                 </button>
               </div>
             </form>
@@ -200,28 +222,26 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {gallery.length === 0 && <p className="col-span-full text-center text-muted-foreground py-12">No images yet. Click "Upload Image" to add your first photo.</p>}
         {gallery.map((g: any) => (
-          <div key={g.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm group">
-            {g.url && <img src={g.url} alt={g.title} className="w-full h-48 object-cover" />}
-            <div className="p-4">
+          <div key={g.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm group relative">
+            {g.url && <img src={g.url} alt="Gallery" className="w-full h-48 object-cover" />}
+            <div className="p-3">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-sm truncate">{g.title}</h3>
+                <p className="text-xs text-muted-foreground">{g.category} · {g.year}</p>
                 <button onClick={() => handleTogglePublish(g.id, !!g.isPublished)} disabled={isPending}
                   className={"px-2 py-0.5 rounded-full text-[10px] font-bold border disabled:opacity-50 " +
                     (g.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200" : "bg-stone-100 text-stone-500 border-stone-200")}>
                   {g.isPublished ? "PUBLISHED" : "DRAFT"}
                 </button>
               </div>
-              <p className="text-xs text-muted-foreground">{g.category} · {g.year}</p>
-              <div className="flex gap-2 mt-3">
-                <button onClick={() => {
-                  setEditingId(g.id); setIsAdding(false);
-                  setTitle(g.title || ""); setCategory(g.category || "General"); setYear(g.year || 2026);
-                }} disabled={isPending} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg disabled:opacity-50">
-                  <Pencil className="w-4 h-4" />
+              <div className="flex gap-2">
+                <button onClick={() => { resetForm(); setReplacingId(g.id); }}
+                  disabled={isPending}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg disabled:opacity-50 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Replace
                 </button>
                 <button onClick={() => handleDelete(g.id)} disabled={isPending}
-                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg disabled:opacity-50">
-                  <Trash2 className="w-4 h-4" />
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-50 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>
               </div>
             </div>
