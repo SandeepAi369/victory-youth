@@ -1,24 +1,18 @@
 import Link from "next/link";
-import { getPublishedGallery, getFeaturedGallery } from "@/lib/queries/public";
-import { ArrowLeft } from "lucide-react";
+import { getPublishedGallery } from "@/lib/queries/public";
+import { ArrowLeft, ImageIcon } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function GalleryPage() {
   let gallery: any[] = [];
-  let featured: any[] = [];
   let error = "";
   try {
-    [gallery, featured] = await Promise.all([
-      getPublishedGallery(50),
-      getFeaturedGallery(),
-    ]);
+    gallery = await getPublishedGallery(100);
   } catch (e: any) {
     error = e.message || "Failed to load gallery.";
     console.error("Gallery page error:", e);
   }
-
-  const allPhotos = [...featured, ...gallery];
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -34,18 +28,25 @@ export default async function GalleryPage() {
       <div className="container mx-auto max-w-6xl px-4 py-8">
         {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 text-red-700 dark:text-red-400">{error}</div>}
 
-        {allPhotos.length === 0 && !error && (
+        {gallery.length === 0 && !error && (
           <div className="text-center py-20 text-stone-400">No photos in the gallery yet.</div>
         )}
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-          {allPhotos.map((photo: any, i: number) => (
-            <div key={i} className="aspect-square rounded-xl overflow-hidden bg-stone-200 dark:bg-stone-800 shadow-sm">
+        {/* Masonry-style grid — images render at original aspect ratio */}
+        <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+          {gallery.map((photo: any) => (
+            <div key={photo.id} className="break-inside-avoid rounded-xl overflow-hidden bg-stone-200 dark:bg-stone-800 shadow-sm hover:shadow-lg transition-shadow">
               <img
-                src={photo.url || photo.imageUrl}
-                alt={photo.alt || photo.caption || "Gallery photo"}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                src={photo.url}
+                alt={photo.title || "Gallery photo"}
+                className="w-full h-auto block"
+                loading="lazy"
               />
+              {photo.title && (
+                <div className="px-3 py-2">
+                  <p className="text-xs font-medium text-stone-700 dark:text-stone-300 truncate">{photo.title}</p>
+                </div>
+              )}
             </div>
           ))}
         </div>
