@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Plus, Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw } from "lucide-react";
+import { Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw, Check, CloudUpload } from "lucide-react";
 import { getDirectUploadUrl, saveGalleryImage, replaceGalleryImage, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
@@ -9,19 +9,25 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const { data: gallery, isPending, execute } = useAdminAction(initialGallery);
   const [isAdding, setIsAdding] = useState(false);
   const [replacingId, setReplacingId] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState("");
   const [preview, setPreview] = useState<string | null>(null);
+
+  // 2-step state
+  const [step, setStep] = useState<"select" | "uploading" | "uploaded" | "saving">("select");
+  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
+  const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [statusMsg, setStatusMsg] = useState("");
 
   const [category, setCategory] = useState("General");
   const [year, setYear] = useState(2026);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const isAllPublished = gallery.length > 0 && gallery.every((g: any) => g.isPublished);
+  const isBusy = step === "uploading" || step === "saving";
 
   const resetForm = () => {
     setCategory("General"); setYear(2026); setPreview(null);
-    setIsAdding(false); setReplacingId(null); setUploadProgress("");
+    setIsAdding(false); setReplacingId(null);
+    setStep("select"); setUploadedImageId(null); setUploadedUrl(null); setStatusMsg("");
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -31,32 +37,25 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       const reader = new FileReader();
       reader.onload = (ev) => setPreview(ev.target?.result as string);
       reader.readAsDataURL(file);
+      // Reset upload state when new file selected
+      setStep("select"); setUploadedImageId(null); setUploadedUrl(null); setStatusMsg("");
     }
   };
 
-  /**
-   * Direct Upload Flow:
-   * 1. Get one-time upload URL from server (server calls CF API securely)
-   * 2. Upload file directly from browser to CF
-   * 3. Save CF image ID to DB via server action
-   */
-  const handleUpload = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── STEP 1: Upload file to Cloudflare ──
+  const handleUploadToCF = async () => {
     const file = fileRef.current?.files?.[0];
-    if (!file) return alert("Please select an image file.");
+    if (!file) return alert("Please select an image file first.");
 
-    setUploading(true);
-
+    setStep("uploading");
     try {
-      // Step 1: Get direct upload URL from server
-      setUploadProgress("Getting upload URL...");
+      setStatusMsg("Getting upload URL...");
       const urlResult = await getDirectUploadUrl();
       if (!urlResult.success || !urlResult.uploadUrl || !urlResult.imageId) {
         throw new Error(urlResult.error || "Failed to get upload URL");
       }
 
-      // Step 2: Upload file directly from browser to Cloudflare
-      setUploadProgress("Uploading to Cloudflare...");
+      setStatusMsg("Uploading to Cloudflare...");
       const cfForm = new FormData();
       cfForm.append("file", file);
 
@@ -70,26 +69,38 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
         throw new Error("Cloudflare upload failed: " + errText);
       }
 
-      // Step 3: Save CF image ID to DB
-      setUploadProgress("Saving to database...");
+      // Upload confirmed!
+      const cfImageId = urlResult.imageId;
+      const deliveryUrl = `https://imagedelivery.net/g0kMHlYRsoNb1rbpdz3L7g/${cfImageId}/public`;
+      setUploadedImageId(cfImageId);
+      setUploadedUrl(deliveryUrl);
+      setStep("uploaded");
+      setStatusMsg("");
+    } catch (err: any) {
+      setStep("select");
+      alert("Upload error: " + err.message);
+    }
+  };
 
+  // ── STEP 2: Save confirmed image to database ──
+  const handleSaveToDB = async () => {
+    if (!uploadedImageId) return;
+    setStep("saving");
+    setStatusMsg("Saving to database...");
+
+    try {
       if (replacingId) {
-        // Replacing an existing image
-        const saveResult = await replaceGalleryImage(replacingId, urlResult.imageId);
-        if (!saveResult.success) throw new Error(saveResult.error || "Failed to replace image");
+        const result = await replaceGalleryImage(replacingId, uploadedImageId);
+        if (!result.success) throw new Error(result.error || "Failed to replace");
       } else {
-        // New image
-        const saveResult = await saveGalleryImage(urlResult.imageId, category, year);
-        if (!saveResult.success) throw new Error(saveResult.error || "Failed to save");
+        const result = await saveGalleryImage(uploadedImageId, category, year);
+        if (!result.success) throw new Error(result.error || "Failed to save");
       }
-
       resetForm();
       window.location.reload();
     } catch (err: any) {
-      alert("Upload error: " + err.message);
-    } finally {
-      setUploading(false);
-      setUploadProgress("");
+      setStep("uploaded"); // Go back to uploaded state so they can retry save
+      alert("Save error: " + err.message);
     }
   };
 
@@ -111,7 +122,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   };
 
   const handleDelete = (id: string) => {
-    if (!confirm("Delete this image permanently? It will be removed from Cloudflare too.")) return;
+    if (!confirm("Delete this image permanently?")) return;
     execute({
       optimisticUpdate: (prev) => prev.filter((g: any) => g.id !== id),
       serverAction: () => deleteGalleryItem(id),
@@ -144,28 +155,35 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
         </div>
       </div>
 
-      {/* ── Upload / Replace Modal ── */}
+      {/* ══ Upload / Replace Modal ══ */}
       {(isAdding || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && !uploading && resetForm()}>
+          onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{replacingId ? "Replace Image" : "Upload New Image"}</h2>
-              <button type="button" onClick={() => !uploading && resetForm()}
+              <button type="button" onClick={() => !isBusy && resetForm()}
                 className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
             </div>
 
-            <form onSubmit={handleUpload} className="space-y-4">
-              {/* File Picker */}
+            <div className="space-y-4">
+              {/* ── File Picker ── */}
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">
                   {replacingId ? "New Image *" : "Image File *"}
                 </label>
                 <div className="border-2 border-dashed border-stone-300 dark:border-stone-700 rounded-xl p-6 text-center hover:border-orange-400 transition-colors">
-                  {preview ? (
+                  {uploadedUrl ? (
+                    <div className="space-y-3">
+                      <img src={uploadedUrl} alt="Uploaded" className="max-h-48 mx-auto rounded-lg object-contain" />
+                      <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-sm font-bold">
+                        <Check className="w-4 h-4" /> Uploaded to Cloudflare
+                      </div>
+                    </div>
+                  ) : preview ? (
                     <div className="space-y-3">
                       <img src={preview} alt="Preview" className="max-h-48 mx-auto rounded-lg object-contain" />
-                      <p className="text-xs text-muted-foreground">Click below to change</p>
+                      <p className="text-xs text-muted-foreground">Local preview — not uploaded yet</p>
                     </div>
                   ) : (
                     <div className="space-y-2">
@@ -173,12 +191,14 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                       <p className="text-sm text-muted-foreground">Click to select an image</p>
                     </div>
                   )}
-                  <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange}
-                    className="mt-3 w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+                  {step === "select" && (
+                    <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange}
+                      className="mt-3 w-full text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100" />
+                  )}
                 </div>
               </div>
 
-              {/* Category + Year — only for new uploads */}
+              {/* ── Category + Year (new uploads only) ── */}
               {!replacingId && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -196,31 +216,62 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                 </div>
               )}
 
-              {/* Upload Progress */}
-              {uploadProgress && (
+              {/* ── Status Message ── */}
+              {statusMsg && (
                 <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-3 py-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  {uploadProgress}
+                  {statusMsg}
                 </div>
               )}
 
+              {/* ── Confirmed URL display ── */}
+              {uploadedUrl && step === "uploaded" && (
+                <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400 break-all">
+                  ✅ {uploadedUrl}
+                </div>
+              )}
+
+              {/* ── Action Buttons ── */}
               <div className="flex gap-2 justify-end pt-4 border-t">
-                <button type="button" onClick={() => !uploading && resetForm()} disabled={uploading}
+                <button type="button" onClick={() => !isBusy && resetForm()} disabled={isBusy}
                   className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl disabled:opacity-50">Cancel</button>
-                <button type="submit" disabled={uploading}
-                  className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50 flex items-center gap-2">
-                  {uploading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  {uploading ? "Uploading..." : replacingId ? "Replace" : "Upload"}
-                </button>
+
+                {/* STEP 1: Upload to Cloudflare */}
+                {step === "select" && (
+                  <button type="button" onClick={handleUploadToCF}
+                    className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-blue-700">
+                    <CloudUpload className="w-4 h-4" /> Upload to Cloud
+                  </button>
+                )}
+
+                {step === "uploading" && (
+                  <button disabled className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl opacity-50 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Uploading...
+                  </button>
+                )}
+
+                {/* STEP 2: Save to Database */}
+                {step === "uploaded" && (
+                  <button type="button" onClick={handleSaveToDB}
+                    className="px-6 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-emerald-700">
+                    <Check className="w-4 h-4" /> Save to Gallery
+                  </button>
+                )}
+
+                {step === "saving" && (
+                  <button disabled className="px-6 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl opacity-50 flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" /> Saving...
+                  </button>
+                )}
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── Gallery Grid ── */}
+      {/* ══ Gallery Grid ══ */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {gallery.length === 0 && <p className="col-span-full text-center text-muted-foreground py-12">No images yet. Click "Upload Image" to add your first photo.</p>}
+        {gallery.length === 0 && <p className="col-span-full text-center text-muted-foreground py-12">No images yet. Click &quot;Upload Image&quot; to add your first photo.</p>}
         {gallery.map((g: any) => (
           <div key={g.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm group relative">
             {g.url && <img src={g.url} alt="Gallery" className="w-full h-48 object-cover" />}
