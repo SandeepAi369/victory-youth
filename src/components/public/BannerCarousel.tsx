@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface Banner {
   id: string;
@@ -10,61 +10,40 @@ interface Banner {
 
 export function BannerCarousel({ banners }: { banners: Banner[] }) {
   const [current, setCurrent] = useState(0);
-  const [isHovered, setIsHovered] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const touchRef = useRef<{ startX: number; startTime: number } | null>(null);
+  const [paused, setPaused] = useState(false);
+  const startX = useRef(0);
   const count = banners.length;
 
-  // Always go forward (wraps around)
-  const next = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % count);
-  }, [count]);
-
-  const goTo = useCallback((index: number) => {
-    setCurrent(((index % count) + count) % count);
-  }, [count]);
-
-  // Auto-scroll every 4s — forward only, infinite loop
+  // Auto-scroll forward every 4s — pauses when user is touching
   useEffect(() => {
-    if (count <= 1 || isHovered) return;
-    const id = setInterval(next, 4000);
-    return () => clearInterval(id);
-  }, [count, isHovered, next]);
+    if (count <= 1 || paused) return;
+    const timer = setInterval(() => {
+      setCurrent((prev) => (prev + 1) % count);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [count, paused]);
 
-  // ── Touch / Swipe handlers (ultra-responsive) ──
-  const onTouchStart = (e: React.TouchEvent) => {
-    touchRef.current = {
-      startX: e.touches[0].clientX,
-      startTime: Date.now(),
-    };
-    setIsDragging(true);
-    setDragOffset(0);
+  // Touch start — pause auto-scroll, record position
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setPaused(true);
+    startX.current = e.touches[0].clientX;
   };
 
-  const onTouchMove = (e: React.TouchEvent) => {
-    if (!touchRef.current) return;
-    const dx = e.touches[0].clientX - touchRef.current.startX;
-    setDragOffset(dx);
-  };
+  // Touch end — detect swipe direction, resume auto-scroll
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const endX = e.changedTouches[0].clientX;
+    const diff = startX.current - endX;
 
-  const onTouchEnd = () => {
-    if (!touchRef.current) return;
-    const dx = dragOffset;
-    const elapsed = Date.now() - touchRef.current.startTime;
-
-    // Velocity-based: fast flick with small distance still triggers
-    const velocity = Math.abs(dx) / Math.max(elapsed, 1);
-    const triggered = Math.abs(dx) > 30 || velocity > 0.3;
-
-    if (triggered) {
-      if (dx < 0) goTo(current + 1);  // swipe left → next
-      else goTo(current - 1);          // swipe right → prev
+    if (diff > 40) {
+      // Swiped left → next
+      setCurrent((prev) => (prev + 1) % count);
+    } else if (diff < -40) {
+      // Swiped right → prev
+      setCurrent((prev) => (prev - 1 + count) % count);
     }
 
-    touchRef.current = null;
-    setIsDragging(false);
-    setDragOffset(0);
+    // Resume auto-scroll after releasing
+    setPaused(false);
   };
 
   if (count === 0) return null;
@@ -85,23 +64,16 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
     );
   }
 
-  // Compute translateX — includes live drag offset for instant feedback
-  const baseTranslate = -(current * 100);
-  const dragPercent = isDragging ? (dragOffset / (typeof window !== "undefined" ? window.innerWidth : 400)) * 100 : 0;
-
   return (
     <div
-      className="relative rounded-2xl overflow-hidden shadow-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800 select-none"
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
+      className="relative rounded-2xl overflow-hidden shadow-lg border border-stone-200 dark:border-stone-700 bg-white dark:bg-stone-800"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       <div className="aspect-[4/3] relative overflow-hidden">
         <div
-          className={isDragging ? "flex h-full" : "flex h-full transition-transform duration-400 ease-out"}
-          style={{ transform: `translateX(${baseTranslate + dragPercent}%)` }}
+          className="flex h-full transition-transform duration-500 ease-in-out"
+          style={{ transform: `translateX(-${current * 100}%)` }}
         >
           {banners.map((b) => (
             <div key={b.id} className="w-full h-full flex-shrink-0 relative">
@@ -121,12 +93,12 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
         {banners.map((_, i) => (
           <button
             key={i}
-            onClick={() => goTo(i)}
+            onClick={() => setCurrent(i)}
             className={"w-2 h-2 rounded-full transition-all duration-300 " +
               (i === current
                 ? "bg-white w-5 shadow-md"
                 : "bg-white/50 hover:bg-white/70")}
-            aria-label={`Go to banner ${i + 1}`}
+            aria-label={`Banner ${i + 1}`}
           />
         ))}
       </div>
