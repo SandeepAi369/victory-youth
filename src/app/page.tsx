@@ -4,12 +4,13 @@ import { CountdownTimer } from "@/components/public/CountdownTimer";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
 import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
+import { BannerCarousel } from "@/components/public/BannerCarousel";
 import { Sparkles, Calendar, Heart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { settings, stats, hero, events, publishedDonations, notes } = await getHomepageData();
+  const { settings, stats, hero, events, publishedDonations, notes, banners } = await getHomepageData();
 
   const progressPercentage = stats.donationTarget > 0
     ? Math.min(Math.round((stats.totalAmount / stats.donationTarget) * 100), 100)
@@ -84,6 +85,18 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* ===== BANNER CAROUSEL ===== */}
+      {banners && banners.length > 0 && (
+        <section id="banner-section" className="py-8 px-4 -mt-2">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-white mb-5 flex items-center gap-2">
+              🎯 Banner
+            </h2>
+            <BannerCarousel banners={banners} />
+          </div>
+        </section>
+      )}
 
       {/* ===== DONATION PROGRESS ===== */}
       {stats.donationTarget > 0 && (
