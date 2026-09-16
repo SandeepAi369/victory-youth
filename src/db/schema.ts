@@ -644,6 +644,25 @@ export const eventCategories = pgTable("event_categories", {
 });
 
 // 21. Gallery Categories
+
+
+// ============================================
+// BANNERS TABLE (max 3 active)
+// ============================================
+export const banners = pgTable("banners", {
+  id: text("id").primaryKey(),
+  url: text("url").notNull(),
+  cloudinaryPublicId: text("cloudinary_public_id"),
+  label: text("label").default(""),
+  sortOrder: integer("sort_order").default(0),
+  isPublished: boolean("is_published").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type BannerRow = InferSelectModel<typeof banners>;
+export type NewBannerRow = InferInsertModel<typeof banners>;
+
 export const galleryCategories = pgTable("gallery_categories", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
