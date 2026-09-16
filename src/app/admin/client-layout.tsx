@@ -6,7 +6,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import {
   LayoutDashboard, IndianRupee, HandCoins, BarChart3,
   Users, Calendar, Image, Bell, StickyNote, Package, Settings, LogOut, Menu, X,
-  MoreVertical, Presentation
+  Presentation
 } from "lucide-react";
 import { useState, useEffect } from "react";
 
@@ -18,6 +18,7 @@ const navItems = [
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/events", label: "Events", icon: Calendar },
   { href: "/admin/gallery", label: "Gallery", icon: Image },
+  { href: "/admin/banners", label: "Banners", icon: Presentation },
   { href: "/admin/notices", label: "Notices", icon: Bell },
   { href: "/admin/notes", label: "Notes", icon: StickyNote },
   { href: "/admin/inventory", label: "Inventory", icon: Package },
@@ -28,7 +29,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [extraMenuOpen, setExtraMenuOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -124,32 +124,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <h1 className="font-semibold text-lg text-foreground capitalize">
             {pathname === "/admin" ? "Dashboard" : pathname.split("/").pop()?.replace(/-/g, " ") || "Admin Panel"}
           </h1>
-          <div className="flex items-center gap-2">
-            {/* 3-dot extra menu */}
-            <div className="relative">
-              <button onClick={() => setExtraMenuOpen(!extraMenuOpen)}
-                className="p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors"
-                aria-label="More options">
-                <MoreVertical className="w-5 h-5" />
-              </button>
-              {extraMenuOpen && (
-                <>
-                  <div className="fixed inset-0 z-40" onClick={() => setExtraMenuOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-50 w-48 bg-card border border-border rounded-xl shadow-xl py-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <Link href="/admin/banners" onClick={() => setExtraMenuOpen(false)}
-                      className={"flex items-center gap-3 px-4 py-2.5 text-sm font-medium transition-colors " +
-                        (pathname.startsWith("/admin/banners")
-                          ? "bg-primary/10 text-primary"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground")}>
-                      <Presentation className="w-4 h-4" />
-                      Banners
-                    </Link>
-                  </div>
-                </>
-              )}
-            </div>
-            <ModeToggle />
-          </div>
+          <ModeToggle />
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6 lg:p-8">
           <div className="max-w-6xl mx-auto">{children}</div>
