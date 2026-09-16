@@ -256,10 +256,34 @@ export async function getFeaturedGallery(existingSettings?: any) {
 // HOMEPAGE DATA AGGREGATION
 // ============================================
 
+
+// ============================================
+// PUBLISHED BANNERS
+// ============================================
+export async function getPublishedBanners() {
+  try {
+    const db = getDb();
+    return await db
+      .select({
+        id: schema.banners.id,
+        url: schema.banners.url,
+        label: schema.banners.label,
+        sortOrder: schema.banners.sortOrder,
+        _now: sql`NOW()`,
+      })
+      .from(schema.banners)
+      .where(eq(schema.banners.isPublished, true))
+      .orderBy(schema.banners.sortOrder);
+  } catch (error: any) {
+    console.error("getPublishedBanners error:", error);
+    return [];
+  }
+}
+
 export async function getHomepageData() {
   try {
     const settings = await getAssociationSettings();
-    const [stats, hero, featuredGallery, events, notices, notes, publishedDonations] =
+    const [stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners] =
       await Promise.all([
         getPublicStats(settings),
         getHeroSection(settings),
@@ -268,8 +292,9 @@ export async function getHomepageData() {
         getPublishedNotices(3),
         getPublishedNotes(5),
         getPublishedDonations(20),
+        getPublishedBanners(),
       ]);
-    return { settings, stats, hero, featuredGallery, events, notices, notes, publishedDonations };
+    return { settings, stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners };
   } catch (err) {
     console.error("❌ getHomepageData top-level error:", err);
     return {
@@ -287,6 +312,7 @@ export async function getHomepageData() {
       notices: [],
       notes: [],
       publishedDonations: [],
+      banners: [],
     };
   }
 }
