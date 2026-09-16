@@ -2,8 +2,11 @@
 
 import { useState, useRef } from "react";
 import { Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw, Check, CloudUpload } from "lucide-react";
-import { getDirectUploadUrl, saveGalleryImage, replaceGalleryImage, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
+import { saveGalleryImage, replaceGalleryImage, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+
+const CLOUD_NAME = "y5dnsgyb";
+const UPLOAD_PRESET = "victory_youth_unsigned";
 
 export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const { data: gallery, isPending, execute } = useAdminAction(initialGallery);
@@ -11,10 +14,10 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const [replacingId, setReplacingId] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // 2-step state
+  // 2-step state machine
   const [step, setStep] = useState<"select" | "uploading" | "uploaded" | "saving">("select");
-  const [uploadedImageId, setUploadedImageId] = useState<string | null>(null);
   const [uploadedUrl, setUploadedUrl] = useState<string | null>(null);
+  const [uploadedPublicId, setUploadedPublicId] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState("");
 
   const [category, setCategory] = useState("General");
@@ -27,7 +30,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const resetForm = () => {
     setCategory("General"); setYear(2026); setPreview(null);
     setIsAdding(false); setReplacingId(null);
-    setStep("select"); setUploadedImageId(null); setUploadedUrl(null); setStatusMsg("");
+    setStep("select"); setUploadedUrl(null); setUploadedPublicId(null); setStatusMsg("");
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -37,69 +40,68 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       const reader = new FileReader();
       reader.onload = (ev) => setPreview(ev.target?.result as string);
       reader.readAsDataURL(file);
-      // Reset upload state when new file selected
-      setStep("select"); setUploadedImageId(null); setUploadedUrl(null); setStatusMsg("");
+      setStep("select"); setUploadedUrl(null); setUploadedPublicId(null); setStatusMsg("");
     }
   };
 
-  // ── STEP 1: Upload file to Cloudflare ──
-  const handleUploadToCF = async () => {
+  // ── STEP 1: Upload directly from browser to Cloudinary ──
+  const handleUploadToCloudinary = async () => {
     const file = fileRef.current?.files?.[0];
     if (!file) return alert("Please select an image file first.");
 
     setStep("uploading");
+    setStatusMsg("Uploading to Cloudinary...");
+
     try {
-      setStatusMsg("Getting upload URL...");
-      const urlResult = await getDirectUploadUrl();
-      if (!urlResult.success || !urlResult.uploadUrl || !urlResult.imageId) {
-        throw new Error(urlResult.error || "Failed to get upload URL");
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("upload_preset", UPLOAD_PRESET);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`,
+        { method: "POST", body: formData }
+      );
+
+      const data = await res.json();
+
+      if (data.error) {
+        throw new Error(data.error.message || "Cloudinary upload failed");
       }
 
-      setStatusMsg("Uploading to Cloudflare...");
-      const cfForm = new FormData();
-      cfForm.append("file", file);
-
-      const cfRes = await fetch(urlResult.uploadUrl, {
-        method: "POST",
-        body: cfForm,
-      });
-
-      if (!cfRes.ok) {
-        const errText = await cfRes.text();
-        throw new Error("Cloudflare upload failed: " + errText);
+      if (!data.secure_url) {
+        throw new Error("No URL returned from Cloudinary");
       }
 
-      // Upload confirmed!
-      const cfImageId = urlResult.imageId;
-      const deliveryUrl = `https://imagedelivery.net/g0kMHlYRsoNb1rbpdz3L7g/${cfImageId}/public`;
-      setUploadedImageId(cfImageId);
-      setUploadedUrl(deliveryUrl);
+      setUploadedUrl(data.secure_url);
+      setUploadedPublicId(data.public_id);
       setStep("uploaded");
       setStatusMsg("");
     } catch (err: any) {
       setStep("select");
+      setStatusMsg("");
       alert("Upload error: " + err.message);
     }
   };
 
-  // ── STEP 2: Save confirmed image to database ──
+  // ── STEP 2: Save confirmed Cloudinary URL to database ──
   const handleSaveToDB = async () => {
-    if (!uploadedImageId) return;
+    if (!uploadedUrl || !uploadedPublicId) return;
     setStep("saving");
     setStatusMsg("Saving to database...");
 
     try {
       if (replacingId) {
-        const result = await replaceGalleryImage(replacingId, uploadedImageId);
+        const result = await replaceGalleryImage(replacingId, uploadedUrl, uploadedPublicId);
         if (!result.success) throw new Error(result.error || "Failed to replace");
       } else {
-        const result = await saveGalleryImage(uploadedImageId, category, year);
+        const result = await saveGalleryImage(uploadedUrl, uploadedPublicId, category, year);
         if (!result.success) throw new Error(result.error || "Failed to save");
       }
       resetForm();
       window.location.reload();
     } catch (err: any) {
-      setStep("uploaded"); // Go back to uploaded state so they can retry save
+      setStep("uploaded");
+      setStatusMsg("");
       alert("Save error: " + err.message);
     }
   };
@@ -135,7 +137,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">Gallery</h1>
-          <p className="text-muted-foreground text-sm">Upload & manage photos via Cloudflare Images</p>
+          <p className="text-muted-foreground text-sm">Upload & manage photos via Cloudinary</p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {gallery.length > 0 && (
@@ -155,7 +157,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
         </div>
       </div>
 
-      {/* ══ Upload / Replace Modal ══ */}
+      {/* Upload / Replace Modal */}
       {(isAdding || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
@@ -167,7 +169,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
             </div>
 
             <div className="space-y-4">
-              {/* ── File Picker ── */}
+              {/* File Picker */}
               <div>
                 <label className="block text-xs font-bold text-muted-foreground mb-1">
                   {replacingId ? "New Image *" : "Image File *"}
@@ -177,7 +179,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                     <div className="space-y-3">
                       <img src={uploadedUrl} alt="Uploaded" className="max-h-48 mx-auto rounded-lg object-contain" />
                       <div className="flex items-center justify-center gap-1.5 text-emerald-600 text-sm font-bold">
-                        <Check className="w-4 h-4" /> Uploaded to Cloudflare
+                        <Check className="w-4 h-4" /> Uploaded to Cloudinary
                       </div>
                     </div>
                   ) : preview ? (
@@ -198,7 +200,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                 </div>
               </div>
 
-              {/* ── Category + Year (new uploads only) ── */}
+              {/* Category + Year (new uploads only) */}
               {!replacingId && (
                 <div className="grid grid-cols-2 gap-4">
                   <div>
@@ -216,7 +218,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                 </div>
               )}
 
-              {/* ── Status Message ── */}
+              {/* Status */}
               {statusMsg && (
                 <div className="flex items-center gap-2 text-sm text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/30 rounded-lg px-3 py-2">
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -224,21 +226,20 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                 </div>
               )}
 
-              {/* ── Confirmed URL display ── */}
+              {/* Confirmed URL */}
               {uploadedUrl && step === "uploaded" && (
                 <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg px-3 py-2 text-xs text-emerald-700 dark:text-emerald-400 break-all">
                   ✅ {uploadedUrl}
                 </div>
               )}
 
-              {/* ── Action Buttons ── */}
+              {/* Action Buttons */}
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <button type="button" onClick={() => !isBusy && resetForm()} disabled={isBusy}
                   className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl disabled:opacity-50">Cancel</button>
 
-                {/* STEP 1: Upload to Cloudflare */}
                 {step === "select" && (
-                  <button type="button" onClick={handleUploadToCF}
+                  <button type="button" onClick={handleUploadToCloudinary}
                     className="px-6 py-2 bg-blue-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-blue-700">
                     <CloudUpload className="w-4 h-4" /> Upload to Cloud
                   </button>
@@ -250,7 +251,6 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
                   </button>
                 )}
 
-                {/* STEP 2: Save to Database */}
                 {step === "uploaded" && (
                   <button type="button" onClick={handleSaveToDB}
                     className="px-6 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-emerald-700">
@@ -269,7 +269,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
         </div>
       )}
 
-      {/* ══ Gallery Grid ══ */}
+      {/* Gallery Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {gallery.length === 0 && <p className="col-span-full text-center text-muted-foreground py-12">No images yet. Click &quot;Upload Image&quot; to add your first photo.</p>}
         {gallery.map((g: any) => (
