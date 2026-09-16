@@ -3,15 +3,11 @@ import { getDb, schema } from "@/db";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
+import { createHash } from "crypto";
 
-const CF_IMAGES_HASH = "g0kMHlYRsoNb1rbpdz3L7g";
-
-function getCfCredentials(): { accountId: string; imagesToken: string } {
-  return {
-    accountId: "3599fd84a57a8884da174cd015d96e1e",
-    imagesToken: "***REMOVED***",
-  };
-}
+const CLOUD_NAME = "y5dnsgyb";
+const API_KEY = "***REMOVED***";
+const API_SECRET = "***REMOVED***";
 
 function revalidate() {
   revalidatePath("/");
@@ -19,64 +15,23 @@ function revalidate() {
   revalidatePath("/gallery");
 }
 
-function cfImageUrl(imageId: string): string {
-  return `https://imagedelivery.net/${CF_IMAGES_HASH}/${imageId}/public`;
-}
-
 /**
- * Step A+B: Server action returns a one-time Direct Upload URL from Cloudflare.
- * The client will use this URL to upload the file directly to CF (no file through server action).
+ * Save a Cloudinary image record to CockroachDB.
+ * Called AFTER the client has uploaded directly to Cloudinary.
  */
-export async function getDirectUploadUrl(): Promise<{
-  success: boolean;
-  uploadUrl?: string;
-  imageId?: string;
-  error?: string;
-}> {
-  try {
-    const { accountId, imagesToken } = getCfCredentials();
-
-    const res = await fetch(
-      `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v2/direct_upload`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${imagesToken}`,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: "requireSignedURLs=false",
-      }
-    );
-
-    const data = await res.json();
-
-    if (!data.success) {
-      return { success: false, error: data.errors?.[0]?.message || "Failed to get upload URL" };
-    }
-
-    return {
-      success: true,
-      uploadUrl: data.result.uploadURL,
-      imageId: data.result.id,
-    };
-  } catch (error: any) {
-    console.error("getDirectUploadUrl error:", error);
-    return { success: false, error: error.message };
-  }
-}
-
-/**
- * Step D: After the client uploads the file directly to CF,
- * save the CF image ID + delivery URL to CockroachDB.
- */
-export async function saveGalleryImage(cfImageId: string, category: string, year: number) {
+export async function saveGalleryImage(
+  secureUrl: string,
+  publicId: string,
+  category: string,
+  year: number
+) {
   try {
     const db = getDb();
     await db.insert(schema.gallery).values({
       id: `gal_${randomUUID()}`,
       title: "Photo",
-      url: cfImageUrl(cfImageId),
-      cloudinaryPublicId: cfImageId,
+      url: secureUrl,
+      cloudinaryPublicId: publicId,
       category: category || "General",
       year: year || 2026,
       uploadedBy: "Admin",
@@ -91,35 +46,36 @@ export async function saveGalleryImage(cfImageId: string, category: string, year
 }
 
 /**
- * Replace an existing gallery image with a new one.
- * Deletes old CF image, updates DB row with new CF image ID + URL.
+ * Replace an existing gallery image with a new Cloudinary upload.
+ * Deletes old image from Cloudinary, updates DB row.
  */
-export async function replaceGalleryImage(galleryId: string, newCfImageId: string) {
+export async function replaceGalleryImage(
+  galleryId: string,
+  newSecureUrl: string,
+  newPublicId: string
+) {
   try {
     const db = getDb();
 
-    // Get old CF image ID to delete it
-    const rows = await db.select({ cfId: schema.gallery.cloudinaryPublicId })
-      .from(schema.gallery).where(eq(schema.gallery.id, galleryId));
+    // Get old public ID to delete from Cloudinary
+    const rows = await db
+      .select({ cfId: schema.gallery.cloudinaryPublicId })
+      .from(schema.gallery)
+      .where(eq(schema.gallery.id, galleryId));
 
-    const oldCfId = rows[0]?.cfId;
-
-    // Delete old image from CF (non-fatal if it fails)
-    if (oldCfId) {
-      try {
-        const { accountId, imagesToken } = getCfCredentials();
-        await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${oldCfId}`,
-          { method: "DELETE", headers: { Authorization: `Bearer ${imagesToken}` } }
-        );
-      } catch (_) {}
+    const oldPublicId = rows[0]?.cfId;
+    if (oldPublicId) {
+      await destroyCloudinaryImage(oldPublicId);
     }
 
     // Update DB with new image
-    await db.update(schema.gallery).set({
-      url: cfImageUrl(newCfImageId),
-      cloudinaryPublicId: newCfImageId,
-    }).where(eq(schema.gallery.id, galleryId));
+    await db
+      .update(schema.gallery)
+      .set({
+        url: newSecureUrl,
+        cloudinaryPublicId: newPublicId,
+      })
+      .where(eq(schema.gallery.id, galleryId));
 
     revalidate();
     return { success: true };
@@ -132,16 +88,19 @@ export async function replaceGalleryImage(galleryId: string, newCfImageId: strin
 export async function getGallery() {
   try {
     const db = getDb();
-    return await db.select({
-      id: schema.gallery.id,
-      url: schema.gallery.url,
-      category: schema.gallery.category,
-      year: schema.gallery.year,
-      isPublished: schema.gallery.isPublished,
-      uploadedAt: schema.gallery.uploadedAt,
-      cloudinaryPublicId: schema.gallery.cloudinaryPublicId,
-      _now: sql`NOW()`,
-    }).from(schema.gallery).orderBy(schema.gallery.uploadedAt);
+    return await db
+      .select({
+        id: schema.gallery.id,
+        url: schema.gallery.url,
+        category: schema.gallery.category,
+        year: schema.gallery.year,
+        isPublished: schema.gallery.isPublished,
+        uploadedAt: schema.gallery.uploadedAt,
+        cloudinaryPublicId: schema.gallery.cloudinaryPublicId,
+        _now: sql`NOW()`,
+      })
+      .from(schema.gallery)
+      .orderBy(schema.gallery.uploadedAt);
   } catch (error: any) {
     console.error("getGallery error:", error);
     return [];
@@ -152,20 +111,14 @@ export async function deleteGalleryItem(id: string) {
   try {
     const db = getDb();
 
-    const rows = await db.select({ cfId: schema.gallery.cloudinaryPublicId })
-      .from(schema.gallery).where(eq(schema.gallery.id, id));
+    const rows = await db
+      .select({ cfId: schema.gallery.cloudinaryPublicId })
+      .from(schema.gallery)
+      .where(eq(schema.gallery.id, id));
 
-    const cfId = rows[0]?.cfId;
-
-    // Delete from CF Images
-    if (cfId) {
-      try {
-        const { accountId, imagesToken } = getCfCredentials();
-        await fetch(
-          `https://api.cloudflare.com/client/v4/accounts/${accountId}/images/v1/${cfId}`,
-          { method: "DELETE", headers: { Authorization: `Bearer ${imagesToken}` } }
-        );
-      } catch (_) {}
+    const publicId = rows[0]?.cfId;
+    if (publicId) {
+      await destroyCloudinaryImage(publicId);
     }
 
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
@@ -180,7 +133,10 @@ export async function deleteGalleryItem(id: string) {
 export async function toggleGalleryPublish(id: string, publish: boolean) {
   try {
     const db = getDb();
-    await db.update(schema.gallery).set({ isPublished: publish }).where(eq(schema.gallery.id, id));
+    await db
+      .update(schema.gallery)
+      .set({ isPublished: publish })
+      .where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
   } catch (error: any) {
@@ -200,5 +156,30 @@ export async function setAllGalleryVisibility(
   } catch (error: any) {
     console.error("setAllGalleryVisibility error:", error);
     return { success: false, newState: !publish, error: error.message };
+  }
+}
+
+/** Delete an image from Cloudinary via REST API (signed request) */
+async function destroyCloudinaryImage(publicId: string): Promise<void> {
+  try {
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const toSign = `public_id=${publicId}&timestamp=${timestamp}${API_SECRET}`;
+    const signature = createHash("sha1").update(toSign).digest("hex");
+
+    await fetch(
+      `https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/destroy`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          public_id: publicId,
+          api_key: API_KEY,
+          timestamp,
+          signature,
+        }),
+      }
+    );
+  } catch (err) {
+    console.error("Cloudinary destroy error:", err);
   }
 }
