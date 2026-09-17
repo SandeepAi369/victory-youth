@@ -49,18 +49,16 @@ export default async function HomePage() {
         </div>
       </nav>
 
-      {/* ===== HERO BANNER ===== */}
+      {/* ===== HERO BANNER (Dynamic Story Image) ===== */}
       <section className="pt-16">
         <div className="w-full bg-stone-950">
           <img
-            src="/hero-banner.jpg"
-            alt="Banswada Ka Raja — Victory Youth Association, Gudem Gally — 50+ Years of Devotion & Service"
-            width={1024}
-            height={576}
+            src={hero.imageUrl || "/hero-banner.jpg"}
+            alt={hero.imageAlt || "Victory Youth Association"}
             fetchPriority="high"
             loading="eager"
             decoding="async"
-            className="w-full h-auto object-cover"
+            className="w-full h-auto"
           />
         </div>
       </section>
