@@ -130,7 +130,7 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Date *</label>
-                  <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" />
+                  <input type="date" required value={form.date} readOnly className="w-full bg-background border rounded-lg px-3 py-2 cursor-not-allowed opacity-70" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Purpose</label>
