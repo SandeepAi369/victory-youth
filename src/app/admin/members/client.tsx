@@ -18,7 +18,7 @@ type Member = {
 };
 
 const ROLES = ["Member", "Special Candidate"];
-const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "Member" };
+const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: "Member", joinDate: new Date().toISOString().split("T")[0] };
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
   const { data, isPending, execute } = useAdminAction<Member>(initialData);
@@ -35,6 +35,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
     const payload = {
       name: form.fullName, fullName: form.fullName, phone: form.phone,
       membershipFee: parseInt(form.membershipFee) || 0, role: form.role,
+      joinDate: form.joinDate,
     };
     execute({
       // No optimistic for add/edit — we don't have the server-generated ID yet
@@ -60,6 +61,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
       name: m.name, fullName: m.fullName || m.name, phone: m.phone,
       membershipFee: String(m.membershipFee || 0),
       role: m.role || m.committeeRole || "Member",
+      joinDate: (m as any).joinDate || new Date().toISOString().split("T")[0],
     });
   };
 
@@ -150,6 +152,11 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">Date</label>
+                <input type="date" value={form.joinDate} readOnly
+                  className="w-full bg-background border rounded-lg px-3 py-2 cursor-not-allowed opacity-70" />
+              </div>
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
                 <button type="submit" disabled={isPending}
@@ -171,12 +178,13 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                 <th className="px-4 py-3">Phone</th>
                 <th className="px-4 py-3">Contribution</th>
                 <th className="px-4 py-3">Role</th>
+                <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {data.length === 0 && (
-                <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No members yet.</td></tr>
+                <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No members yet.</td></tr>
               )}
               {data.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
@@ -193,6 +201,13 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                         : "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400")}>
                       {m.role || m.committeeRole || "Member"}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">
+                    {(m as any).joinDate
+                      ? new Date((m as any).joinDate + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                      : (m as any).createdAt
+                        ? new Date((m as any).createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                        : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">

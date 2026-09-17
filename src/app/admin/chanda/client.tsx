@@ -123,7 +123,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-muted-foreground mb-1">Date *</label>
-                  <input type="date" required value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" />
+                  <input type="date" required value={form.date} readOnly className="w-full bg-background border rounded-lg px-3 py-2 cursor-not-allowed opacity-70" />
                 </div>
               </div>
               <div>
