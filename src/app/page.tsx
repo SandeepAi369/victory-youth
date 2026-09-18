@@ -5,7 +5,7 @@ import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
 import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
 import { BannerCarousel } from "@/components/public/BannerCarousel";
-import { Sparkles, Calendar, Heart } from "lucide-react";
+import { Sparkles, Calendar, Heart, Instagram, Mail, MapPin, Github } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -188,6 +188,26 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* ===== SOCIAL / CONTACT ICONS ===== */}
+      <section className="py-10 px-4">
+        <div className="container mx-auto max-w-3xl">
+          <div className="flex items-center justify-center gap-5">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center shadow-md shadow-pink-300/30 dark:shadow-pink-900/30">
+              <Instagram className="w-5 h-5 text-white" />
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center shadow-md shadow-red-300/30 dark:shadow-red-900/30">
+              <Mail className="w-5 h-5 text-white" />
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-md shadow-emerald-300/30 dark:shadow-emerald-900/30">
+              <MapPin className="w-5 h-5 text-white" />
+            </div>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-stone-700 to-stone-900 flex items-center justify-center shadow-md shadow-stone-400/30 dark:shadow-stone-900/30">
+              <Github className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ===== FOOTER ===== */}
       <Footer
