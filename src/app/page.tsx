@@ -50,24 +50,68 @@ export default async function HomePage() {
       </nav>
 
       {/* ===== GOLDEN ASSOCIATION BANNER ===== */}
-      <div className="w-full flex justify-center items-center py-2 gap-4 mt-16 overflow-hidden" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
+      <style>{`
+        @keyframes goldPulse {
+          0%, 100% { opacity: 0.2; transform: scale(0.6); }
+          50% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes goldFloat {
+          0%, 100% { opacity: 0.15; transform: translateY(0px) scale(0.7); }
+          50% { opacity: 0.8; transform: translateY(-4px) scale(1); }
+        }
+        @keyframes goldShimmer {
+          0%, 100% { opacity: 0.1; transform: rotate(0deg) scale(0.5); }
+          50% { opacity: 0.7; transform: rotate(180deg) scale(1); }
+        }
+        .gp1 { animation: goldPulse 2s ease-in-out infinite; }
+        .gp2 { animation: goldFloat 2.5s ease-in-out infinite 0.4s; }
+        .gp3 { animation: goldShimmer 3s ease-in-out infinite 0.8s; }
+        .gp4 { animation: goldPulse 2.2s ease-in-out infinite 1.2s; }
+        .gp5 { animation: goldFloat 2.8s ease-in-out infinite 0.6s; }
+        .gp6 { animation: goldShimmer 3.2s ease-in-out infinite 1.5s; }
+      `}</style>
+      <div className="w-full flex justify-center items-center py-2 gap-3 mt-16 overflow-hidden" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
 
-        {/* Left Om symbol */}
-        <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight: 1}}>
-          <span style={{fontSize: "clamp(1.4rem, 4vw, 2rem)", color: "#FFD700", textShadow: "0 0 12px rgba(255,215,0,0.6), 0 0 24px rgba(255,215,0,0.3)", fontFamily: "serif"}}>ॐ</span>
-          <div style={{width: "clamp(28px, 6vw, 40px)", height: "1px", background: "linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop: "2px"}} />
+        {/* Left sparkles + Om */}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {/* Animated sparkle cluster */}
+          <div className="relative w-10 h-10 hidden sm:block">
+            <span className="gp1 absolute" style={{top:"2px", left:"2px", fontSize:"7px", color:"#FFD700"}}>✦</span>
+            <span className="gp2 absolute" style={{top:"8px", left:"14px", fontSize:"10px", color:"#FFC200"}}>★</span>
+            <span className="gp3 absolute" style={{top:"20px", left:"3px", fontSize:"6px", color:"#FFD700"}}>◆</span>
+            <span className="gp4 absolute" style={{top:"28px", left:"16px", fontSize:"8px", color:"#FFC200"}}>✦</span>
+            <span className="gp5 absolute" style={{top:"14px", left:"24px", fontSize:"5px", color:"#FFD700"}}>★</span>
+            <span className="gp6 absolute" style={{top:"4px", left:"22px", fontSize:"6px", color:"#C8960C"}}>◆</span>
+          </div>
+          {/* Om symbol */}
+          <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight:1}}>
+            <span style={{fontSize:"clamp(2rem, 6vw, 3rem)", color:"#FFD700", textShadow:"0 0 16px rgba(255,215,0,0.8), 0 0 32px rgba(255,215,0,0.4)", fontFamily:"serif"}}>ॐ</span>
+            <div style={{width:"clamp(32px, 7vw, 48px)", height:"1.5px", background:"linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop:"3px"}} />
+          </div>
         </div>
 
         {/* Center glass pill — unchanged */}
-        <div className="flex-shrink-0 inline-flex flex-col items-center px-6 py-1.5 rounded-2xl border border-yellow-400/30" style={{background: "rgba(212,160,23,0.12)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 4px 24px rgba(212,160,23,0.15), inset 0 1px 0 rgba(255,215,0,0.2)"}}>
-          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>GANESH</span>
-          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>ASSOCIATION</span>
+        <div className="flex-shrink-0 inline-flex flex-col items-center px-6 py-1.5 rounded-2xl border border-yellow-400/30" style={{background:"rgba(212,160,23,0.12)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", boxShadow:"0 4px 24px rgba(212,160,23,0.15), inset 0 1px 0 rgba(255,215,0,0.2)"}}>
+          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color:"#FFD700"}}>GANESH</span>
+          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color:"#FFD700"}}>ASSOCIATION</span>
         </div>
 
-        {/* Right Om symbol */}
-        <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight: 1}}>
-          <span style={{fontSize: "clamp(1.4rem, 4vw, 2rem)", color: "#FFD700", textShadow: "0 0 12px rgba(255,215,0,0.6), 0 0 24px rgba(255,215,0,0.3)", fontFamily: "serif"}}>ॐ</span>
-          <div style={{width: "clamp(28px, 6vw, 40px)", height: "1px", background: "linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop: "2px"}} />
+        {/* Right Om + sparkles */}
+        <div className="flex-shrink-0 flex items-center gap-2">
+          {/* Om symbol */}
+          <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight:1}}>
+            <span style={{fontSize:"clamp(2rem, 6vw, 3rem)", color:"#FFD700", textShadow:"0 0 16px rgba(255,215,0,0.8), 0 0 32px rgba(255,215,0,0.4)", fontFamily:"serif"}}>ॐ</span>
+            <div style={{width:"clamp(32px, 7vw, 48px)", height:"1.5px", background:"linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop:"3px"}} />
+          </div>
+          {/* Animated sparkle cluster */}
+          <div className="relative w-10 h-10 hidden sm:block">
+            <span className="gp2 absolute" style={{top:"2px", left:"8px", fontSize:"7px", color:"#FFD700"}}>✦</span>
+            <span className="gp3 absolute" style={{top:"8px", left:"0px", fontSize:"10px", color:"#FFC200"}}>★</span>
+            <span className="gp4 absolute" style={{top:"20px", left:"14px", fontSize:"6px", color:"#FFD700"}}>◆</span>
+            <span className="gp1 absolute" style={{top:"28px", left:"2px", fontSize:"8px", color:"#FFC200"}}>✦</span>
+            <span className="gp6 absolute" style={{top:"14px", left:"20px", fontSize:"5px", color:"#FFD700"}}>★</span>
+            <span className="gp5 absolute" style={{top:"4px", left:"22px", fontSize:"6px", color:"#C8960C"}}>◆</span>
+          </div>
         </div>
 
       </div>
