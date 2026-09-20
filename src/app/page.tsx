@@ -50,11 +50,97 @@ export default async function HomePage() {
       </nav>
 
       {/* ===== GOLDEN ASSOCIATION BANNER ===== */}
-      <div className="pt-16 flex justify-center items-center py-2" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
+      <div className="pt-16 flex justify-center items-center py-2 gap-3" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
+
+        {/* Left Ganesha + swirl */}
+        <div className="flex items-center gap-1 opacity-90">
+          <svg width="18" height="40" viewBox="0 0 18 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 38 Q2 30 3 22 Q1 18 3 14 Q5 8 9 6" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M9 30 Q5 26 6 20" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M9 22 Q4 18 5 12" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+          </svg>
+          <svg width="52" height="64" viewBox="0 0 52 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Crown/mukut */}
+            <path d="M20 10 L26 4 L32 10" stroke="#FFD700" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 13 L20 8 L26 6 L32 8 L36 13" stroke="#FFD700" strokeWidth="1.2" fill="none"/>
+            <circle cx="26" cy="5" r="2" fill="#FFD700" opacity="0.8"/>
+            {/* Head */}
+            <ellipse cx="26" cy="22" rx="11" ry="10" stroke="#FFD700" strokeWidth="1.5" fill="rgba(212,160,23,0.12)"/>
+            {/* Left ear */}
+            <ellipse cx="13" cy="22" rx="6" ry="8" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            <ellipse cx="13" cy="22" rx="3.5" ry="5" stroke="#FFD700" strokeWidth="0.8" fill="none" opacity="0.6"/>
+            {/* Right ear */}
+            <ellipse cx="39" cy="22" rx="6" ry="8" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            <ellipse cx="39" cy="22" rx="3.5" ry="5" stroke="#FFD700" strokeWidth="0.8" fill="none" opacity="0.6"/>
+            {/* Eyes */}
+            <circle cx="22" cy="20" r="1.5" fill="#FFD700"/>
+            <circle cx="30" cy="20" r="1.5" fill="#FFD700"/>
+            <circle cx="22" cy="20" r="0.7" fill="#1a1a2e"/>
+            <circle cx="30" cy="20" r="0.7" fill="#1a1a2e"/>
+            {/* Trunk curling left */}
+            <path d="M22 28 Q18 34 14 36 Q10 38 12 42 Q14 45 18 44" stroke="#FFD700" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+            {/* Tusk */}
+            <path d="M23 27 Q19 30 20 34" stroke="#FFF8DC" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            {/* Body */}
+            <path d="M18 32 Q14 36 15 44 Q16 50 20 52 L26 54 L32 52 Q36 50 37 44 Q38 36 34 32" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            {/* Arms */}
+            <path d="M18 35 Q12 33 10 36 Q8 39 11 41" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M34 35 Q40 33 42 36 Q44 39 41 41" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            {/* Decorative belly dot */}
+            <circle cx="26" cy="43" r="2.5" stroke="#FFD700" strokeWidth="0.8" fill="rgba(212,160,23,0.2)"/>
+            {/* Base swirl/lotus */}
+            <path d="M20 54 Q17 58 14 60 Q20 62 26 61 Q32 62 38 60 Q35 58 32 54" stroke="#C8960C" strokeWidth="1" fill="rgba(212,160,23,0.1)" strokeLinecap="round"/>
+            <path d="M22 56 Q26 59 30 56" stroke="#FFD700" strokeWidth="0.8" fill="none"/>
+          </svg>
+          <svg width="18" height="40" viewBox="0 0 18 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 38 Q16 30 15 22 Q17 18 15 14 Q13 8 9 6" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M9 30 Q13 26 12 20" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M9 22 Q14 18 13 12" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+          </svg>
+        </div>
+
+        {/* Center pill — UNCHANGED */}
         <div className="inline-flex flex-col items-center px-8 py-2 rounded-2xl border border-yellow-400/30" style={{background: "rgba(212,160,23,0.12)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 4px 24px rgba(212,160,23,0.15), inset 0 1px 0 rgba(255,215,0,0.2)"}}>
           <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>GANESH</span>
           <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>ASSOCIATION</span>
         </div>
+
+        {/* Right Ganesha + swirl (mirrored) */}
+        <div className="flex items-center gap-1 opacity-90" style={{transform: "scaleX(-1)"}}>
+          <svg width="18" height="40" viewBox="0 0 18 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 38 Q2 30 3 22 Q1 18 3 14 Q5 8 9 6" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M9 30 Q5 26 6 20" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M9 22 Q4 18 5 12" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+          </svg>
+          <svg width="52" height="64" viewBox="0 0 52 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M20 10 L26 4 L32 10" stroke="#FFD700" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+            <path d="M16 13 L20 8 L26 6 L32 8 L36 13" stroke="#FFD700" strokeWidth="1.2" fill="none"/>
+            <circle cx="26" cy="5" r="2" fill="#FFD700" opacity="0.8"/>
+            <ellipse cx="26" cy="22" rx="11" ry="10" stroke="#FFD700" strokeWidth="1.5" fill="rgba(212,160,23,0.12)"/>
+            <ellipse cx="13" cy="22" rx="6" ry="8" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            <ellipse cx="13" cy="22" rx="3.5" ry="5" stroke="#FFD700" strokeWidth="0.8" fill="none" opacity="0.6"/>
+            <ellipse cx="39" cy="22" rx="6" ry="8" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            <ellipse cx="39" cy="22" rx="3.5" ry="5" stroke="#FFD700" strokeWidth="0.8" fill="none" opacity="0.6"/>
+            <circle cx="22" cy="20" r="1.5" fill="#FFD700"/>
+            <circle cx="30" cy="20" r="1.5" fill="#FFD700"/>
+            <circle cx="22" cy="20" r="0.7" fill="#1a1a2e"/>
+            <circle cx="30" cy="20" r="0.7" fill="#1a1a2e"/>
+            <path d="M22 28 Q18 34 14 36 Q10 38 12 42 Q14 45 18 44" stroke="#FFD700" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+            <path d="M23 27 Q19 30 20 34" stroke="#FFF8DC" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M18 32 Q14 36 15 44 Q16 50 20 52 L26 54 L32 52 Q36 50 37 44 Q38 36 34 32" stroke="#C8960C" strokeWidth="1.2" fill="rgba(212,160,23,0.08)"/>
+            <path d="M18 35 Q12 33 10 36 Q8 39 11 41" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M34 35 Q40 33 42 36 Q44 39 41 41" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <circle cx="26" cy="43" r="2.5" stroke="#FFD700" strokeWidth="0.8" fill="rgba(212,160,23,0.2)"/>
+            <path d="M20 54 Q17 58 14 60 Q20 62 26 61 Q32 62 38 60 Q35 58 32 54" stroke="#C8960C" strokeWidth="1" fill="rgba(212,160,23,0.1)" strokeLinecap="round"/>
+            <path d="M22 56 Q26 59 30 56" stroke="#FFD700" strokeWidth="0.8" fill="none"/>
+          </svg>
+          <svg width="18" height="40" viewBox="0 0 18 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 38 Q16 30 15 22 Q17 18 15 14 Q13 8 9 6" stroke="#C8960C" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
+            <path d="M9 30 Q13 26 12 20" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+            <path d="M9 22 Q14 18 13 12" stroke="#C8960C" strokeWidth="0.8" fill="none" strokeLinecap="round"/>
+          </svg>
+        </div>
+
       </div>
 
       {/* ===== HERO BANNER (Dynamic Story Image) ===== */}
