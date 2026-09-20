@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { Menu, X, BookOpen, ChevronRight, Presentation } from "lucide-react";
+import { Menu, X, BookOpen, ChevronRight, Presentation, Phone } from "lucide-react";
 
 export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) {
   const [open, setOpen] = useState(false);
@@ -114,6 +114,27 @@ export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) 
                 </span>
                 <span className="text-[11px] text-stone-400 dark:text-stone-500">
                   Featured highlights
+                </span>
+              </div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-stone-300 dark:text-stone-600" />
+          </button>
+
+          {/* Contact Us */}
+          <button
+            onClick={handleContactClick}
+            className="w-full flex items-center justify-between px-4 py-4 rounded-2xl text-left transition-all duration-200 hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-[0.98]"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-300/30 dark:shadow-emerald-900/30">
+                <Phone className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <span className="text-[15px] font-bold text-stone-800 dark:text-stone-100 block">
+                  Contact Us
+                </span>
+                <span className="text-[11px] text-stone-400 dark:text-stone-500">
+                  Get in touch with us
                 </span>
               </div>
             </div>
