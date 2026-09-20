@@ -63,12 +63,22 @@ export default async function HomePage() {
           0%, 100% { opacity: 0.1; transform: rotate(0deg) scale(0.5); }
           50% { opacity: 0.7; transform: rotate(180deg) scale(1); }
         }
+        @keyframes spinCW {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes spinCCW {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(-360deg); }
+        }
         .gp1 { animation: goldPulse 2s ease-in-out infinite; }
         .gp2 { animation: goldFloat 2.5s ease-in-out infinite 0.4s; }
         .gp3 { animation: goldShimmer 3s ease-in-out infinite 0.8s; }
         .gp4 { animation: goldPulse 2.2s ease-in-out infinite 1.2s; }
         .gp5 { animation: goldFloat 2.8s ease-in-out infinite 0.6s; }
         .gp6 { animation: goldShimmer 3.2s ease-in-out infinite 1.5s; }
+        .spin-cw  { animation: spinCW  8s linear infinite; }
+        .spin-ccw { animation: spinCCW 12s linear infinite; }
       `}</style>
       <div className="w-full flex justify-center items-center py-2 gap-3 mt-16 overflow-hidden" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
 
@@ -76,41 +86,77 @@ export default async function HomePage() {
         <div className="flex-shrink-0 flex items-center gap-2">
           {/* Animated sparkle cluster */}
           <div className="relative w-10 h-10 hidden sm:block">
-            <span className="gp1 absolute" style={{top:"2px", left:"2px", fontSize:"7px", color:"#FFD700"}}>✦</span>
-            <span className="gp2 absolute" style={{top:"8px", left:"14px", fontSize:"10px", color:"#FFC200"}}>★</span>
-            <span className="gp3 absolute" style={{top:"20px", left:"3px", fontSize:"6px", color:"#FFD700"}}>◆</span>
-            <span className="gp4 absolute" style={{top:"28px", left:"16px", fontSize:"8px", color:"#FFC200"}}>✦</span>
-            <span className="gp5 absolute" style={{top:"14px", left:"24px", fontSize:"5px", color:"#FFD700"}}>★</span>
-            <span className="gp6 absolute" style={{top:"4px", left:"22px", fontSize:"6px", color:"#C8960C"}}>◆</span>
+            <span className="gp1 absolute" style={{top:"2px",left:"2px",fontSize:"7px",color:"#FFD700"}}>✦</span>
+            <span className="gp2 absolute" style={{top:"8px",left:"14px",fontSize:"10px",color:"#FFC200"}}>★</span>
+            <span className="gp3 absolute" style={{top:"20px",left:"3px",fontSize:"6px",color:"#FFD700"}}>◆</span>
+            <span className="gp4 absolute" style={{top:"28px",left:"16px",fontSize:"8px",color:"#FFC200"}}>✦</span>
+            <span className="gp5 absolute" style={{top:"14px",left:"24px",fontSize:"5px",color:"#FFD700"}}>★</span>
+            <span className="gp6 absolute" style={{top:"4px",left:"22px",fontSize:"6px",color:"#C8960C"}}>◆</span>
           </div>
-          {/* Om symbol */}
+          {/* Om with rotating rings behind */}
           <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight:1}}>
-            <span style={{fontSize:"clamp(2rem, 6vw, 3rem)", color:"#FFD700", textShadow:"0 0 16px rgba(255,215,0,0.8), 0 0 32px rgba(255,215,0,0.4)", fontFamily:"serif"}}>ॐ</span>
-            <div style={{width:"clamp(32px, 7vw, 48px)", height:"1.5px", background:"linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop:"3px"}} />
+            <div className="relative flex items-center justify-center" style={{width:"clamp(52px,10vw,68px)",height:"clamp(52px,10vw,68px)"}}>
+              {/* Outer ring — slow CW */}
+              <svg className="spin-cw absolute inset-0 w-full h-full" viewBox="0 0 68 68" fill="none">
+                <circle cx="34" cy="34" r="31" stroke="#FFD700" strokeWidth="1" strokeDasharray="6 5" opacity="0.5"/>
+                <circle cx="34" cy="5" r="2.5" fill="#FFD700" opacity="0.8"/>
+                <circle cx="63" cy="34" r="2" fill="#FFD700" opacity="0.6"/>
+                <circle cx="5" cy="34" r="2" fill="#FFD700" opacity="0.6"/>
+              </svg>
+              {/* Inner ring — faster CCW */}
+              <svg className="spin-ccw absolute inset-0 w-full h-full" viewBox="0 0 68 68" fill="none">
+                <circle cx="34" cy="34" r="22" stroke="#C8960C" strokeWidth="1" strokeDasharray="4 8" opacity="0.6"/>
+                <polygon points="34,14 36,18 32,18" fill="#FFD700" opacity="0.7"/>
+                <polygon points="54,34 50,32 50,36" fill="#FFD700" opacity="0.7"/>
+                <polygon points="14,34 18,36 18,32" fill="#FFD700" opacity="0.7"/>
+                <polygon points="34,54 32,50 36,50" fill="#FFD700" opacity="0.7"/>
+              </svg>
+              {/* Om symbol on top */}
+              <span style={{fontSize:"clamp(2.2rem,6.5vw,3.2rem)",color:"#FFD700",textShadow:"0 0 16px rgba(255,215,0,0.9),0 0 32px rgba(255,215,0,0.5)",fontFamily:"serif",zIndex:1,position:"relative"}}>ॐ</span>
+            </div>
+            <div style={{width:"clamp(36px,8vw,52px)",height:"1.5px",background:"linear-gradient(90deg,transparent,#FFD700,transparent)",marginTop:"3px"}} />
           </div>
         </div>
 
         {/* Center glass pill — unchanged */}
-        <div className="flex-shrink-0 inline-flex flex-col items-center px-6 py-1.5 rounded-2xl border border-yellow-400/30" style={{background:"rgba(212,160,23,0.12)", backdropFilter:"blur(12px)", WebkitBackdropFilter:"blur(12px)", boxShadow:"0 4px 24px rgba(212,160,23,0.15), inset 0 1px 0 rgba(255,215,0,0.2)"}}>
+        <div className="flex-shrink-0 inline-flex flex-col items-center px-6 py-1.5 rounded-2xl border border-yellow-400/30" style={{background:"rgba(212,160,23,0.12)",backdropFilter:"blur(12px)",WebkitBackdropFilter:"blur(12px)",boxShadow:"0 4px 24px rgba(212,160,23,0.15),inset 0 1px 0 rgba(255,215,0,0.2)"}}>
           <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color:"#FFD700"}}>GANESH</span>
           <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color:"#FFD700"}}>ASSOCIATION</span>
         </div>
 
         {/* Right Om + sparkles */}
         <div className="flex-shrink-0 flex items-center gap-2">
-          {/* Om symbol */}
+          {/* Om with rotating rings behind */}
           <div className="flex-shrink-0 flex flex-col items-center select-none" style={{lineHeight:1}}>
-            <span style={{fontSize:"clamp(2rem, 6vw, 3rem)", color:"#FFD700", textShadow:"0 0 16px rgba(255,215,0,0.8), 0 0 32px rgba(255,215,0,0.4)", fontFamily:"serif"}}>ॐ</span>
-            <div style={{width:"clamp(32px, 7vw, 48px)", height:"1.5px", background:"linear-gradient(90deg, transparent, #FFD700, transparent)", marginTop:"3px"}} />
+            <div className="relative flex items-center justify-center" style={{width:"clamp(52px,10vw,68px)",height:"clamp(52px,10vw,68px)"}}>
+              {/* Outer ring — slow CW */}
+              <svg className="spin-cw absolute inset-0 w-full h-full" viewBox="0 0 68 68" fill="none">
+                <circle cx="34" cy="34" r="31" stroke="#FFD700" strokeWidth="1" strokeDasharray="6 5" opacity="0.5"/>
+                <circle cx="34" cy="5" r="2.5" fill="#FFD700" opacity="0.8"/>
+                <circle cx="63" cy="34" r="2" fill="#FFD700" opacity="0.6"/>
+                <circle cx="5" cy="34" r="2" fill="#FFD700" opacity="0.6"/>
+              </svg>
+              {/* Inner ring — faster CCW */}
+              <svg className="spin-ccw absolute inset-0 w-full h-full" viewBox="0 0 68 68" fill="none">
+                <circle cx="34" cy="34" r="22" stroke="#C8960C" strokeWidth="1" strokeDasharray="4 8" opacity="0.6"/>
+                <polygon points="34,14 36,18 32,18" fill="#FFD700" opacity="0.7"/>
+                <polygon points="54,34 50,32 50,36" fill="#FFD700" opacity="0.7"/>
+                <polygon points="14,34 18,36 18,32" fill="#FFD700" opacity="0.7"/>
+                <polygon points="34,54 32,50 36,50" fill="#FFD700" opacity="0.7"/>
+              </svg>
+              {/* Om symbol on top */}
+              <span style={{fontSize:"clamp(2.2rem,6.5vw,3.2rem)",color:"#FFD700",textShadow:"0 0 16px rgba(255,215,0,0.9),0 0 32px rgba(255,215,0,0.5)",fontFamily:"serif",zIndex:1,position:"relative"}}>ॐ</span>
+            </div>
+            <div style={{width:"clamp(36px,8vw,52px)",height:"1.5px",background:"linear-gradient(90deg,transparent,#FFD700,transparent)",marginTop:"3px"}} />
           </div>
           {/* Animated sparkle cluster */}
           <div className="relative w-10 h-10 hidden sm:block">
-            <span className="gp2 absolute" style={{top:"2px", left:"8px", fontSize:"7px", color:"#FFD700"}}>✦</span>
-            <span className="gp3 absolute" style={{top:"8px", left:"0px", fontSize:"10px", color:"#FFC200"}}>★</span>
-            <span className="gp4 absolute" style={{top:"20px", left:"14px", fontSize:"6px", color:"#FFD700"}}>◆</span>
-            <span className="gp1 absolute" style={{top:"28px", left:"2px", fontSize:"8px", color:"#FFC200"}}>✦</span>
-            <span className="gp6 absolute" style={{top:"14px", left:"20px", fontSize:"5px", color:"#FFD700"}}>★</span>
-            <span className="gp5 absolute" style={{top:"4px", left:"22px", fontSize:"6px", color:"#C8960C"}}>◆</span>
+            <span className="gp2 absolute" style={{top:"2px",left:"8px",fontSize:"7px",color:"#FFD700"}}>✦</span>
+            <span className="gp3 absolute" style={{top:"8px",left:"0px",fontSize:"10px",color:"#FFC200"}}>★</span>
+            <span className="gp4 absolute" style={{top:"20px",left:"14px",fontSize:"6px",color:"#FFD700"}}>◆</span>
+            <span className="gp1 absolute" style={{top:"28px",left:"2px",fontSize:"8px",color:"#FFC200"}}>✦</span>
+            <span className="gp6 absolute" style={{top:"14px",left:"20px",fontSize:"5px",color:"#FFD700"}}>★</span>
+            <span className="gp5 absolute" style={{top:"4px",left:"22px",fontSize:"6px",color:"#C8960C"}}>◆</span>
           </div>
         </div>
 
