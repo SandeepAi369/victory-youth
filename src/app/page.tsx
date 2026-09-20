@@ -190,24 +190,37 @@ export default async function HomePage() {
       )}
 
       {/* ===== SOCIAL / CONTACT ICONS ===== */}
-      <section className="py-10 px-4">
+      <section id="contact-section" className="py-10 px-4">
         <div className="container mx-auto max-w-3xl">
+          <h2 className="text-center text-xl font-black text-stone-800 dark:text-white mb-6">Contact Us</h2>
           <div className="flex items-center justify-center gap-6">
-            {/* GitHub — dark circle with octocat */}
-            <a href="https://github.com/SandeepAi369" target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full bg-[#24292f] flex items-center justify-center shadow-lg hover:scale-110 transition-transform">
+            {/* GitHub */}
+            <a href="https://github.com/SandeepAi369" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-full bg-[#24292f] flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+              </div>
+              <span className="text-xs font-bold text-stone-600 dark:text-stone-400">GitHub</span>
             </a>
-            {/* Instagram — gradient pink/purple/orange with camera */}
-            <a href="https://www.instagram.com/victory_youth_bswd" target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg hover:scale-110 transition-transform" style={{background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"}}>
+            {/* Instagram */}
+            <a href="https://www.instagram.com/victory_youth_bswd" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform" style={{background: "radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%)"}}>
               <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+              </div>
+              <span className="text-xs font-bold text-stone-600 dark:text-stone-400">Instagram</span>
             </a>
-            {/* Google Maps — white circle with colorful pin */}
-            <a href="https://maps.app.goo.gl/8SgCjUJhztJs32f4A" target="_blank" rel="noopener noreferrer" className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg border border-stone-200 hover:scale-110 transition-transform">
+            {/* Google Maps */}
+            <a href="https://maps.app.goo.gl/8SgCjUJhztJs32f4A" target="_blank" rel="noopener noreferrer" className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg border border-stone-200 group-hover:scale-110 transition-transform">
               <svg className="w-8 h-8" viewBox="0 0 92.3 132.3"><path fill="#1a73e8" d="M60.2 2.2C55.8.8 51 0 46.1 0 32 0 19.3 6.4 10.8 16.5l21.8 18.3L60.2 2.2z"/><path fill="#ea4335" d="M10.8 16.5C4.1 24.5 0 34.9 0 46.1c0 8.7 1.7 15.7 4.6 22l28-33.3L10.8 16.5z"/><path fill="#4285f4" d="M46.2 28.5c9.8 0 17.7 7.9 17.7 17.7 0 4.3-1.6 8.3-4.2 11.4 0 0 13.9-16.6 27.5-32.7-5.6-10.8-15.3-19-27-22.7L32.6 34.8c3.3-3.8 8.1-6.3 13.6-6.3"/><path fill="#fbbc04" d="M46.2 63.8c-9.8 0-17.7-7.9-17.7-17.7 0-4.3 1.5-8.3 4.1-11.3l-28 33.3c4.8 10.6 12.8 19.2 21 29.9l34.1-40.5c-3.3 3.9-8.1 6.3-13.5 6.3"/><path fill="#34a853" d="M59.1 109.2c15.4-24.1 33.3-35 33.3-63 0-7.7-1.9-14.9-5.2-21.3L25.6 98c2.6 3.4 5.3 7.3 7.9 11.3 9.4 14.5 6.8 23.1 12.8 23.1s3.4-8.7 12.8-23.2"/></svg>
+              </div>
+              <span className="text-xs font-bold text-stone-600 dark:text-stone-400">Maps</span>
             </a>
-            {/* Gmail — white circle with colorful M */}
-            <a href="mailto:victoryyouthbswd@gmail.com" className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg border border-stone-200 hover:scale-110 transition-transform">
+            {/* Gmail */}
+            <a href="mailto:victoryyouthbswd@gmail.com" className="flex flex-col items-center gap-2 group">
+              <div className="w-14 h-14 rounded-full bg-white flex items-center justify-center shadow-lg border border-stone-200 group-hover:scale-110 transition-transform">
               <svg className="w-8 h-6" viewBox="0 0 75 50"><path fill="#ea4335" d="M0 8L37.5 30 75 8V4C75 1.8 73.2 0 71 0H4C1.8 0 0 1.8 0 4v4z"/><path fill="#fbbc04" d="M0 8l37.5 22L0 46V8z" opacity=".8"/><path fill="#34a853" d="M75 8L37.5 30 75 46V8z" opacity=".8"/><path fill="#c5221f" d="M75 46V8L37.5 30 75 46z" opacity=".6"/><path fill="#4285f4" d="M0 46l37.5-16L0 8v38z" opacity=".6"/><path fill="#1a73e8" d="M0 46c0 2.2 1.8 4 4 4h67c2.2 0 4-1.8 4-4V8L37.5 30 0 8v38z" opacity=".2"/></svg>
+              </div>
+              <span className="text-xs font-bold text-stone-600 dark:text-stone-400">Mail</span>
             </a>
           </div>
         </div>
