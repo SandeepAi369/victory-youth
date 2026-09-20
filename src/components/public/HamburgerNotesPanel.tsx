@@ -134,7 +134,7 @@ export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) 
             className="w-full flex items-center justify-between px-4 py-4 rounded-2xl text-left transition-all duration-200 hover:bg-stone-100 dark:hover:bg-stone-900 active:scale-[0.98]"
           >
             <div className="flex items-center gap-4">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-300/30 dark:shadow-emerald-900/30">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-700 to-violet-900 flex items-center justify-center shadow-md shadow-purple-900/40">
                 <Phone className="w-5 h-5 text-white" />
               </div>
               <div>
