@@ -51,10 +51,10 @@ export default async function HomePage() {
 
       {/* ===== GOLDEN ASSOCIATION BANNER ===== */}
       <div className="pt-16">
-        <div className="w-full py-3" style={{backgroundColor: "#D4A017"}}>
-          <div className="flex flex-col items-center leading-none">
-            <span className="font-black text-[clamp(1.6rem,6vw,3rem)] tracking-[0.25em] text-black uppercase">GANESH</span>
-            <span className="font-black text-[clamp(1rem,3.6vw,1.85rem)] tracking-[0.18em] text-black uppercase">ASSOCIATION</span>
+        <div className="w-full py-1.5 px-4" style={{backgroundColor: "#D4A017"}}>
+          <div className="flex flex-col items-center leading-tight">
+            <span className="font-black text-[clamp(1.2rem,4.5vw,2.2rem)] tracking-[0.18em] text-black uppercase">GANESH</span>
+            <span className="font-black text-[clamp(0.75rem,2.8vw,1.4rem)] tracking-[0.18em] text-black uppercase">ASSOCIATION</span>
           </div>
         </div>
       </div>
