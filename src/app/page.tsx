@@ -50,12 +50,10 @@ export default async function HomePage() {
       </nav>
 
       {/* ===== GOLDEN ASSOCIATION BANNER ===== */}
-      <div className="pt-16">
-        <div className="w-full py-1.5 px-4" style={{backgroundColor: "#D4A017"}}>
-          <div className="flex flex-col items-center leading-tight">
-            <span className="font-black text-[clamp(1.2rem,4.5vw,2.2rem)] tracking-[0.18em] text-black uppercase">GANESH</span>
-            <span className="font-black text-[clamp(0.75rem,2.8vw,1.4rem)] tracking-[0.18em] text-black uppercase">ASSOCIATION</span>
-          </div>
+      <div className="pt-16 flex justify-center items-center py-2" style={{background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)"}}>
+        <div className="inline-flex flex-col items-center px-8 py-2 rounded-2xl border border-yellow-400/30" style={{background: "rgba(212,160,23,0.12)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)", boxShadow: "0 4px 24px rgba(212,160,23,0.15), inset 0 1px 0 rgba(255,215,0,0.2)"}}>
+          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>GANESH</span>
+          <span className="font-black text-sm tracking-[0.18em] uppercase" style={{color: "#FFD700"}}>ASSOCIATION</span>
         </div>
       </div>
 
