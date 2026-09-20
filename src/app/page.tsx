@@ -193,10 +193,10 @@ export default async function HomePage() {
       <section id="contact-section" className="py-10 px-4">
         <div className="container mx-auto max-w-3xl">
           <div className="flex justify-center mb-6">
-            <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/40 dark:to-amber-950/40 border border-orange-200/70 dark:border-orange-700/40 shadow-md shadow-orange-100/60 dark:shadow-orange-900/20">
-              <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400 animate-pulse" />
-              <h2 className="text-base font-black tracking-widest uppercase text-orange-700 dark:text-orange-300">Contact Us</h2>
-              <span className="w-2 h-2 rounded-full bg-orange-500 dark:bg-orange-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2.5 px-6 py-2.5 rounded-full bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-950/50 dark:to-violet-950/50 border border-purple-300/70 dark:border-purple-600/50 shadow-md shadow-purple-100/60 dark:shadow-purple-900/30">
+              <span className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400 animate-pulse" />
+              <h2 className="text-base font-black tracking-widest uppercase text-purple-800 dark:text-purple-200">Contact Us</h2>
+              <span className="w-2 h-2 rounded-full bg-purple-500 dark:bg-purple-400 animate-pulse" />
             </div>
           </div>
           <div className="flex items-center justify-center gap-6">
