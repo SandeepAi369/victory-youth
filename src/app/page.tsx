@@ -180,21 +180,20 @@ export default async function HomePage() {
 
         {/* ── Top 5 Golden Icons ── */}
         <div className="py-6 px-4 border-b border-yellow-600/20">
-          <div className="container mx-auto max-w-3xl">
-            <div className="flex justify-between items-start gap-2">
+          <div className="container mx-auto max-w-sm sm:max-w-lg">
+            <div className="flex justify-around items-center">
               {[
-                {icon: "📅", name: "Events", sub: "11 Days of\nCelebrations"},
-                {icon: "💰", name: "Donations", sub: "Our Generous\nDonors"},
-                {icon: "🪙", name: "Chanda", sub: "Member\nContribution"},
-                {icon: "👥", name: "Committee", sub: "Youth Members"},
-                {icon: "🖼️", name: "Gallery", sub: "Our Moments"}
+                {icon: "📅", name: "Events"},
+                {icon: "💰", name: "Donations"},
+                {icon: "🪙", name: "Chanda"},
+                {icon: "👥", name: "Committee"},
+                {icon: "🖼️", name: "Gallery"}
               ].map((item) => (
                 <div key={item.name} className="flex flex-col items-center text-center">
-                  <div className="w-14 h-14 rounded-full border-2 flex items-center justify-center text-2xl mb-2" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
                     {item.icon}
                   </div>
-                  <span className="text-xs font-bold" style={{color:"#FFD700"}}>{item.name}</span>
-                  <span className="text-[10px] mt-0.5 max-w-[70px] leading-tight" style={{color:"#9CA3AF"}}>{item.sub.replace(/\\n/g, " ")}</span>
+                  <span className="text-[10px] sm:text-xs font-bold" style={{color:"#FFD700"}}>{item.name}</span>
                 </div>
               ))}
             </div>
@@ -211,7 +210,7 @@ export default async function HomePage() {
         {/* ── Three Feature Cards ── */}
         <div className="px-4 pb-6">
           <div className="container mx-auto max-w-3xl">
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-4">
 
               {/* Upcoming Events */}
               <div className="relative rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #f97316 100%)", minHeight:"140px"}}>
