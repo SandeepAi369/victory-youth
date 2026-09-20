@@ -175,6 +175,109 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ===== TEST_DESIGN_START ===== */}
+      <section className="py-0 overflow-hidden" style={{background:"linear-gradient(180deg, #0d1117 0%, #131a26 100%)"}}>
+
+        {/* ── Top 5 Golden Icons ── */}
+        <div className="py-6 px-4 border-b border-yellow-600/20">
+          <div className="container mx-auto max-w-3xl">
+            <div className="flex justify-between items-start gap-2">
+              {[
+                {icon: "📅", name: "Events", sub: "11 Days of\nCelebrations"},
+                {icon: "💰", name: "Donations", sub: "Our Generous\nDonors"},
+                {icon: "🪙", name: "Chanda", sub: "Member\nContribution"},
+                {icon: "👥", name: "Committee", sub: "Youth Members"},
+                {icon: "🖼️", name: "Gallery", sub: "Our Moments"}
+              ].map((item) => (
+                <div key={item.name} className="flex flex-col items-center text-center">
+                  <div className="w-14 h-14 rounded-full border-2 flex items-center justify-center text-2xl mb-2" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
+                    {item.icon}
+                  </div>
+                  <span className="text-xs font-bold" style={{color:"#FFD700"}}>{item.name}</span>
+                  <span className="text-[10px] mt-0.5 max-w-[70px] leading-tight" style={{color:"#9CA3AF"}}>{item.sub.replace(/\\n/g, " ")}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── Decorative golden divider ── */}
+        <div className="flex items-center justify-center gap-2 py-3">
+          <div style={{width:"60px",height:"1px",background:"linear-gradient(90deg,transparent,#C8960C)"}} />
+          <span style={{color:"#FFD700",fontSize:"16px"}}>❀</span>
+          <div style={{width:"60px",height:"1px",background:"linear-gradient(90deg,#C8960C,transparent)"}} />
+        </div>
+
+        {/* ── Three Feature Cards ── */}
+        <div className="px-4 pb-6">
+          <div className="container mx-auto max-w-3xl">
+            <div className="grid grid-cols-3 gap-3">
+
+              {/* Upcoming Events */}
+              <div className="relative rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg, #dc2626 0%, #ea580c 50%, #f97316 100%)", minHeight:"140px"}}>
+                <div className="absolute inset-0 opacity-20">
+                  <div className="absolute top-0 left-0 w-full flex justify-center gap-1 pt-1">
+                    <span style={{fontSize:"8px"}}>🔺</span>
+                    <span style={{fontSize:"8px"}}>🔺</span>
+                    <span style={{fontSize:"8px"}}>🔺</span>
+                    <span style={{fontSize:"8px"}}>🔺</span>
+                    <span style={{fontSize:"8px"}}>🔺</span>
+                  </div>
+                </div>
+                <div className="relative p-3 flex flex-col justify-between h-full">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base mb-2" style={{background:"rgba(255,255,255,0.2)"}}>
+                    📅
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-xs leading-tight">Upcoming Events</h3>
+                    <p className="text-[9px] text-white/80 mt-1 leading-tight">Stay updated with our latest events and celebrations.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Donation Drive */}
+              <div className="relative rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #c084fc 100%)", minHeight:"140px"}}>
+                <div className="relative p-3 flex flex-col justify-between h-full">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base mb-2" style={{background:"rgba(255,255,255,0.2)"}}>
+                    💝
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-xs leading-tight">Donation Drive</h3>
+                    <p className="text-[9px] text-white/80 mt-1 leading-tight">Your support helps us spread more happiness.</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Become a Member */}
+              <div className="relative rounded-xl overflow-hidden" style={{background:"linear-gradient(135deg, #059669 0%, #0d9488 50%, #14b8a6 100%)", minHeight:"140px"}}>
+                <div className="relative p-3 flex flex-col justify-between h-full">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center text-base mb-2" style={{background:"rgba(255,255,255,0.2)"}}>
+                    👥
+                  </div>
+                  <div>
+                    <h3 className="font-black text-white text-xs leading-tight">Become a Member</h3>
+                    <p className="text-[9px] text-white/80 mt-1 leading-tight">Join our youth community and be a part of something big.</p>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </div>
+
+        {/* ── Bottom golden divider + tagline ── */}
+        <div className="flex flex-col items-center pb-4">
+          <div className="flex items-center gap-2 mb-2">
+            <div style={{width:"40px",height:"1px",background:"linear-gradient(90deg,transparent,#C8960C)"}} />
+            <span style={{color:"#C8960C",fontSize:"12px"}}>❀</span>
+            <div style={{width:"40px",height:"1px",background:"linear-gradient(90deg,#C8960C,transparent)"}} />
+          </div>
+          <p className="text-xs font-bold italic tracking-wide" style={{color:"#C8960C"}}>|| Ganpati Bappa Morya ||</p>
+        </div>
+
+      </section>
+      {/* ===== TEST_DESIGN_END ===== */}
+
       {/* ===== QUICK ACTIONS — Dedicated Routes, NO anchors ===== */}
       <section className="py-10 px-4 -mt-8 relative z-20">
         <div className="container mx-auto max-w-3xl">
