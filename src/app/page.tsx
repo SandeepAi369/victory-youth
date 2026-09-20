@@ -49,8 +49,18 @@ export default async function HomePage() {
         </div>
       </nav>
 
+      {/* ===== GOLDEN ASSOCIATION BANNER ===== */}
+      <div className="pt-16">
+        <div className="w-full py-3" style={{backgroundColor: "#D4A017"}}>
+          <div className="flex flex-col items-center leading-none">
+            <span className="font-black text-[clamp(1.6rem,6vw,3rem)] tracking-[0.25em] text-black uppercase">GANESH</span>
+            <span className="font-black text-[clamp(1rem,3.6vw,1.85rem)] tracking-[0.18em] text-black uppercase">ASSOCIATION</span>
+          </div>
+        </div>
+      </div>
+
       {/* ===== HERO BANNER (Dynamic Story Image) ===== */}
-      <section className="pt-16">
+      <section>
         <div className="w-full bg-stone-950">
           <img
             src={hero.imageUrl || "/hero-banner.jpg"}
