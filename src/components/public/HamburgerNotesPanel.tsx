@@ -29,6 +29,14 @@ export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) 
     }, 100);
   };
 
+  const handleContactClick = () => {
+    setOpen(false);
+    setTimeout(() => {
+      const el = document.getElementById("contact-section");
+      if (el) el.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
+
   const overlay = (
     <div
       className={
