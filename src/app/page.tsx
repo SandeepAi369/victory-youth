@@ -180,7 +180,7 @@ export default async function HomePage() {
 
         {/* ── Top 5 Golden Icons ── */}
         <div className="py-6 px-4 border-b border-yellow-600/20">
-          <div className="container mx-auto max-w-sm sm:max-w-lg">
+          <div className="container mx-auto max-w-full px-2 sm:px-6">
             <div className="flex justify-around items-center">
               {[
                 {icon: "📅", name: "Events"},
