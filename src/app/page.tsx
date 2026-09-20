@@ -181,7 +181,7 @@ export default async function HomePage() {
         {/* ── Top 5 Golden Icons ── */}
         <div className="py-6 px-4 border-b border-yellow-600/20">
           <div className="container mx-auto max-w-full px-2 sm:px-6">
-            <div className="flex justify-around items-center">
+            <div className="flex justify-evenly items-center gap-6 sm:gap-10">
               {[
                 {icon: "📅", name: "Events"},
                 {icon: "💰", name: "Donations"},
