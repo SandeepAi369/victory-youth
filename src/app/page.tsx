@@ -183,18 +183,18 @@ export default async function HomePage() {
           <div className="container mx-auto max-w-full px-2 sm:px-6">
             <div className="flex justify-between items-center">
               {[
-                {icon: "📅", name: "Events"},
-                {icon: "💰", name: "Donations"},
-                {icon: "🪙", name: "Chanda"},
-                {icon: "👥", name: "Committee"},
-                {icon: "🖼️", name: "Gallery"}
+                {icon: "📅", name: "Events", href: "/events"},
+                {icon: "💰", name: "Donations", href: "/donations"},
+                {icon: "🪙", name: "Chanda", href: "/chanda"},
+                {icon: "👥", name: "Committee", href: "/members"},
+                {icon: "🖼️", name: "Gallery", href: "/gallery"}
               ].map((item) => (
-                <div key={item.name} className="flex flex-col items-center text-center">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
+                <Link key={item.name} href={item.href} className="flex flex-col items-center text-center group">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5 group-hover:scale-110 transition-transform" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
                     {item.icon}
                   </div>
                   <span className="text-[10px] sm:text-xs font-bold" style={{color:"#FFD700"}}>{item.name}</span>
-                </div>
+                </Link>
               ))}
             </div>
           </div>
