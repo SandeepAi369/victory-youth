@@ -82,13 +82,34 @@ function HeroCarouselInner({ images, alt }: { images: HeroImage[]; alt: string }
     }
   };
 
-  // Auto-scroll every 3 seconds
+  // Auto-scroll every 3 seconds — pauses when tab is hidden
   useEffect(() => {
     if (paused) return;
-    const timer = setInterval(() => {
-      setPos((prev) => prev + 1);
-    }, 3000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const startTimer = () => {
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => {
+        setPos((prev) => prev + 1);
+      }, 3000);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (timer) { clearInterval(timer); timer = null; }
+      } else {
+        // Reset position cleanly on return
+        setAnimate(true);
+        startTimer();
+      }
+    };
+
+    startTimer();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [paused, count]);
 
   // Touch handlers

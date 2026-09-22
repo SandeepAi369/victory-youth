@@ -271,6 +271,20 @@ export default async function HomePage() {
       </section>
       {/* ===== TEST_DESIGN_END ===== */}
 
+      {/* ===== BANNER CAROUSEL ===== */}
+      {banners && banners.length > 0 && (
+        <section id="banner-section" className="py-8 px-4 -mt-2">
+          <div className="container mx-auto max-w-3xl">
+            <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-white mb-5 flex items-center gap-2">
+              🎯 Banner
+            </h2>
+            <BannerCarousel banners={banners} />
+          </div>
+        </section>
+      )}
+
+
+
       {/* ===== QUICK ACTIONS — Dedicated Routes, NO anchors ===== */}
       <section className="py-10 px-4 -mt-8 relative z-20">
         <div className="container mx-auto max-w-3xl">
@@ -291,18 +305,6 @@ export default async function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* ===== BANNER CAROUSEL ===== */}
-      {banners && banners.length > 0 && (
-        <section id="banner-section" className="py-8 px-4 -mt-2">
-          <div className="container mx-auto max-w-3xl">
-            <h2 className="text-2xl md:text-3xl font-black text-stone-900 dark:text-white mb-5 flex items-center gap-2">
-              🎯 Banner
-            </h2>
-            <BannerCarousel banners={banners} />
-          </div>
-        </section>
-      )}
 
       {/* ===== DONATION PROGRESS ===== */}
       {stats.donationTarget > 0 && (
