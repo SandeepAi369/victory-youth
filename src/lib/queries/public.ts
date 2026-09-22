@@ -315,7 +315,6 @@ export async function getHomepageData() {
     return {
       settings: null,
       stats: { totalDonations: 0, totalAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
-      heroImages: [],
       hero: {
         title: "Victory Youth",
         subtitleEn: "50th Golden Jubilee Celebrations",
