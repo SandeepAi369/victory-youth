@@ -40,13 +40,33 @@ export function BannerCarousel({ banners }: { banners: Banner[] }) {
     }
   };
 
-  // Auto-scroll forward every 4s
+  // Auto-scroll forward every 4s — pauses when tab is hidden
   useEffect(() => {
     if (count <= 1 || paused) return;
-    const timer = setInterval(() => {
-      setPos((prev) => prev + 1);
-    }, 4000);
-    return () => clearInterval(timer);
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const startTimer = () => {
+      if (timer) clearInterval(timer);
+      timer = setInterval(() => {
+        setPos((prev) => prev + 1);
+      }, 4000);
+    };
+
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (timer) { clearInterval(timer); timer = null; }
+      } else {
+        setAnimate(true);
+        startTimer();
+      }
+    };
+
+    startTimer();
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [count, paused]);
 
   // Touch handlers
