@@ -2,7 +2,7 @@
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { createHash } from "crypto";
+import { createHash, randomUUID } from "crypto";
 
 const CLOUD_NAME = "y5dnsgyb";
 const API_KEY = "***REMOVED***";
@@ -145,7 +145,7 @@ export async function addHeroImage(secureUrl: string, publicId: string) {
     if (existing.length >= 5) {
       return { success: false, error: "Maximum 5 hero images allowed" };
     }
-    const id = crypto.randomUUID();
+    const id = `hero_${randomUUID()}`;
     const maxSort = existing.reduce((max, r) => Math.max(max, r.sortOrder ?? 0), 0);
     await db.insert(schema.heroImages).values({
       id,
