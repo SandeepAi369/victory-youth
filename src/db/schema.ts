@@ -785,3 +785,16 @@ export type DonationPurposeRow = InferSelectModel<typeof donationPurposes>;
 // Important Notes
 export type ImportantNoteRow = InferSelectModel<typeof importantNotes>;
 export type NewImportantNoteRow = InferInsertModel<typeof importantNotes>;
+
+// Hero Images (carousel — max 5)
+export const heroImages = pgTable("hero_images", {
+  id: text("id").primaryKey(),
+  url: text("url").notNull(),
+  cloudinaryPublicId: text("cloudinary_public_id"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export type HeroImageRow = InferSelectModel<typeof heroImages>;
+export type NewHeroImageRow = InferInsertModel<typeof heroImages>;

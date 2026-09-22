@@ -280,10 +280,24 @@ export async function getPublishedBanners() {
   }
 }
 
+export async function getHeroImages() {
+  try {
+    const db = getDb();
+    const rows = await db
+      .select({ id: schema.heroImages.id, url: schema.heroImages.url })
+      .from(schema.heroImages)
+      .orderBy(schema.heroImages.sortOrder);
+    return rows;
+  } catch (error) {
+    console.error("getHeroImages error:", error);
+    return [];
+  }
+}
+
 export async function getHomepageData() {
   try {
     const settings = await getAssociationSettings();
-    const [stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners] =
+    const [stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners, heroImages] =
       await Promise.all([
         getPublicStats(settings),
         getHeroSection(settings),
@@ -293,13 +307,15 @@ export async function getHomepageData() {
         getPublishedNotes(5),
         getPublishedDonations(20),
         getPublishedBanners(),
+      getHeroImages(),
       ]);
-    return { settings, stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners };
+    return { settings, stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners, heroImages };
   } catch (err) {
     console.error("❌ getHomepageData top-level error:", err);
     return {
       settings: null,
       stats: { totalDonations: 0, totalAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
+      heroImages: [],
       hero: {
         title: "Victory Youth",
         subtitleEn: "50th Golden Jubilee Celebrations",
@@ -313,6 +329,7 @@ export async function getHomepageData() {
       notes: [],
       publishedDonations: [],
       banners: [],
+      heroImages: [],
     };
   }
 }

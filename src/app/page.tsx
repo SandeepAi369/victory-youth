@@ -5,12 +5,13 @@ import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
 import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
 import { BannerCarousel } from "@/components/public/BannerCarousel";
+import { HeroCarousel } from "@/components/public/HeroCarousel";
 import { Sparkles, Calendar, Heart } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { settings, stats, hero, events, publishedDonations, notes, banners } = await getHomepageData();
+  const { settings, stats, hero, events, publishedDonations, notes, banners, heroImages } = await getHomepageData();
 
   const progressPercentage = stats.donationTarget > 0
     ? Math.min(Math.round((stats.totalAmount / stats.donationTarget) * 100), 100)
@@ -161,25 +162,18 @@ export default async function HomePage() {
         </div>
 
       </div>
-      {/* ===== HERO BANNER (Dynamic Story Image) ===== */}
-      <section>
-        <div className="w-full bg-stone-950">
-          <img
-            src={hero.imageUrl || "/hero-banner.jpg"}
-            alt={hero.imageAlt || "Victory Youth Association"}
-            fetchPriority="high"
-            loading="eager"
-            decoding="async"
-            className="w-full h-auto"
-          />
-        </div>
-      </section>
+      {/* ===== HERO BANNER (Dynamic Carousel) ===== */}
+      <HeroCarousel
+        images={heroImages}
+        fallbackUrl={hero.imageUrl}
+        fallbackAlt={hero.imageAlt || "Victory Youth Association"}
+      />
 
       {/* ===== TEST_DESIGN_START ===== */}
-      <section className="py-0 overflow-hidden" style={{background:"linear-gradient(180deg, #0d1117 0%, #131a26 100%)"}}>
+      <section className="py-0 overflow-hidden bg-stone-100 dark:bg-stone-950 border-y border-stone-200 dark:border-stone-800">
 
         {/* ── Top 5 Golden Icons ── */}
-        <div className="py-6 px-4 border-b border-yellow-600/20">
+        <div className="py-6 px-4 border-b border-orange-200 dark:border-yellow-600/20">
           <div className="container mx-auto max-w-full px-2 sm:px-6">
             <div className="flex justify-between items-center">
               {[
@@ -190,10 +184,10 @@ export default async function HomePage() {
                 {icon: "🖼️", name: "Gallery", href: "/gallery"}
               ].map((item) => (
                 <Link key={item.name} href={item.href} className="flex flex-col items-center text-center group">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5 group-hover:scale-110 transition-transform" style={{borderColor:"#C8960C", background:"rgba(200,150,12,0.08)"}}>
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5 group-hover:scale-110 transition-transform border-orange-400 dark:border-yellow-600 bg-orange-50 dark:bg-yellow-900/20">
                     {item.icon}
                   </div>
-                  <span className="text-[10px] sm:text-xs font-bold" style={{color:"#FFD700"}}>{item.name}</span>
+                  <span className="text-[10px] sm:text-xs font-bold text-orange-700 dark:text-yellow-400">{item.name}</span>
                 </Link>
               ))}
             </div>
