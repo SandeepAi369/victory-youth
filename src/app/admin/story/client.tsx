@@ -2,37 +2,18 @@
 
 import { useState, useRef } from "react";
 import { CloudUpload, Trash2, Loader2, X, Check, ImageIcon, RefreshCw } from "lucide-react";
-import {
-  getStoryImage, saveStoryImage, deleteStoryImage,
-  getHeroImages, addHeroImage, deleteHeroImage
-} from "./actions";
+import { addHeroImage, deleteHeroImage, getHeroImages } from "./actions";
 import type { HeroImageRow } from "@/db/schema";
 
 const CLOUD_NAME = "y5dnsgyb";
 const UPLOAD_PRESET = "victory_youth_unsigned";
 
-interface StoryData {
-  url: string | null;
-  publicId: string | null;
-  alt: string;
-}
-
-export function StoryClient({
-  initialStory,
-  initialHeroImages,
-}: {
-  initialStory: StoryData;
-  initialHeroImages: HeroImageRow[];
-}) {
-  // ── Legacy single story image (fallback) ──
-  const [story, setStory] = useState<StoryData>(initialStory);
-
-  // ── Hero images carousel ──
-  const [heroImages, setHeroImages] = useState<HeroImageRow[]>(initialHeroImages);
-
-  // ── Upload state ──
+export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImageRow[] }) {
+  const [images, setImages] = useState<HeroImageRow[]>(initialHeroImages);
   const [showUpload, setShowUpload] = useState(false);
-  const [uploadTarget, setUploadTarget] = useState<"story" | "hero">("hero");
+  const [replacingId, setReplacingId] = useState<string | null>(null);
+
+  // Upload state
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -40,12 +21,13 @@ export function StoryClient({
   const [uploadedPublicId, setUploadedPublicId] = useState<string | null>(null);
   const [step, setStep] = useState<"select" | "uploading" | "uploaded" | "saving">("select");
   const [statusMsg, setStatusMsg] = useState("");
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [isPending, setIsPending] = useState(false);
 
   const isBusy = step === "uploading" || step === "saving";
 
   const resetForm = () => {
     setShowUpload(false);
+    setReplacingId(null);
     setPreview(null);
     setSelectedFile(null);
     setUploadedUrl(null);
@@ -90,16 +72,19 @@ export function StoryClient({
     }
   };
 
-  const handleSaveHeroImage = async () => {
+  const handleSaveToDB = async () => {
     if (!uploadedUrl || !uploadedPublicId) return;
     setStep("saving");
     setStatusMsg("Saving...");
     try {
+      // If replacing, delete old first then add new
+      if (replacingId) {
+        await deleteHeroImage(replacingId);
+      }
       const result = await addHeroImage(uploadedUrl, uploadedPublicId);
       if (!result.success) throw new Error(result.error || "Failed to save");
-      // Refresh list
       const updated = await getHeroImages();
-      setHeroImages(updated);
+      setImages(updated);
       resetForm();
     } catch (err: any) {
       setStep("uploaded");
@@ -108,136 +93,47 @@ export function StoryClient({
     }
   };
 
-  const handleSaveStory = async () => {
-    if (!uploadedUrl || !uploadedPublicId) return;
-    setStep("saving");
-    setStatusMsg("Saving...");
-    try {
-      const result = await saveStoryImage(uploadedUrl, uploadedPublicId);
-      if (!result.success) throw new Error(result.error || "Failed to save");
-      setStory({ url: uploadedUrl, publicId: uploadedPublicId, alt: "Victory Youth Association" });
-      resetForm();
-    } catch (err: any) {
-      setStep("uploaded");
-      setStatusMsg("");
-      alert("Save error: " + err.message);
-    }
-  };
-
-  const handleDeleteHeroImage = async (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this hero image?")) return;
-    setIsDeleting(id);
+    setIsPending(true);
     try {
       const result = await deleteHeroImage(id);
       if (!result.success) throw new Error(result.error || "Failed to delete");
-      setHeroImages((prev) => prev.filter((img) => img.id !== id));
+      setImages((prev) => prev.filter((img) => img.id !== id));
     } catch (err: any) {
       alert("Delete error: " + err.message);
     }
-    setIsDeleting(null);
-  };
-
-  const handleDeleteStory = async () => {
-    if (!confirm("Delete the fallback Story image? The homepage will show default banner.")) return;
-    setIsDeleting("story");
-    try {
-      const result = await deleteStoryImage();
-      if (!result.success) throw new Error(result.error || "Failed to delete");
-      setStory({ url: null, publicId: null, alt: "Victory Youth Association" });
-    } catch (err: any) {
-      alert("Delete error: " + err.message);
-    }
-    setIsDeleting(null);
+    setIsPending(false);
   };
 
   return (
-    <div className="space-y-8">
-
-      {/* ═══ Hero Carousel Images ═══ */}
-      <div>
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">Hero Carousel</h1>
-            <p className="text-muted-foreground text-sm">Manage up to 5 hero images. They auto-scroll on the homepage every 3 seconds.</p>
-          </div>
-          <button
-            onClick={() => { resetForm(); setUploadTarget("hero"); setShowUpload(true); }}
-            disabled={heroImages.length >= 5}
-            className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50"
-          >
-            <CloudUpload className="w-4 h-4" />
-            Add Image ({heroImages.length}/5)
-          </button>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">Story</h1>
+          <p className="text-muted-foreground text-sm">
+            Manage hero images for the homepage carousel (max 5). Auto-scrolls every 3 seconds.
+          </p>
         </div>
-
-        {heroImages.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {heroImages.map((img, i) => (
-              <div key={img.id} className="relative bg-card border rounded-xl overflow-hidden shadow-sm group">
-                <img src={img.url} alt={`Hero ${i + 1}`} className="w-full aspect-video object-cover" />
-                <div className="absolute top-2 left-2 bg-black/60 text-white text-xs font-bold px-2 py-0.5 rounded-lg">
-                  #{i + 1}
-                </div>
-                <button
-                  onClick={() => handleDeleteHeroImage(img.id)}
-                  disabled={isDeleting === img.id}
-                  className="absolute top-2 right-2 bg-red-600 text-white p-1.5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity disabled:opacity-50"
-                >
-                  {isDeleting === img.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                </button>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="bg-card border rounded-2xl flex flex-col items-center justify-center py-16 text-muted-foreground">
-            <ImageIcon className="w-14 h-14 mb-3 opacity-30" />
-            <p className="text-lg font-bold">No Hero Images</p>
-            <p className="text-sm">Add images to create the homepage carousel</p>
-          </div>
-        )}
+        <button
+          onClick={() => { resetForm(); setShowUpload(true); }}
+          disabled={images.length >= 5}
+          className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50"
+        >
+          <CloudUpload className="w-4 h-4" />
+          Upload Image ({images.length}/5)
+        </button>
       </div>
 
-      {/* ═══ Fallback Story Image (legacy) ═══ */}
-      <div className="border-t pt-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
-          <div>
-            <h2 className="text-lg font-bold">Fallback Story Image</h2>
-            <p className="text-muted-foreground text-sm">Shown when no carousel images exist. Stays active permanently.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            {story.url && (
-              <button onClick={handleDeleteStory} disabled={isDeleting === "story"}
-                className="px-3 py-1.5 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-xl flex items-center gap-1.5 disabled:opacity-50">
-                <Trash2 className="w-3 h-3" /> Delete
-              </button>
-            )}
-            <button onClick={() => { resetForm(); setUploadTarget("story"); setShowUpload(true); }}
-              className="px-3 py-1.5 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-1.5">
-              {story.url ? <RefreshCw className="w-3 h-3" /> : <CloudUpload className="w-3 h-3" />}
-              {story.url ? "Replace" : "Upload"}
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-card border rounded-xl overflow-hidden shadow-sm">
-          {story.url ? (
-            <img src={story.url} alt={story.alt} className="w-full h-auto max-h-48 object-cover" />
-          ) : (
-            <div className="flex items-center justify-center py-8 text-muted-foreground text-sm">
-              No fallback image set — will show /hero-banner.jpg
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ═══ Upload Modal ═══ */}
-      {showUpload && (
+      {/* Upload Modal */}
+      {(showUpload || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
           onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">
-                {uploadTarget === "hero" ? "Add Hero Image" : "Upload Fallback Image"}
+                {replacingId ? "Replace Image" : "Upload Hero Image"}
               </h2>
               <button type="button" onClick={() => !isBusy && resetForm()}
                 className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
@@ -261,7 +157,7 @@ export function StoryClient({
                   ) : (
                     <div className="space-y-2">
                       <ImageIcon className="w-10 h-10 text-stone-300 dark:text-stone-600 mx-auto" />
-                      <p className="text-sm text-muted-foreground">Select an image</p>
+                      <p className="text-sm text-muted-foreground">Select a hero image</p>
                     </div>
                   )}
                   {step === "select" && (
@@ -298,9 +194,9 @@ export function StoryClient({
                   </button>
                 )}
                 {step === "uploaded" && (
-                  <button type="button" onClick={uploadTarget === "hero" ? handleSaveHeroImage : handleSaveStory}
+                  <button type="button" onClick={handleSaveToDB}
                     className="px-6 py-2 bg-emerald-600 text-white text-sm font-bold rounded-xl flex items-center gap-2 hover:bg-emerald-700">
-                    <Check className="w-4 h-4" /> {uploadTarget === "hero" ? "Add to Carousel" : "Save as Fallback"}
+                    <Check className="w-4 h-4" /> {replacingId ? "Replace" : "Save Image"}
                   </button>
                 )}
                 {step === "saving" && (
@@ -313,6 +209,37 @@ export function StoryClient({
           </div>
         </div>
       )}
+
+      {/* Image Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {images.length === 0 && (
+          <p className="col-span-full text-center text-muted-foreground py-12">
+            No hero images yet. Click &quot;Upload Image&quot; to add your first (max 5).
+          </p>
+        )}
+        {images.map((img, i) => (
+          <div key={img.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm">
+            <div className="aspect-[4/3] bg-stone-100 dark:bg-stone-800 relative">
+              <img src={img.url} alt={`Hero ${i + 1}`} className="w-full h-full object-contain" />
+              <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-xs font-bold px-2 py-1 rounded-lg">
+                #{i + 1}
+              </div>
+            </div>
+            <div className="p-3">
+              <div className="flex gap-2">
+                <button onClick={() => { resetForm(); setReplacingId(img.id); }} disabled={isPending}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg disabled:opacity-50 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5" /> Replace
+                </button>
+                <button onClick={() => handleDelete(img.id)} disabled={isPending}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-bold text-red-600 bg-red-50 hover:bg-red-100 rounded-lg disabled:opacity-50 transition-colors">
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
