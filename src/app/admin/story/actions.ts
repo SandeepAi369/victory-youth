@@ -119,3 +119,64 @@ async function destroyCloudinaryImage(publicId: string): Promise<void> {
     console.error("Cloudinary destroy error:", err);
   }
 }
+
+
+// ───── Hero Images (Carousel) ─────
+
+export async function getHeroImages() {
+  try {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(schema.heroImages)
+      .orderBy(schema.heroImages.sortOrder);
+    return rows;
+  } catch (error: any) {
+    console.error("getHeroImages error:", error);
+    return [];
+  }
+}
+
+export async function addHeroImage(secureUrl: string, publicId: string) {
+  try {
+    const db = getDb();
+    // Check count — max 5
+    const existing = await db.select().from(schema.heroImages);
+    if (existing.length >= 5) {
+      return { success: false, error: "Maximum 5 hero images allowed" };
+    }
+    const id = crypto.randomUUID();
+    const maxSort = existing.reduce((max, r) => Math.max(max, r.sortOrder ?? 0), 0);
+    await db.insert(schema.heroImages).values({
+      id,
+      url: secureUrl,
+      cloudinaryPublicId: publicId,
+      sortOrder: maxSort + 1,
+    });
+    revalidate();
+    return { success: true, id };
+  } catch (error: any) {
+    console.error("addHeroImage error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function deleteHeroImage(id: string) {
+  try {
+    const db = getDb();
+    // Get image to destroy on Cloudinary
+    const rows = await db
+      .select()
+      .from(schema.heroImages)
+      .where(eq(schema.heroImages.id, id));
+    if (rows.length > 0 && rows[0].cloudinaryPublicId) {
+      await destroyCloudinaryImage(rows[0].cloudinaryPublicId);
+    }
+    await db.delete(schema.heroImages).where(eq(schema.heroImages.id, id));
+    revalidate();
+    return { success: true };
+  } catch (error: any) {
+    console.error("deleteHeroImage error:", error);
+    return { success: false, error: error.message };
+  }
+}

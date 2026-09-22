@@ -1,9 +1,18 @@
-import { getStoryImage } from "./actions";
+import { getStoryImage, getHeroImages } from "./actions";
 import { StoryClient } from "./client";
-
-export const dynamic = "force-dynamic";
 
 export default async function StoryPage() {
   const story = await getStoryImage();
-  return <StoryClient story={story} />;
+  const heroImages = await getHeroImages();
+
+  return (
+    <StoryClient
+      initialStory={{
+        url: story.url,
+        publicId: story.publicId,
+        alt: story.alt,
+      }}
+      initialHeroImages={heroImages}
+    />
+  );
 }
