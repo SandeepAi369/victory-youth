@@ -15,7 +15,7 @@
  * │ Local (PM2/next start)  │ Production (Cloudflare)     │
  * ├─────────────────────────┼─────────────────────────────┤
  * │ Node.js process         │ Edge Worker (stateless)     │
- * │ Direct DB connection    │ Hyperdrive connection pool  │
+ * │ DATABASE_URL from .env  │ DATABASE_URL wrangler secret│
  * │ File system cache       │ No persistent cache         │
  * │ next start -p 3000      │ wrangler deploy             │
  * └─────────────────────────┴─────────────────────────────┘
