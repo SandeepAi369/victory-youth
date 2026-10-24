@@ -16,7 +16,7 @@ function revalidate() {
 }
 
 /**
- * Save a Cloudinary image record to CockroachDB.
+ * Save a Cloudinary image record to the database.
  * Called AFTER the client has uploaded directly to Cloudinary.
  */
 export async function saveGalleryImage(

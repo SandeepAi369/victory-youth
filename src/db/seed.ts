@@ -17,7 +17,6 @@ const generateId = (prefix: string, num: number) => `${prefix}_${num.toString().
 
 async function seed() {
   console.log("🌱 Starting comprehensive database seed...");
-  console.log("📍 Target: CockroachDB Serverless");
 
   try {
     // ============================================
