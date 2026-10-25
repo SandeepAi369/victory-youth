@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
-import { addChanda, updateChanda, deleteChanda, toggleChandaPublish, setAllChandaVisibility } from "./actions";
+import { Plus, Pencil, Trash2, X, Eye, EyeOff, User, UserX } from "lucide-react";
+import { addChanda, updateChanda, deleteChanda, toggleChandaPublish, toggleChandaAnonymous, setAllChandaVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
 type Entry = {
   id: string; receiptNo: string | null; donorName: string; phone: string | null;
   amount: number; purpose: string | null; paymentMode: string | null;
-  date: string | null; isPublished: boolean | null;
+  date: string | null; isPublished: boolean | null; isAnonymous: boolean | null;
 };
 
 const PAYMENT_MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE"];
-const emptyForm = { donorName: "", phone: "", amount: "", paymentMode: "CASH", date: new Date().toISOString().split("T")[0], purpose: "" };
+const emptyForm = { donorName: "", phone: "", amount: "", paymentMode: "CASH", date: new Date().toISOString().split("T")[0], purpose: "", isAnonymous: false };
 
 export default function ChandaClient({ initialData }: { initialData: Entry[] }) {
   const { data, isPending, execute } = useAdminAction<Entry>(initialData);
@@ -35,7 +35,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const payload = { donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "Monthly Chanda" };
+    const payload = { isAnonymous: form.isAnonymous, donorName: form.donorName, phone: form.phone, amount: parseInt(form.amount) || 0, paymentMode: form.paymentMode, date: form.date, purpose: form.purpose || "Monthly Chanda" };
     execute({
       serverAction: () => editingId ? updateChanda(editingId, payload) : addChanda(payload),
       successMsg: editingId ? "Updated" : "Chanda added",
@@ -54,7 +54,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
 
   const handleEdit = (e: Entry) => {
     setEditingId(e.id); setShowForm(true);
-    setForm({ donorName: e.donorName, phone: e.phone || "", amount: String(e.amount), paymentMode: e.paymentMode || "CASH", date: e.date || new Date().toISOString().split("T")[0], purpose: e.purpose || "" });
+    setForm({ donorName: e.donorName, phone: e.phone || "", amount: String(e.amount), paymentMode: e.paymentMode || "CASH", date: e.date || new Date().toISOString().split("T")[0], purpose: e.purpose || "", isAnonymous: !!e.isAnonymous });
   };
 
   const handleTogglePublish = (id: string, current: boolean) => {
@@ -62,6 +62,14 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
       optimisticUpdate: (prev) => prev.map((d) => d.id === id ? { ...d, isPublished: !current } : d),
       serverAction: () => toggleChandaPublish(id, !current),
       successMsg: current ? "Unpublished" : "Published",
+    });
+  };
+
+  const handleToggleAnonymous = (id: string, current: boolean) => {
+    execute({
+      optimisticUpdate: (prev) => prev.map((d) => d.id === id ? { ...d, isAnonymous: !current } : d),
+      serverAction: () => toggleChandaAnonymous(id, !current),
+      successMsg: current ? "Name will be shown publicly" : "Name hidden — shown as Anonymous",
     });
   };
 
@@ -130,6 +138,13 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
                 <label className="block text-xs font-bold text-muted-foreground mb-1">Purpose</label>
                 <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className="w-full bg-background border rounded-lg px-3 py-2" placeholder="Monthly Chanda" />
               </div>
+              <label className="flex items-start gap-2 text-sm cursor-pointer">
+                <input type="checkbox" checked={form.isAnonymous} onChange={(e) => setForm({ ...form, isAnonymous: e.target.checked })} className="mt-0.5" />
+                <span>
+                  <span className="font-bold">Anonymous donor</span>
+                  <span className="block text-xs text-muted-foreground">The name is never shown on the public site; it appears as &quot;Anonymous Devotee&quot;.</span>
+                </span>
+              </label>
               <div className="flex gap-2 justify-end pt-4 border-t">
                 <button type="button" onClick={resetForm} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
                 <button type="submit" disabled={isPending} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">
@@ -159,6 +174,7 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
                 <tr key={e.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{e.donorName}</p>
+                    {e.isAnonymous && <p className="text-[10px] font-bold text-violet-600 flex items-center gap-1"><UserX className="w-3 h-3" /> Anonymous on public site</p>}
                     {e.receiptNo && <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo}</p>}
                   </td>
                   <td className="px-4 py-3 font-bold text-emerald-600">₹{e.amount?.toLocaleString("en-IN")}</td>
@@ -167,6 +183,11 @@ export default function ChandaClient({ initialData }: { initialData: Entry[] }) 
                     <button onClick={() => handleTogglePublish(e.id, !!e.isPublished)} disabled={isPending}
                       className={"px-2.5 py-1 rounded-full text-[10px] font-bold border disabled:opacity-50 " + (e.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200")}>
                       {e.isPublished ? "PUBLISHED" : "DRAFT"}
+                    </button>
+                    <button onClick={() => handleToggleAnonymous(e.id, !!e.isAnonymous)} disabled={isPending} title="Hide or show the donor's name on the public site"
+                      className={"ml-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border disabled:opacity-50 inline-flex items-center gap-1 " + (e.isAnonymous ? "bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200")}>
+                      {e.isAnonymous ? <UserX className="w-3 h-3" /> : <User className="w-3 h-3" />}
+                      {e.isAnonymous ? "ANONYMOUS" : "NAMED"}
                     </button>
                   </td>
                   <td className="px-4 py-3 text-right">

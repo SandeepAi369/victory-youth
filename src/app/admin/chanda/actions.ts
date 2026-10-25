@@ -24,7 +24,7 @@ export async function getChandaEntries() {
   try {
     const db = getDb();
     const { desc } = await import("drizzle-orm");
-    return await db.select({ id: schema.donations.id, receiptNo: schema.donations.receiptNo, donorName: schema.donations.donorName, phone: schema.donations.phone, amount: schema.donations.amount, category: schema.donations.category, purpose: schema.donations.purpose, paymentMode: schema.donations.paymentMode, date: schema.donations.date, isPublished: schema.donations.isPublished, createdAt: schema.donations.createdAt }).from(schema.donations)
+    return await db.select({ id: schema.donations.id, receiptNo: schema.donations.receiptNo, donorName: schema.donations.donorName, phone: schema.donations.phone, amount: schema.donations.amount, category: schema.donations.category, purpose: schema.donations.purpose, paymentMode: schema.donations.paymentMode, date: schema.donations.date, isPublished: schema.donations.isPublished, isAnonymous: schema.donations.isAnonymous, createdAt: schema.donations.createdAt }).from(schema.donations)
       .where(eq(schema.donations.category, "CHANDA"))
       .orderBy(desc(schema.donations.createdAt));
   } catch (error: any) {
@@ -36,6 +36,7 @@ export async function getChandaEntries() {
 export async function addChanda(data: {
   donorName: string; phone: string; amount: number;
   paymentMode: string; date: string; purpose?: string;
+  isAnonymous?: boolean;
 }) {
   await requireAdmin();
   try {
@@ -46,7 +47,7 @@ export async function addChanda(data: {
       id, receiptNo,
       donorName: data.donorName, phone: data.phone, amount: data.amount,
       category: "CHANDA", purpose: data.purpose || "Chanda",
-      paymentMode: data.paymentMode, status: "SUCCESS", date: data.date, isPublished: false,
+      paymentMode: data.paymentMode, status: "SUCCESS", date: data.date, isPublished: false, isAnonymous: !!data.isAnonymous,
     });
     revalidate();
     return { success: true, receiptNo };
@@ -91,6 +92,20 @@ export async function toggleChandaPublish(id: string, publish: boolean) {
     return { success: true };
   } catch (error: any) {
     console.error("toggleChandaPublish error:", error);
+    return { success: false, error: error.message };
+  }
+}
+
+/** Hide (true) or show (false) the donor's name on the public site */
+export async function toggleChandaAnonymous(id: string, anonymous: boolean) {
+  await requireAdmin();
+  try {
+    const db = getDb();
+    await db.update(schema.donations).set({ isAnonymous: anonymous }).where(eq(schema.donations.id, id));
+    revalidate();
+    return { success: true };
+  } catch (error: any) {
+    console.error("toggleChandaAnonymous error:", error);
     return { success: false, error: error.message };
   }
 }

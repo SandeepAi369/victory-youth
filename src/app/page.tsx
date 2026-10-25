@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getHomepageData } from "@/lib/queries/public";
-import { CountdownTimer } from "@/components/public/CountdownTimer";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
 import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
