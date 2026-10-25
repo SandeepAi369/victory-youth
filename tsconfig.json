@@ -38,7 +38,7 @@
   ],
   "exclude": [
     "node_modules",
-    "src/db/seed.ts",
-    "drizzle.config.ts"
+    "drizzle.core.config.ts",
+    "drizzle.media.config.ts"
   ]
 }

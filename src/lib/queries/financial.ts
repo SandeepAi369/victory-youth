@@ -57,8 +57,8 @@ export async function getDonationsSummary() {
     // Total donations
     const totalResult = await db
       .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(amount), 0)`,
       })
       .from(schema.donations)
       .where(eq(schema.donations.status, "SUCCESS"));
@@ -67,8 +67,8 @@ export async function getDonationsSummary() {
     const byModeResult = await db
       .select({
         mode: schema.donations.paymentMode,
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(amount), 0)`,
       })
       .from(schema.donations)
       .where(eq(schema.donations.status, "SUCCESS"))
@@ -78,8 +78,8 @@ export async function getDonationsSummary() {
     const byPurposeResult = await db
       .select({
         purpose: schema.donations.purpose,
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(amount), 0)`,
       })
       .from(schema.donations)
       .where(eq(schema.donations.status, "SUCCESS"))
@@ -174,8 +174,8 @@ export async function getSponsorsSummary() {
     // Total sponsors
     const totalResult = await db
       .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(amount), 0)`,
       })
       .from(schema.sponsors)
       .where(eq(schema.sponsors.isPublished, true));
@@ -184,8 +184,8 @@ export async function getSponsorsSummary() {
     const byTierResult = await db
       .select({
         tier: schema.sponsors.tier,
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(amount), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(amount), 0)`,
       })
       .from(schema.sponsors)
       .where(eq(schema.sponsors.isPublished, true))
@@ -230,22 +230,22 @@ export async function getAuctionSummary() {
     // Item count
     const itemsResult = await db
       .select({
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(*)`,
       })
       .from(schema.auctionItems);
 
     // Total bids
     const bidsResult = await db
       .select({
-        count: sql<number>`count(*)::int`,
+        count: sql<number>`count(*)`,
       })
       .from(schema.auctionBids);
 
     // Sold items and revenue
     const soldResult = await db
       .select({
-        count: sql<number>`count(*)::int`,
-        total: sql<number>`coalesce(sum(current_bid), 0)::int`,
+        count: sql<number>`count(*)`,
+        total: sql<number>`coalesce(sum(current_bid), 0)`,
       })
       .from(schema.auctionItems)
       .where(eq(schema.auctionItems.status, "CLOSED"));

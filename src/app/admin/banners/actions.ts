@@ -1,6 +1,6 @@
 "use server";
-import { getDb, schema } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { getMediaDb, schema } from "@/db";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID, createHash } from "crypto";
 
@@ -15,7 +15,7 @@ function revalidate() {
 
 export async function getBanners() {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     return await db
       .select({
         id: schema.banners.id,
@@ -25,7 +25,6 @@ export async function getBanners() {
         sortOrder: schema.banners.sortOrder,
         isPublished: schema.banners.isPublished,
         createdAt: schema.banners.createdAt,
-        _now: sql`NOW()`,
       })
       .from(schema.banners)
       .orderBy(schema.banners.sortOrder);
@@ -37,7 +36,7 @@ export async function getBanners() {
 
 export async function saveBanner(secureUrl: string, publicId: string, label: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
 
     // Enforce max 3 banners
     const existing = await db.select({ id: schema.banners.id }).from(schema.banners);
@@ -65,7 +64,7 @@ export async function saveBanner(secureUrl: string, publicId: string, label: str
 
 export async function updateBannerLabel(id: string, label: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     const trimmedLabel = (label || "").slice(0, 10);
     await db.update(schema.banners).set({ label: trimmedLabel, updatedAt: new Date() }).where(eq(schema.banners.id, id));
     revalidate();
@@ -78,7 +77,7 @@ export async function updateBannerLabel(id: string, label: string) {
 
 export async function replaceBannerImage(bannerId: string, newSecureUrl: string, newPublicId: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     const rows = await db.select({ cfId: schema.banners.cloudinaryPublicId })
       .from(schema.banners).where(eq(schema.banners.id, bannerId));
     const oldPublicId = rows[0]?.cfId;
@@ -100,7 +99,7 @@ export async function replaceBannerImage(bannerId: string, newSecureUrl: string,
 
 export async function deleteBanner(id: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     const rows = await db.select({ cfId: schema.banners.cloudinaryPublicId })
       .from(schema.banners).where(eq(schema.banners.id, id));
     const publicId = rows[0]?.cfId;
@@ -117,7 +116,7 @@ export async function deleteBanner(id: string) {
 
 export async function toggleBannerPublish(id: string, publish: boolean) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     await db.update(schema.banners).set({ isPublished: publish }).where(eq(schema.banners.id, id));
     revalidate();
     return { success: true };

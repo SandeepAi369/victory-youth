@@ -15,7 +15,7 @@
  * │ Local (PM2/next start)  │ Production (Cloudflare)     │
  * ├─────────────────────────┼─────────────────────────────┤
  * │ Node.js process         │ Edge Worker (stateless)     │
- * │ DATABASE_URL from .env  │ DATABASE_URL wrangler secret│
+ * │ TURSO_* vars from .env  │ TURSO_* wrangler secrets    │
  * │ File system cache       │ No persistent cache         │
  * │ next start -p 3000      │ wrangler deploy             │
  * └─────────────────────────┴─────────────────────────────┘
@@ -32,7 +32,7 @@ module.exports = {
       watch: false,
       env: {
         NODE_ENV: "development",
-        // DATABASE_URL must be set in your .env file
+        // TURSO_CORE_* and TURSO_MEDIA_* must be set in your .env file
         // ADMIN_PASSWORD must be set in your .env file
       },
       // PM2 log settings

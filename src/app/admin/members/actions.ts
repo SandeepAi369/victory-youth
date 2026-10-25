@@ -1,6 +1,6 @@
 "use server";
 import { getDb, schema } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -13,7 +13,7 @@ function revalidate() {
 export async function getMembers() {
   try {
     const db = getDb();
-    return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive, _now: sql`NOW()` }).from(schema.members).orderBy(schema.members.name);
+    return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive }).from(schema.members).orderBy(schema.members.name);
   } catch (error: any) {
     console.error("getMembers error:", error);
     return [];
@@ -82,7 +82,7 @@ export async function setAllMembersVisibility(
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
   try {
     const db = getDb();
-    await db.execute(sql`UPDATE members SET is_active = ${publish}`);
+    await db.update(schema.members).set({ isActive: publish });
     revalidatePath("/admin/members");
     revalidatePath("/members");
     revalidatePath("/");

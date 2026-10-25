@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
   images: {
@@ -16,13 +17,16 @@ const nextConfig: NextConfig = {
       allowedOrigins: ['localhost:3000', '*.lhr.life', '*.pinggy.net', '*.pinggy.link', '*.loca.lt', '*.pages.dev', '*.workers.dev']
     }
   },
-  serverExternalPackages: ['pg', 'pg-cloudflare', 'pg-connection-string', 'pgpass', 'drizzle-orm', 'postgres'],
+  // Turso: file tracing only copies isomorphic-ws's Node entry; Workers need the web one
   outputFileTracingIncludes: {
     "**/*": [
-      "./node_modules/pg-cloudflare/dist/**",
-      "./node_modules/pg-cloudflare/esm/**",
+      "./node_modules/@libsql/isomorphic-ws/web.mjs",
+      "./node_modules/@libsql/isomorphic-ws/web.cjs",
     ],
   },
   
 };
 export default nextConfig;
+
+// Gives `next dev` the Cloudflare bindings (a local copy of the MEDIA_DB D1 database)
+initOpenNextCloudflareForDev();

@@ -2,7 +2,7 @@
 
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
-import { eq, inArray , sql} from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -16,7 +16,7 @@ function revalidate() {
 export async function getEvents() {
   try {
     const db = getDb();
-    return await db.select({ id: events.id, day: events.day, title: events.title, description: events.description, date: events.date, timing: events.timing, location: events.location, inCharge: events.inCharge, isPublished: events.isPublished, _now: sql`NOW()` }).from(events).orderBy(events.day);
+    return await db.select({ id: events.id, day: events.day, title: events.title, description: events.description, date: events.date, timing: events.timing, location: events.location, inCharge: events.inCharge, isPublished: events.isPublished }).from(events).orderBy(events.day);
   } catch (error: any) {
     console.error("getEvents error:", error);
     return [];

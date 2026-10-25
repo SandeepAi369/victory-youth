@@ -1,15 +1,11 @@
 /**
  * Public Data Queries — Ganesh BNS / Victory Youth Association
  *
- * All read queries include `NOW()` as an extra selected column.
- * This is a deliberate Hyperdrive cache-busting technique:
- *   - Cloudflare docs: "NOW() is a stable function — not cached"
- *   - Every SELECT with NOW() bypasses Hyperdrive's 60s query cache
- *   - This ensures admin mutations reflect on the frontend IMMEDIATELY
- *   - The NOW() column is harmless and discarded by the application
+ * Gallery, banners and hero images live in the MEDIA database (getMediaDb);
+ * everything else is in the CORE database (getDb).
  */
 
-import { getDb, schema } from "@/db";
+import { getDb, getMediaDb, schema } from "@/db";
 import { eq, desc, and, ne, sql } from "drizzle-orm";
 
 // ============================================
@@ -38,18 +34,16 @@ async function getPublicStats(existingSettings?: any) {
       ? existingSettings
       : await getAssociationSettings();
 
-    // NOW() on each query = Hyperdrive never caches these
     const [memberRows, donationRows, eventRows] = await Promise.all([
-      db.select({ count: sql<number>`count(*)`, _t: sql`NOW()` })
+      db.select({ count: sql<number>`count(*)` })
         .from(schema.members).where(eq(schema.members.isActive, true)),
       db.select({
           total: sql<number>`coalesce(sum(amount), 0)`,
           count: sql<number>`count(*)`,
-          _t: sql`NOW()`,
         })
         .from(schema.donations)
         .where(eq(schema.donations.isPublished, true)),
-      db.select({ count: sql<number>`count(*)`, _t: sql`NOW()` })
+      db.select({ count: sql<number>`count(*)` })
         .from(schema.events).where(eq(schema.events.isPublished, true)),
     ]);
 
@@ -131,7 +125,7 @@ export async function getPublishedNotes(limit: number = 10) {
 
 export async function getPublishedGallery(limit: number = 12) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     return await db
       .select()
       .from(schema.gallery)
@@ -262,14 +256,13 @@ export async function getFeaturedGallery(existingSettings?: any) {
 // ============================================
 export async function getPublishedBanners() {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     return await db
       .select({
         id: schema.banners.id,
         url: schema.banners.url,
         label: schema.banners.label,
         sortOrder: schema.banners.sortOrder,
-        _now: sql`NOW()`,
       })
       .from(schema.banners)
       .where(eq(schema.banners.isPublished, true))
@@ -282,7 +275,7 @@ export async function getPublishedBanners() {
 
 export async function getHeroImages() {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     const rows = await db
       .select({ id: schema.heroImages.id, url: schema.heroImages.url })
       .from(schema.heroImages)
