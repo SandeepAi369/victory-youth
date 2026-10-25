@@ -1,4 +1,5 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq, desc } from "drizzle-orm";
@@ -18,7 +19,7 @@ export async function getNotices() {
   try {
     const db = getDb();
     return await db.select({ id: schema.notices.id, title: schema.notices.title, body: schema.notices.body, status: schema.notices.status, createdAt: schema.notices.createdAt }).from(schema.notices).orderBy(desc(schema.notices.createdAt));
-  } catch (error: any) {
+  } catch (error) {
     console.error("getNotices error:", error);
     return [];
   }
@@ -32,8 +33,8 @@ export async function addNotice(data: { title: string; body: string }) {
     await db.insert(schema.notices).values({ id, title: data.title, body: data.body, status: "DRAFT", sentBy: "Admin" });
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -44,8 +45,8 @@ export async function updateNotice(id: string, data: { title?: string; body?: st
     await db.update(schema.notices).set({ ...data, updatedAt: new Date() }).where(eq(schema.notices.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -56,8 +57,8 @@ export async function deleteNotice(id: string) {
     await db.delete(schema.notices).where(eq(schema.notices.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -70,8 +71,8 @@ export async function toggleNoticePublish(id: string, publish: boolean) {
       .where(eq(schema.notices.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -88,9 +89,9 @@ export async function setAllNoticesVisibility(
     });
     revalidate();
     return { success: true, newState: publish };
-  } catch (e: any) {
+  } catch (e) {
     console.error("setAllNoticesVisibility error:", e);
-    return { success: false, newState: !publish, error: e.message };
+    return { success: false, newState: !publish, error: errorMessage(e) };
   }
 }
 
@@ -101,7 +102,7 @@ export async function getNotes() {
   try {
     const db = getDb();
     return await db.select({ id: schema.importantNotes.id, title: schema.importantNotes.title, content: schema.importantNotes.content, category: schema.importantNotes.category, authorName: schema.importantNotes.authorName, isPublished: schema.importantNotes.isPublished, createdAt: schema.importantNotes.createdAt }).from(schema.importantNotes).orderBy(desc(schema.importantNotes.createdAt));
-  } catch (error: any) {
+  } catch (error) {
     console.error("getNotes error:", error);
     return [];
   }
@@ -118,8 +119,8 @@ export async function addNote(data: { title: string; content: string; category: 
     });
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -130,8 +131,8 @@ export async function updateNote(id: string, data: { title?: string; content?: s
     await db.update(schema.importantNotes).set({ ...data, updatedAt: new Date() }).where(eq(schema.importantNotes.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -142,8 +143,8 @@ export async function deleteNote(id: string) {
     await db.delete(schema.importantNotes).where(eq(schema.importantNotes.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -156,8 +157,8 @@ export async function toggleNotePublish(id: string, publish: boolean) {
       .where(eq(schema.importantNotes.id, id));
     revalidate();
     return { success: true };
-  } catch (e: any) {
-    return { success: false, error: e.message };
+  } catch (e) {
+    return { success: false, error: errorMessage(e) };
   }
 }
 
@@ -171,8 +172,8 @@ export async function setAllNotesVisibility(
     await db.update(schema.importantNotes).set({ isPublished: publish, updatedAt: new Date() });
     revalidate();
     return { success: true, newState: publish };
-  } catch (e: any) {
+  } catch (e) {
     console.error("setAllNotesVisibility error:", e);
-    return { success: false, newState: !publish, error: e.message };
+    return { success: false, newState: !publish, error: errorMessage(e) };
   }
 }

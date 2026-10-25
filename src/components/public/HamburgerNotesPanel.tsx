@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Menu, X, BookOpen, ChevronRight, Presentation, Phone } from "lucide-react";
@@ -8,10 +8,10 @@ import { Menu, X, BookOpen, ChevronRight, Presentation, Phone } from "lucide-rea
 export function HamburgerNotesPanel({ notesCount = 0 }: { notesCount: number }) {
   const [open, setOpen] = useState(false);
   const [navigating, setNavigating] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
-  useEffect(() => { setMounted(true); }, []);
+  // true only in the browser (createPortal needs document.body)
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   const handleNotesClick = () => {
     setNavigating(true);

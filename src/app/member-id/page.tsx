@@ -117,7 +117,7 @@ export default function MemberIdPage() {
             </div>
           ) : (
             <div className="p-8 rounded-2xl bg-black/40 border border-red-950 text-center space-y-2">
-              <p className="text-sm text-red-400 font-semibold">No member record found for "{query}"</p>
+              <p className="text-sm text-red-400 font-semibold">No member record found for &quot;{query}&quot;</p>
               <p className="text-xs text-zinc-400">Please contact Victory Youth Association committee to enroll.</p>
             </div>
           )

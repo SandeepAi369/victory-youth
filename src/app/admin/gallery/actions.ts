@@ -1,11 +1,11 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { destroyCloudinaryImage } from "@/lib/cloudinary-admin";
-import { createHash } from "crypto";
 
 function revalidate() {
   revalidatePath("/");
@@ -38,9 +38,9 @@ export async function saveGalleryImage(
     });
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("saveGalleryImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -79,9 +79,9 @@ export async function replaceGalleryImage(
 
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("replaceGalleryImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -101,7 +101,7 @@ export async function getGallery() {
       })
       .from(schema.gallery)
       .orderBy(schema.gallery.uploadedAt);
-  } catch (error: any) {
+  } catch (error) {
     console.error("getGallery error:", error);
     return [];
   }
@@ -125,9 +125,9 @@ export async function deleteGalleryItem(id: string) {
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteGalleryItem error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -141,9 +141,9 @@ export async function toggleGalleryPublish(id: string, publish: boolean) {
       .where(eq(schema.gallery.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("toggleGalleryPublish error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -156,9 +156,9 @@ export async function setAllGalleryVisibility(
     await db.update(schema.gallery).set({ isPublished: publish });
     revalidate();
     return { success: true, newState: publish };
-  } catch (error: any) {
+  } catch (error) {
     console.error("setAllGalleryVisibility error:", error);
-    return { success: false, newState: !publish, error: error.message };
+    return { success: false, newState: !publish, error: errorMessage(error) };
   }
 }
 

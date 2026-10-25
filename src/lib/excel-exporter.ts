@@ -1,5 +1,5 @@
 import * as XLSX from "xlsx";
-import { Donation, Expense, CashBookEntry, Member, InventoryItem } from "@/types";
+import { Donation, Expense, CashBookEntry, Member } from "@/types";
 
 export function exportDonationsToExcel(donations: Donation[]) {
   const data = donations.map((d) => ({
@@ -80,22 +80,27 @@ export function exportMembersToExcel(members: Member[]) {
   XLSX.writeFile(wb, `Ganesh_BNS_Members_${new Date().toISOString().split("T")[0]}.xlsx`);
 }
 
-export function exportInventoryToExcel(items: InventoryItem[]) {
+type InventoryExportRow = {
+  name: string;
+  category: string;
+  quantity: number | null;
+  unit: string | null;
+  condition: string | null;
+  inCharge: string | null;
+};
+
+export function exportInventoryToExcel(items: InventoryExportRow[]) {
   const data = items.map((i) => ({
     "Item Name": i.name,
     "Category": i.category,
-    "Total Quantity": i.total,
-    "Available": i.available,
-    "Issued": i.issued,
-    "Condition": i.condition,
-    "Is Rented": i.isRented ? "Yes" : "No",
-    "Vendor Name": i.vendorName || "-",
-    "Rent/Day": i.rentPerDay || 0,
-    "Deposit": i.deposit || 0,
+    "Quantity": i.quantity ?? 0,
+    "Unit": i.unit || "-",
+    "Condition": i.condition || "-",
+    "In Charge": i.inCharge || "-",
   }));
 
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Inventory");
-  XLSX.writeFile(wb, `Ganesh_BNS_Inventory_${new Date().toISOString().split("T")[0]}.xlsx`);
+  XLSX.writeFile(wb, `Victory_Youth_Inventory_${new Date().toISOString().split("T")[0]}.xlsx`);
 }

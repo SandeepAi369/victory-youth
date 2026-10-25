@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff } from "lucide-react";
 import { addMember, updateMember, deleteMember, setAllMembersVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 
 type Member = {
   id: string;
@@ -15,6 +16,8 @@ type Member = {
   committeeRole: string | null;
   isActive: boolean | null;
   memberId: string;
+  joinDate?: string | null;
+  createdAt?: Date | null;
 };
 
 const ROLES = ["Member", "Special Candidate"];
@@ -22,12 +25,13 @@ const emptyForm = { name: "", fullName: "", phone: "", membershipFee: "", role: 
 
 export default function MembersClient({ initialData }: { initialData: Member[] }) {
   const { data, isPending, execute } = useAdminAction<Member>(initialData);
+  const [search, setSearch] = useState("");
+  const visible = filterRows(data, search, (m) => [m.name, m.fullName, m.memberId, m.phone, m.role]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   const published = data.length > 0 && data.some((m) => m.isActive === true);
-  const totalContribution = data.reduce((sum, m) => sum + (m.membershipFee || 0), 0);
   const resetForm = () => { setShowForm(false); setEditingId(null); setForm(emptyForm); };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -61,7 +65,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
       name: m.name, fullName: m.fullName || m.name, phone: m.phone,
       membershipFee: String(m.membershipFee || 0),
       role: m.role || m.committeeRole || "Member",
-      joinDate: (m as any).joinDate || new Date().toISOString().split("T")[0],
+      joinDate: m.joinDate || new Date().toISOString().split("T")[0],
     });
   };
 
@@ -115,7 +119,7 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
       {showForm && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && resetForm()}
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && resetForm()}
         >
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
@@ -169,6 +173,8 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
         </div>
       )}
 
+      <AdminSearch value={search} onChange={setSearch} placeholder="Search members by name, member ID, phone or role…" shown={visible.length} total={data.length} />
+
       <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -183,10 +189,11 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {search && visible.length === 0 && data.length > 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</td></tr>}
               {data.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No members yet.</td></tr>
               )}
-              {data.map((m) => (
+              {visible.map((m) => (
                 <tr key={m.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{m.fullName || m.name}</p>
@@ -203,10 +210,10 @@ export default function MembersClient({ initialData }: { initialData: Member[] }
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground text-xs">
-                    {(m as any).joinDate
-                      ? new Date((m as any).joinDate + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
-                      : (m as any).createdAt
-                        ? new Date((m as any).createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                    {m.joinDate
+                      ? new Date(m.joinDate + "T00:00:00").toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
+                      : m.createdAt
+                        ? new Date(m.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" })
                         : "—"}
                   </td>
                   <td className="px-4 py-3 text-right">

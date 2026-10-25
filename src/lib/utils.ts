@@ -134,3 +134,9 @@ export function numberToIndianWords(num: number): string {
   
   return numberToIndianWords(Math.floor(num / 10000000)) + ' Crore' + (num % 10000000 !== 0 ? ' ' + numberToIndianWords(num % 10000000) : '');
 }
+
+/** Readable message from anything thrown (catch clauses receive `unknown`). */
+export function errorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return typeof error === "string" ? error : "An unexpected error occurred";
+}

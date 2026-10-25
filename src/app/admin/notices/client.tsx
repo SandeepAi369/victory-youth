@@ -7,6 +7,7 @@ import {
   toggleNoticePublish, setAllNoticesVisibility,
 } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 
 type Notice = {
   id: string;
@@ -18,6 +19,8 @@ type Notice = {
 
 export default function NoticesClient({ initialData }: { initialData: Notice[] }) {
   const { data, isPending, execute } = useAdminAction<Notice>(initialData);
+  const [search, setSearch] = useState("");
+  const visible = filterRows(data, search, (n) => [n.title, n.body, n.status]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -123,9 +126,12 @@ export default function NoticesClient({ initialData }: { initialData: Notice[] }
         </form>
       )}
 
+      <AdminSearch value={search} onChange={setSearch} placeholder="Search notices by title or text…" shown={visible.length} total={data.length} />
+
       <div className="space-y-3">
-        {data.length === 0 && <p className="text-center text-muted-foreground py-12">No notices yet. Click "Add Notice" to create one.</p>}
-        {data.map((n) => {
+        {search && visible.length === 0 && data.length > 0 && <p className="text-center text-muted-foreground py-8 text-sm">No matches for &ldquo;{search}&rdquo;.</p>}
+        {data.length === 0 && <p className="text-center text-muted-foreground py-12">No notices yet. Click &quot;Add Notice&quot; to create one.</p>}
+        {visible.map((n) => {
           const isPublished = n.status === "PUBLISHED";
           return (
             <div key={n.id}

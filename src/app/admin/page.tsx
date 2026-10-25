@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { IndianRupee, ArrowDownLeft, ArrowUpRight, Scale, Users, Calendar, StickyNote } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Scale, Users, Calendar, StickyNote } from "lucide-react";
 import { getDb, schema } from "@/db";
 import { count, sum, eq } from "drizzle-orm";
 import Link from "next/link";

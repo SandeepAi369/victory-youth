@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { Plus, Pencil, Trash2, Search, Download, X } from "lucide-react";
 import { addInventoryItem, updateInventoryItem, deleteInventoryItem } from "./actions";
+import type { getInventory } from "./actions";
+
+type Row = Awaited<ReturnType<typeof getInventory>>[number];
 import { exportInventoryToExcel } from "@/lib/excel-exporter";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
-export function InventoryClient({ items: initialItems }: { items: any[] }) {
+export function InventoryClient({ items: initialItems }: { items: Row[] }) {
   const { data: items, isPending, execute } = useAdminAction(initialItems);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -28,14 +31,14 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
   const handleDelete = (id: string) => {
     if (!confirm("Delete this item?")) return;
     execute({
-      optimisticUpdate: (prev) => prev.filter((i: any) => i.id !== id),
+      optimisticUpdate: (prev) => prev.filter((i) => i.id !== id),
       serverAction: () => deleteInventoryItem(id),
       successMsg: "Item deleted",
     });
   };
 
   const filtered = items.filter(
-    (i: any) =>
+    (i) =>
       i.name.toLowerCase().includes(search.toLowerCase()) ||
       i.category.toLowerCase().includes(search.toLowerCase()) ||
       (i.inCharge || "").toLowerCase().includes(search.toLowerCase())
@@ -65,7 +68,7 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
 
       {(isAdding || editingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-bold text-foreground">
@@ -130,7 +133,7 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {filtered.map((item: any) => (
+              {filtered.map((item) => (
                 <tr key={item.id} className="hover:bg-muted/30 transition-all">
                   <td className="py-3 px-4 font-bold">{item.name}</td>
                   <td className="py-3 px-4 text-muted-foreground">{item.category}</td>
@@ -146,7 +149,7 @@ export function InventoryClient({ items: initialItems }: { items: any[] }) {
                       <button onClick={() => {
                           setEditingId(item.id); setIsAdding(false);
                           setFormData({ name: item.name, category: item.category,
-                            quantity: item.quantity, condition: item.condition,
+                            quantity: item.quantity, condition: item.condition || "Good",
                             inCharge: item.inCharge || "", unit: item.unit || "pcs" });
                         }} disabled={isPending}
                         className="p-1.5 text-blue-600 hover:bg-blue-100 rounded-lg disabled:opacity-50">

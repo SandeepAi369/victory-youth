@@ -1,18 +1,20 @@
 import Link from "next/link";
+import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getPublishedChanda } from "@/lib/queries/public";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function ChandaPage() {
-  let chandas: any[] = [];
+export default async function ChandaPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const q = searchQuery(await searchParams);
+  let chandas: Awaited<ReturnType<typeof getPublishedChanda>> = [];
   try {
-    chandas = await getPublishedChanda(100);
-  } catch (e: any) {
+    chandas = await getPublishedChanda(100, q);
+  } catch (e) {
     console.error("Chanda page error:", e);
   }
 
-  const totalAmount = chandas.reduce((sum: number, c: any) => sum + (Number(c.amount) || 0), 0);
+  const totalAmount = chandas.reduce((sum: number, c) => sum + (Number(c.amount) || 0), 0);
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -26,6 +28,8 @@ export default async function ChandaPage() {
       </nav>
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
+
+        <SearchBox basePath="/chanda" query={q} resultCount={chandas.length} placeholder="Search chanda by name or purpose…" />
         {/* Summary Card */}
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
           <p className="text-sm font-medium text-white/80">Total Chanda Collected</p>
@@ -38,7 +42,7 @@ export default async function ChandaPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {chandas.map((d: any, i: number) => (
+          {chandas.map((d, i) => (
             <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 font-bold text-lg">

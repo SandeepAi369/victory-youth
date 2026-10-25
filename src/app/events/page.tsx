@@ -1,16 +1,19 @@
+import { errorMessage } from "@/lib/utils";
+import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import Link from "next/link";
 import { getPublishedEvents } from "@/lib/queries/public";
 import { ArrowLeft, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function EventsPage() {
-  let events: any[] = [];
+export default async function EventsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const q = searchQuery(await searchParams);
+  let events: Awaited<ReturnType<typeof getPublishedEvents>> = [];
   let error = "";
   try {
-    events = await getPublishedEvents();
-  } catch (e: any) {
-    error = e.message || "Failed to load events.";
+    events = await getPublishedEvents(q);
+  } catch (e) {
+    error = errorMessage(e) || "Failed to load events.";
     console.error("Events page error:", e);
   }
 
@@ -26,6 +29,8 @@ export default async function EventsPage() {
       </nav>
 
       <div className="container mx-auto max-w-5xl px-4 py-8">
+
+        <SearchBox basePath="/events" query={q} resultCount={events.length} placeholder="Search events by name, place or type…" />
         {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 text-red-700 dark:text-red-400">{error}</div>}
 
         {events.length === 0 && !error && (
@@ -33,7 +38,7 @@ export default async function EventsPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {events.map((evt: any) => (
+          {events.map((evt) => (
             <div key={evt.id} className="group bg-white dark:bg-stone-800 rounded-2xl overflow-hidden shadow-sm border border-stone-100 dark:border-stone-700 hover:shadow-lg transition-shadow flex flex-col">
               <div className="relative aspect-video bg-stone-100 dark:bg-stone-700 overflow-hidden">
                 {evt.imageUrl ? (

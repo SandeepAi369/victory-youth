@@ -7,11 +7,12 @@ import {
   toggleNotePublish, setAllNotesVisibility,
 } from "../notices/actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 
 type Note = {
   id: string;
   title: string;
-  content: any;
+  content: unknown;
   category: string | null;
   authorName: string;
   isPublished: boolean | null;
@@ -20,6 +21,8 @@ type Note = {
 
 export default function NotesClient({ initialData }: { initialData: Note[] }) {
   const { data, isPending, execute } = useAdminAction<Note>(initialData);
+  const [search, setSearch] = useState("");
+  const visible = filterRows(data, search, (n) => [n.title, n.content, n.category, n.authorName]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -141,9 +144,12 @@ export default function NotesClient({ initialData }: { initialData: Note[] }) {
         </form>
       )}
 
+      <AdminSearch value={search} onChange={setSearch} placeholder="Search notes by title, text, category or author…" shown={visible.length} total={data.length} />
+
       <div className="space-y-3">
-        {data.length === 0 && <p className="text-center text-muted-foreground py-12">No notes yet. Click "Add Note" to create one.</p>}
-        {data.map((note) => (
+        {search && visible.length === 0 && data.length > 0 && <p className="text-center text-muted-foreground py-8 text-sm">No matches for &ldquo;{search}&rdquo;.</p>}
+        {data.length === 0 && <p className="text-center text-muted-foreground py-12">No notes yet. Click &quot;Add Note&quot; to create one.</p>}
+        {visible.map((note) => (
           <div key={note.id}
             className={`p-4 rounded-xl border flex items-start justify-between transition-all ${note.isPublished ? "bg-card border-emerald-200 dark:border-emerald-800" : "bg-muted/30 border-border"}`}>
             <div className="flex-1">

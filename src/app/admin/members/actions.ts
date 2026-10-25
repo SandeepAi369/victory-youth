@@ -1,6 +1,8 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
+import type { NewMemberRow } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -15,8 +17,8 @@ export async function getMembers() {
   await requireAdmin();
   try {
     const db = getDb();
-    return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive }).from(schema.members).orderBy(schema.members.name);
-  } catch (error: any) {
+    return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive, joinDate: schema.members.joinDate, createdAt: schema.members.createdAt }).from(schema.members).orderBy(schema.members.name);
+  } catch (error) {
     console.error("getMembers error:", error);
     return [];
   }
@@ -47,13 +49,13 @@ export async function addMember(data: {
     });
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("addMember error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
-export async function updateMember(id: string, data: Record<string, any>) {
+export async function updateMember(id: string, data: Partial<NewMemberRow>) {
   await requireAdmin();
   try {
     const db = getDb();
@@ -63,9 +65,9 @@ export async function updateMember(id: string, data: Record<string, any>) {
       .where(eq(schema.members.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("updateMember error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -76,9 +78,9 @@ export async function deleteMember(id: string) {
     await db.delete(schema.members).where(eq(schema.members.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteMember error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -93,8 +95,24 @@ export async function setAllMembersVisibility(
     revalidatePath("/members");
     revalidatePath("/");
     return { success: true, newState: publish };
-  } catch (error: any) {
+  } catch (error) {
     console.error("setAllMembersVisibility error:", error);
-    return { success: false, newState: !publish, error: error.message };
+    return { success: false, newState: !publish, error: errorMessage(error) };
+  }
+}
+
+/** Names of active members only — no phones, amounts or any other data. */
+export async function getActiveMemberNames() {
+  await requireAdmin();
+  try {
+    const db = getDb();
+    return await db
+      .select({ id: schema.members.id, name: schema.members.name })
+      .from(schema.members)
+      .where(eq(schema.members.isActive, true))
+      .orderBy(schema.members.name);
+  } catch (error) {
+    console.error("getActiveMemberNames error:", error);
+    return [];
   }
 }

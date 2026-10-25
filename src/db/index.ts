@@ -1,6 +1,9 @@
 import { cache } from "react";
-import { createClient } from "@libsql/client/web";
-import { drizzle as drizzleTurso } from "drizzle-orm/libsql/web";
+// "@libsql/client" resolves to the fetch-based web client on Cloudflare Workers
+// (workerd export condition) and to the full Node client in `next dev`, which
+// also supports local `file:` databases (used by `npm run setup -- --local` and demo mode).
+import { createClient } from "@libsql/client";
+import { drizzle as drizzleTurso } from "drizzle-orm/libsql";
 import { drizzle as drizzleD1, type AnyD1Database } from "drizzle-orm/d1";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import * as schema from "./schema";
@@ -36,14 +39,12 @@ function readEnv(name: string): string {
 }
 
 /** Request-scoped connection to the CORE database on Turso (React.cache). */
-export const getDb = cache(() =>
-  drizzleTurso({
-    client: createClient({
-      url: readEnv("TURSO_CORE_DATABASE_URL"),
-      authToken: readEnv("TURSO_CORE_AUTH_TOKEN"),
-    }),
-  })
-);
+export const getDb = cache(() => {
+  const url = readEnv("TURSO_CORE_DATABASE_URL");
+  // A local `file:` database (development / demo mode) needs no auth token
+  const authToken = url.startsWith("file:") ? undefined : readEnv("TURSO_CORE_AUTH_TOKEN");
+  return drizzleTurso({ client: createClient({ url, authToken }) });
+});
 
 /**
  * Request-scoped connection to the MEDIA database on Cloudflare D1 (React.cache).

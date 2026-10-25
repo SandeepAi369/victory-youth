@@ -1,15 +1,18 @@
 "use client";
+import { errorMessage } from "@/lib/utils";
 
 import { useState, useRef } from "react";
-import { Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw, Check, CloudUpload, Pencil } from "lucide-react";
+import { Trash2, X, Upload, Image as ImageIcon, Loader2, RefreshCw, Check, CloudUpload, Pencil } from "lucide-react";
 import { saveBanner, replaceBannerImage, deleteBanner, toggleBannerPublish, updateBannerLabel } from "./actions";
+import type { getBanners } from "./actions";
+
+type Row = Awaited<ReturnType<typeof getBanners>>[number];
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
-const CLOUD_NAME = "y5dnsgyb";
-const UPLOAD_PRESET = "victory_youth_unsigned";
+import { CLOUDINARY_CLOUD_NAME as CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET as UPLOAD_PRESET } from "@/lib/cloudinary-config";
 const MAX_BANNERS = 3;
 
-export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
+export function BannersClient({ banners: initialBanners }: { banners: Row[] }) {
   const { data: banners, isPending, execute } = useAdminAction(initialBanners);
   const [isAdding, setIsAdding] = useState(false);
   const [replacingId, setReplacingId] = useState<string | null>(null);
@@ -60,9 +63,9 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
       setUploadedUrl(data.secure_url);
       setUploadedPublicId(data.public_id);
       setStep("uploaded"); setStatusMsg("");
-    } catch (err: any) {
+    } catch (err) {
       setStep("select"); setStatusMsg("");
-      alert("Upload error: " + err.message);
+      alert("Upload error: " + errorMessage(err));
     }
   };
 
@@ -79,16 +82,16 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
       }
       resetForm();
       window.location.reload();
-    } catch (err: any) {
+    } catch (err) {
       setStep("uploaded"); setStatusMsg("");
-      alert("Save error: " + err.message);
+      alert("Save error: " + errorMessage(err));
     }
   };
 
   const handleDelete = (id: string) => {
     if (!confirm("Delete this banner permanently?")) return;
     execute({
-      optimisticUpdate: (prev) => prev.filter((b: any) => b.id !== id),
+      optimisticUpdate: (prev) => prev.filter((b) => b.id !== id),
       serverAction: () => deleteBanner(id),
       successMsg: "Deleted",
     });
@@ -96,7 +99,7 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
 
   const handleTogglePublish = (id: string, current: boolean) => {
     execute({
-      optimisticUpdate: (prev) => prev.map((b: any) => b.id === id ? { ...b, isPublished: !current } : b),
+      optimisticUpdate: (prev) => prev.map((b) => b.id === id ? { ...b, isPublished: !current } : b),
       serverAction: () => toggleBannerPublish(id, !current),
       successMsg: current ? "Unpublished" : "Published",
     });
@@ -104,7 +107,7 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
 
   const handleSaveLabel = (id: string) => {
     execute({
-      optimisticUpdate: (prev) => prev.map((b: any) => b.id === id ? { ...b, label: editLabelValue } : b),
+      optimisticUpdate: (prev) => prev.map((b) => b.id === id ? { ...b, label: editLabelValue } : b),
       serverAction: () => updateBannerLabel(id, editLabelValue),
       successMsg: "Label updated",
     });
@@ -130,7 +133,7 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
       {/* Upload / Replace Modal */}
       {(isAdding || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && !isBusy && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{replacingId ? "Replace Banner" : "Upload New Banner"}</h2>
@@ -237,7 +240,7 @@ export function BannersClient({ banners: initialBanners }: { banners: any[] }) {
             No banners yet. Click &quot;Upload Banner&quot; to add your first (max 3).
           </p>
         )}
-        {banners.map((b: any) => (
+        {banners.map((b) => (
           <div key={b.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm">
             <div className="aspect-[4/3] bg-stone-100 dark:bg-stone-800 relative">
               {b.url && <img src={b.url} alt="Banner" className="w-full h-full object-contain" />}

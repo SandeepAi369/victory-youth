@@ -1,4 +1,5 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
@@ -32,7 +33,7 @@ export async function getStoryImage() {
       };
     }
     return { url: null, publicId: null, alt: "Victory Youth Association" };
-  } catch (error: any) {
+  } catch (error) {
     console.error("getStoryImage error:", error);
     return { url: null, publicId: null, alt: "Victory Youth Association" };
   }
@@ -74,9 +75,9 @@ export async function saveStoryImage(secureUrl: string, publicId: string) {
 
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("saveStoryImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -100,9 +101,9 @@ export async function deleteStoryImage() {
 
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteStoryImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -119,7 +120,7 @@ export async function getHeroImages() {
       .from(schema.heroImages)
       .orderBy(schema.heroImages.sortOrder);
     return rows;
-  } catch (error: any) {
+  } catch (error) {
     console.error("getHeroImages error:", error);
     return [];
   }
@@ -144,9 +145,9 @@ export async function addHeroImage(secureUrl: string, publicId: string) {
     });
     revalidate();
     return { success: true, id };
-  } catch (error: any) {
+  } catch (error) {
     console.error("addHeroImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -165,8 +166,8 @@ export async function deleteHeroImage(id: string) {
     await db.delete(schema.heroImages).where(eq(schema.heroImages.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteHeroImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }

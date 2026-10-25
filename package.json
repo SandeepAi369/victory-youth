@@ -7,12 +7,15 @@
     "build": "next build",
     "start": "next start -H 0.0.0.0 -p 3000",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate --config drizzle.core.config.ts && drizzle-kit generate --config drizzle.media.config.ts",
     "db:push": "drizzle-kit push --config drizzle.core.config.ts && drizzle-kit push --config drizzle.media.config.ts",
     "db:media:local": "node scripts/d1-local-migrate.mjs",
     "build:cloudflare": "npx opennextjs-cloudflare build",
     "deploy": "npm run build:cloudflare && wrangler deploy",
-    "preview": "npm run build:cloudflare && wrangler dev"
+    "preview": "npm run build:cloudflare && wrangler dev",
+    "setup": "node scripts/setup.mjs",
+    "demo": "node scripts/demo.mjs"
   },
   "dependencies": {
     "@libsql/client": "^0.18.0",

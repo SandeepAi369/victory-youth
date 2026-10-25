@@ -285,6 +285,9 @@ export const events = sqliteTable("events", {
   
   inCharge: text("in_charge").notNull(),
   coordinatorId: text("coordinator_id"),
+
+  // Optional cover image (Cloudinary or any https URL)
+  imageUrl: text("image_url"),
   
   // Visibility
   isPublished: boolean("is_published").default(true),
