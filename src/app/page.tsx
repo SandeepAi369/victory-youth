@@ -191,9 +191,15 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
-            {/* Calculator, right below the five icons */}
-            <div className="flex justify-center mt-4">
+            {/* Calculator and Active Members, right below the five icons */}
+            <div className="flex justify-center gap-10 sm:gap-16 mt-4">
               <CalculatorLauncher />
+              <Link href="/active-members" className="flex flex-col items-center text-center group">
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 flex items-center justify-center text-xl sm:text-2xl mb-1.5 group-hover:scale-110 transition-transform border-orange-400 dark:border-yellow-600 bg-orange-50 dark:bg-yellow-900/20">
+                  <span aria-hidden>🙋</span>
+                </div>
+                <span className="text-[10px] sm:text-xs font-bold text-orange-700 dark:text-yellow-400">Active Members</span>
+              </Link>
             </div>
           </div>
         </div>

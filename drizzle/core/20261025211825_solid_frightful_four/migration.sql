@@ -1,0 +1,1 @@
+ALTER TABLE `members` ADD `listed_publicly` integer DEFAULT false;

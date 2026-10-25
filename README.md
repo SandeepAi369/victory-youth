@@ -40,12 +40,13 @@ npm install && npm run demo
 - **Donation receipts**: shareable receipt page (`/receipt/<id>`) with a downloadable 80G receipt PDF. Only successful transactions get a receipt.
 - **Member ID verifier**: look up an active member by exact member ID or phone number and download a printable ID card (PDF with QR code). Phone numbers are masked unless the visitor searched by that number.
 - **Photo gallery** grouped **month by month**, newest first, with each photo's date.
+- **Active Members**: a public, searchable list of names only, showing just the members an admin has published.
 - **Light and dark mode**, responsive on every screen size.
 
 ### Admin panel (`/admin`)
 - Manage **members**, **donations**, **chanda**, **events**, **inventory** (with Excel export), **notices**, **notes**, **gallery**, **banners** and **hero images**.
 - **Instant search** on every admin list.
-- **Active Members** view: just the names of active members, nothing else.
+- **Active Members** view: just the names of active members, each with a **Published / Draft** switch that controls the public list.
 - **Master financial summary** across donations, sponsors and auctions.
 - **Association settings**: name, registration and 80G numbers, contact details, and UPI / bank details shown to donors.
 - Publish / unpublish switches on most content, so nothing goes live until it is ready, plus an **Anonymous** switch per donation.
