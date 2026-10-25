@@ -1,30 +1,18 @@
 "use server";
-import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clearAdminSession, createAdminSession, verifyAdminPassword } from "@/lib/admin-session";
 
 export async function loginAction(formData: FormData) {
-  const password = formData.get("password");
-
-  // Use env var in production, fallback to default for local/unset environments
-  const adminPassword = process.env.ADMIN_PASSWORD || "ganesh2026";
-
-  if (!password || password !== adminPassword) {
+  // No fallback password: if ADMIN_PASSWORD is not configured, nobody can log in
+  if (!(await verifyAdminPassword(formData.get("password")))) {
     redirect("/login?error=Incorrect+password.+Please+try+again.");
   }
 
-  // Detect if running on HTTPS (Cloudflare) or HTTP (local dev)
-  const headersList = await headers();
-  const proto = headersList.get("x-forwarded-proto") || "http";
-  const isSecure = proto === "https";
-
-  const cookieStore = await cookies();
-  cookieStore.set("admin-auth", adminPassword, {
-    path: "/",
-    maxAge: 86400,
-    httpOnly: false,
-    sameSite: "lax",
-    secure: isSecure,
-  });
-
+  await createAdminSession();
   redirect("/admin");
+}
+
+export async function logoutAction() {
+  await clearAdminSession();
+  redirect("/login");
 }

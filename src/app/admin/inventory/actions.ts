@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -10,6 +11,7 @@ function revalidate() {
 }
 
 export async function getInventory() {
+  await requireAdmin();
   try {
     const db = getDb();
     return await db.select({ id: schema.inventoryItems.id, name: schema.inventoryItems.name, category: schema.inventoryItems.category, quantity: schema.inventoryItems.quantity, condition: schema.inventoryItems.condition, inCharge: schema.inventoryItems.inCharge, unit: schema.inventoryItems.unit }).from(schema.inventoryItems).orderBy(schema.inventoryItems.name);
@@ -20,6 +22,7 @@ export async function getInventory() {
 }
 
 export async function addInventoryItem(data: any) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.insert(schema.inventoryItems).values({ id: `inv_${randomUUID()}`, ...data });
@@ -32,6 +35,7 @@ export async function addInventoryItem(data: any) {
 }
 
 export async function updateInventoryItem(id: string, data: any) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.inventoryItems).set(data).where(eq(schema.inventoryItems.id, id));
@@ -44,6 +48,7 @@ export async function updateInventoryItem(id: string, data: any) {
 }
 
 export async function deleteInventoryItem(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(schema.inventoryItems).where(eq(schema.inventoryItems.id, id));

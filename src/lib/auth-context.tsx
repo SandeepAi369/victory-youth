@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext } from "react";
 import { User } from "@/types";
+import { logoutAction } from "@/app/login/actions";
 
 /**
  * Admin access is a single shared password (see /login and app/admin/layout.tsx),
@@ -25,9 +26,8 @@ interface AuthContextType {
 }
 
 function logout() {
-  // Clear the admin session cookie set by the login action, then leave the admin area
-  document.cookie = "admin-auth=; path=/; max-age=0";
-  window.location.href = "/login";
+  // Session cookie is httpOnly, so it can only be cleared on the server
+  void logoutAction();
 }
 
 const allow = () => true;

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { ModeToggle } from "@/components/mode-toggle";
 import {
   LayoutDashboard, IndianRupee, HandCoins, BarChart3,
@@ -9,6 +9,7 @@ import {
   Presentation, Clapperboard
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { logoutAction } from "@/app/login/actions";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -28,7 +29,6 @@ const navItems = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -58,8 +58,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }, []);
 
   const handleLogout = () => {
-    document.cookie = "admin-auth=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-    router.push("/login");
+    // Session cookie is httpOnly, so it can only be cleared on the server
+    void logoutAction();
   };
 
   const isActive = (href: string) => {

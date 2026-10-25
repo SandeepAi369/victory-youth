@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createAdminSession, verifyAdminPassword } from "@/lib/admin-session";
 
 export async function POST(request: Request) {
   let body: { password?: string };
@@ -18,27 +19,14 @@ export async function POST(request: Request) {
     );
   }
 
-  const adminPassword = process.env.ADMIN_PASSWORD || "ganesh2026";
-
-  if (body.password !== adminPassword) {
+  if (!(await verifyAdminPassword(body.password))) {
     return NextResponse.json(
       { success: false, error: "Incorrect password." },
       { status: 401 }
     );
   }
 
-  const response = NextResponse.json({ success: true, message: "Login successful." });
-
-  // Detect if running on HTTPS (Cloudflare) or HTTP (local dev)
-  const isSecure = request.url.startsWith("https");
-
-  response.cookies.set("admin-auth", adminPassword, {
-    path: "/",
-    maxAge: 86400,
-    httpOnly: false,
-    sameSite: "lax",
-    secure: isSecure,
-  });
-
-  return response;
+  // Signed, httpOnly session cookie — the password is never stored in the browser
+  await createAdminSession();
+  return NextResponse.json({ success: true, message: "Login successful." });
 }

@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -25,6 +26,7 @@ export async function saveGalleryImage(
   category: string,
   year: number
 ) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     await db.insert(schema.gallery).values({
@@ -54,6 +56,7 @@ export async function replaceGalleryImage(
   newSecureUrl: string,
   newPublicId: string
 ) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
 
@@ -86,6 +89,7 @@ export async function replaceGalleryImage(
 }
 
 export async function getGallery() {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     return await db
@@ -107,6 +111,7 @@ export async function getGallery() {
 }
 
 export async function deleteGalleryItem(id: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
 
@@ -130,6 +135,7 @@ export async function deleteGalleryItem(id: string) {
 }
 
 export async function toggleGalleryPublish(id: string, publish: boolean) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     await db
@@ -147,6 +153,7 @@ export async function toggleGalleryPublish(id: string, publish: boolean) {
 export async function setAllGalleryVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     await db.update(schema.gallery).set({ isPublished: publish });
