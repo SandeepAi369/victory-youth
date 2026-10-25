@@ -28,34 +28,37 @@ export const associationSettings = sqliteTable("association_settings", {
   // Basic Info
   associationName: text("association_name").notNull().default("Victory Youth Association (Gudem Gally)"),
   shortName: text("short_name").notNull().default("Victory Youth"),
-  registrationNo: text("registration_no").default("TS/NZB/2008/4892"),
+  registrationNo: text("registration_no"),
   establishedYear: integer("established_year").default(1974),
   
   // Address
   address: text("address").default("Gudem Gally, Banswada, Kamareddy Dist., Telangana - 503187"),
   
   // Office Bearers
-  presidentName: text("president_name").default("V. Rajeshwar Rao"),
-  secretaryName: text("secretary_name").default("Ch. Srinivas"),
-  treasurerName: text("treasurer_name").default("M. Laxmi Narayana"),
+  presidentName: text("president_name"),
+  secretaryName: text("secretary_name"),
+  treasurerName: text("treasurer_name"),
   
   // Contact
-  contactPhone: text("contact_phone").default("+91 98765 43210"),
-  contactEmail: text("contact_email").default("contact@ganeshbns.org"),
+  contactPhone: text("contact_phone"),
+  contactEmail: text("contact_email"),
   
+  // Payment, contact and office-bearer details: no defaults — they must come
+  // from the admin settings page, never from placeholder values.
+
   // UPI Details
-  upiVpa: text("upi_vpa").default("vya.ganesh@sbi"),
-  upiName: text("upi_name").default("Victory Youth Association Banswada"),
+  upiVpa: text("upi_vpa"),
+  upiName: text("upi_name"),
   upiQrCodeUrl: text("upi_qr_code_url"),
   
   // Bank Details
-  bankName: text("bank_name").default("State Bank of India"),
-  bankAccountNo: text("bank_account_no").default("38291048592"),
-  bankIfsc: text("bank_ifsc").default("SBIN0001234"),
-  bankBranch: text("bank_branch").default("Banswada Main Branch"),
+  bankName: text("bank_name"),
+  bankAccountNo: text("bank_account_no"),
+  bankIfsc: text("bank_ifsc"),
+  bankBranch: text("bank_branch"),
   
   // Tax & Target
-  tax80GNo: text("tax_80g_no").default("80G/AAATV1234F/2020-21"),
+  tax80GNo: text("tax_80g_no"),
   goldenJubileeTarget: integer("golden_jubilee_target").default(2500000),
   donationTarget: integer("donation_target").default(2500000),
   

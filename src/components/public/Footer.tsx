@@ -18,8 +18,8 @@ interface FooterProps {
 export function Footer({
   associationName = "Victory Youth Association",
   address = "Banswada, Nizamabad District, Telangana",
-  email = "info@victoryyouth.org",
-  phone = "+91 98765 43210",
+  email,
+  phone,
   facebookUrl,
   instagramUrl,
   youtubeUrl,
@@ -166,19 +166,24 @@ export function Footer({
                   <span className="text-stone-400 text-sm">{address}</span>
                 </div>
                 
-                <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <a href={`mailto:${email}`} className="text-stone-400 hover:text-amber-400 text-sm transition-colors">
-                    {email}
-                  </a>
-                </div>
-                
-                <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                  <a href={`tel:${phone}`} className="text-stone-400 hover:text-amber-400 text-sm transition-colors">
-                    {phone}
-                  </a>
-                </div>
+                {/* Email and phone only appear once set in admin settings */}
+                {email && (
+                  <div className="flex items-center gap-3">
+                    <Mail className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <a href={`mailto:${email}`} className="text-stone-400 hover:text-amber-400 text-sm transition-colors">
+                      {email}
+                    </a>
+                  </div>
+                )}
+
+                {phone && (
+                  <div className="flex items-center gap-3">
+                    <Phone className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    <a href={`tel:${phone}`} className="text-stone-400 hover:text-amber-400 text-sm transition-colors">
+                      {phone}
+                    </a>
+                  </div>
+                )}
               </div>
             </motion.div>
 
