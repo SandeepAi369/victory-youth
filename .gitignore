@@ -29,3 +29,6 @@ yarn-error.log*
 # Build artifacts
 .open-next/
 .wrangler/
+
+# TypeScript build info (build artifact)
+*.tsbuildinfo
