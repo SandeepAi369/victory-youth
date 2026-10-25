@@ -11,18 +11,18 @@ It is designed to run for years on free tiers: **Next.js** on **Cloudflare Worke
 ### Public site
 - **Home page**: hero carousel, banners, live totals (members, donations, events), notices and recent donations.
 - **Events & schedule**: day-by-day pooja and event programme with timings, locations and people in charge.
-- **Donations & chanda**: published donor lists and running totals. Entries only appear once an admin publishes them.
+- **Donations & chanda**: published donor lists and running totals. Entries only appear once an admin publishes them, and donors marked **Anonymous** are always shown as "Anonymous Devotee" (the real name never leaves the database for public pages).
 - **Donation receipts**: shareable receipt page (`/receipt/<id>`) with a downloadable 80G receipt PDF. Only successful transactions get a receipt.
 - **Member ID verifier**: look up an active member by exact member ID or phone number and download a printable ID card (PDF with QR code). Phone numbers are masked unless the visitor searched by that number.
 - **Notices & notes**: committee announcements and important updates.
 - **Photo gallery**: Cloudinary-hosted photos in a masonry grid.
-- **English / Telugu** language toggle, plus light and dark mode.
+- **Light and dark mode**, responsive on every screen size.
 
 ### Admin panel (`/admin`)
 - Manage **members**, **donations**, **chanda**, **events**, **inventory** (with Excel export), **notices**, **notes**, **gallery**, **banners** and **hero images**.
 - **Master financial summary** across donations, sponsors and auctions.
 - **Association settings**: name, registration and 80G numbers, contact details, and UPI / bank details shown to donors.
-- Publish / unpublish switches on most content, so nothing goes live until it is ready.
+- Publish / unpublish switches on most content, so nothing goes live until it is ready, plus an **Anonymous** switch per donation.
 - Image uploads go **directly from the browser to Cloudinary**; the database stores only the `secure_url` and `public_id`.
 
 ### Security
@@ -43,7 +43,7 @@ It is designed to run for years on free tiers: **Next.js** on **Cloudflare Worke
 | Media database | [Cloudflare D1](https://developers.cloudflare.com/d1/): 5 tables for gallery, gallery categories, banners, hero images and documents |
 | ORM | [Drizzle ORM](https://orm.drizzle.team) + drizzle-kit |
 | Images | [Cloudinary](https://cloudinary.com) (unsigned browser uploads, signed server-side deletes) |
-| UI | Tailwind CSS 4, Radix UI, Framer Motion, Lucide icons, Recharts |
+| UI | Tailwind CSS 4, Framer Motion, Lucide icons |
 | Documents | jsPDF (receipts and ID cards), SheetJS (Excel export) |
 | CI/CD | GitHub Actions → `wrangler deploy` on every push to `main` |
 

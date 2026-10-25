@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/lib/auth-context";
-import { LanguageProvider } from "@/lib/language-context";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopLoader } from "@/components/TopLoader";
 
@@ -54,9 +52,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            <LanguageProvider>{children}</LanguageProvider>
-          </AuthProvider>
+          {children}
         </ThemeProvider>
 
       </body>

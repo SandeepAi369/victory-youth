@@ -8,6 +8,12 @@
 import { getDb, getMediaDb, schema } from "@/db";
 import { eq, desc, and, ne, or, sql } from "drizzle-orm";
 
+/**
+ * Public donor name: anonymous donations are masked inside the SQL query, so
+ * the real name never leaves the database for public pages.
+ */
+const publicDonorName = sql<string>`CASE WHEN ${schema.donations.isAnonymous} = 1 THEN 'Anonymous Devotee' ELSE ${schema.donations.donorName} END`;
+
 // ============================================
 // ASSOCIATION SETTINGS
 // ============================================
@@ -147,7 +153,7 @@ export async function getPublishedDonations(limit = 20) {
     const db = getDb();
     return await db
       .select({
-        donorName: schema.donations.donorName,
+        donorName: publicDonorName,
         amount: schema.donations.amount,
         category: schema.donations.category,
         date: schema.donations.date,
@@ -190,8 +196,15 @@ export async function getReceiptDonation(idOrReceiptNo: string) {
 export async function getPublishedChanda(limit = 100) {
   try {
     const db = getDb();
+    // Only the columns the public chanda page shows — no phone, address or PAN
     return await db
-      .select()
+      .select({
+        id: schema.donations.id,
+        donorName: publicDonorName,
+        amount: schema.donations.amount,
+        purpose: schema.donations.purpose,
+        date: schema.donations.date,
+      })
       .from(schema.donations)
       .where(and(eq(schema.donations.isPublished, true), eq(schema.donations.category, "CHANDA")))
       .orderBy(desc(schema.donations.createdAt))

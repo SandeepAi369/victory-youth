@@ -14,7 +14,15 @@ export default async function MembersPage() {
   let members: any[] = [];
   try {
     const db = getDb();
-    members = await db.select().from(schema.members)
+    // Only what the public page shows — never phone numbers or addresses
+    members = await db.select({
+      id: schema.members.id,
+      name: schema.members.name,
+      fullName: schema.members.fullName,
+      role: schema.members.role,
+      committeeRole: schema.members.committeeRole,
+      membershipFee: schema.members.membershipFee,
+    }).from(schema.members)
       .where(eq(schema.members.isActive, true))
       .orderBy(schema.members.name);
   } catch (e: any) {
