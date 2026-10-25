@@ -27,17 +27,6 @@ npm install && npm run demo
 
 <sub>Screenshots are from `npm run demo`: all names, numbers and images are fictional.</sub>
 
----|---|
-| ![Home page quick links with the calculator below them](docs/screenshots/home-icons.jpg) | ![Gallery grouped into month sections with dates](docs/screenshots/gallery.jpg) |
-| **Calculator (history auto-deletes after 24 h)** | **Category search: Donations** |
-| ![Calculator with history and 24-hour notice](docs/screenshots/calculator.jpg) | ![Donations page search results](docs/screenshots/donations-search.jpg) |
-| **Admin dashboard** | **Admin: instant search + Anonymous switch** |
-| ![Admin dashboard](docs/screenshots/admin-dashboard.jpg) | ![Admin donations with search and anonymous switch](docs/screenshots/admin-donations.jpg) |
-| **Admin: Active Members (names only)** | **Mobile** |
-| ![Active members list](docs/screenshots/admin-active-members.jpg) | ![Mobile home page](docs/screenshots/home-mobile.jpg) |
-
-<sub>Screenshots are from `npm run demo`: all names, numbers and images are fictional.</sub>
-
 ---
 
 ## Features
