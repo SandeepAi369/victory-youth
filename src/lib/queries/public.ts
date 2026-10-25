@@ -147,6 +147,26 @@ export async function getPublishedNotes(limit: number = 10, search = "") {
 }
 
 // ============================================
+// ACTIVE MEMBERS (public list — names only)
+// ============================================
+
+/** Names of active members an admin has published. Never returns any other column. */
+export async function getPublicActiveMembers(search = "") {
+  try {
+    const db = getDb();
+    const m = schema.members;
+    return await db
+      .select({ id: m.id, name: m.name })
+      .from(m)
+      .where(and(eq(m.isActive, true), eq(m.listedPublicly, true), search ? contains(m.name, search) : undefined))
+      .orderBy(m.name);
+  } catch (error) {
+    console.error("❌ getPublicActiveMembers error:", error);
+    return [];
+  }
+}
+
+// ============================================
 // GALLERY
 // ============================================
 

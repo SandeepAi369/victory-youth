@@ -138,6 +138,8 @@ export const members = sqliteTable("members", {
   
   // Visibility & Status
   isActive: boolean("is_active").default(true),
+  // Shown on the public "Active Members" list — off until an admin publishes it
+  listedPublicly: boolean("listed_publicly").default(false),
   isIdCardIssued: boolean("is_id_card_issued").default(false),
   
   createdAt: timestamp("created_at").default(now),

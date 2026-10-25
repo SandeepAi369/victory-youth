@@ -101,8 +101,8 @@ async function seedCore() {
       'Demo Bank', '000000000000', 'DEMO0000000', 'Demo Branch', 'DEMO-80G-0000', 500000, 500000)`
   );
   for (const [i, [name, role]] of members.entries())
-    await exec("INSERT INTO members (id, member_id, name, phone, role, committee_role, is_active, join_date, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?)",
-      [`mem_demo_${i}`, `VY-${String(i + 1).padStart(3, "0")}`, name, `90000${String(10000 + i)}`, role === "MEMBER" ? "MEMBER" : "COMMITTEE", role, isoDate(daysAgo(300 - i * 9)), daysAgo(300 - i * 9)]);
+    await exec("INSERT INTO members (id, member_id, name, phone, role, committee_role, is_active, listed_publicly, join_date, created_at) VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?)",
+      [`mem_demo_${i}`, `VY-${String(i + 1).padStart(3, "0")}`, name, `90000${String(10000 + i)}`, role === "MEMBER" ? "MEMBER" : "COMMITTEE", role, i < 10 ? 1 : 0, isoDate(daysAgo(300 - i * 9)), daysAgo(300 - i * 9)]);
   for (const [i, name] of inactiveMembers.entries())
     await exec("INSERT INTO members (id, member_id, name, phone, is_active) VALUES (?, ?, ?, ?, 0)", [`mem_demo_old_${i}`, `VY-9${i}`, name, `90000${i}9999`]);
 
