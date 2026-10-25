@@ -3,11 +3,8 @@ import { requireAdmin } from "@/lib/admin-session";
 import { getDb, getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { createHash, randomUUID } from "crypto";
-
-const CLOUD_NAME = "y5dnsgyb";
-const API_KEY = "***REMOVED***";
-const API_SECRET = "***REMOVED***";
+import { randomUUID } from "crypto";
+import { destroyCloudinaryImage } from "@/lib/cloudinary-admin";
 
 function revalidate() {
   revalidatePath("/");
@@ -109,20 +106,6 @@ export async function deleteStoryImage() {
   }
 }
 
-async function destroyCloudinaryImage(publicId: string): Promise<void> {
-  try {
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const toSign = `public_id=${publicId}&timestamp=${timestamp}${API_SECRET}`;
-    const signature = createHash("sha1").update(toSign).digest("hex");
-    await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/destroy`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ public_id: publicId, api_key: API_KEY, timestamp, signature }),
-    });
-  } catch (err) {
-    console.error("Cloudinary destroy error:", err);
-  }
-}
 
 
 // ───── Hero Images (Carousel) ─────
