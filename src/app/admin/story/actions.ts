@@ -1,5 +1,5 @@
 "use server";
-import { getDb, schema } from "@/db";
+import { getDb, getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { createHash, randomUUID } from "crypto";
@@ -125,7 +125,7 @@ async function destroyCloudinaryImage(publicId: string): Promise<void> {
 
 export async function getHeroImages() {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     const rows = await db
       .select()
       .from(schema.heroImages)
@@ -139,7 +139,7 @@ export async function getHeroImages() {
 
 export async function addHeroImage(secureUrl: string, publicId: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     // Check count — max 5
     const existing = await db.select().from(schema.heroImages);
     if (existing.length >= 5) {
@@ -163,7 +163,7 @@ export async function addHeroImage(secureUrl: string, publicId: string) {
 
 export async function deleteHeroImage(id: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     // Get image to destroy on Cloudinary
     const rows = await db
       .select()

@@ -9,9 +9,9 @@
 
 "use server";
 
-import { getDb, schema } from "@/db";
+import { getDb, getMediaDb, schema } from "@/db";
 import type { NewMemberRow, NewDonationRow, NewEventRow, NewNoticeRow, NewSponsorRow, NewGalleryRow, NewAuctionItemRow, NewImportantNoteRow, NewAssociationSettingsRow } from "@/db/schema";
-import { eq, ilike, or, desc, and, inArray } from "drizzle-orm";
+import { eq, like, or, desc, and, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -41,9 +41,9 @@ export async function getMembers(query: string = "") {
         .from(schema.members)
         .where(
           or(
-            ilike(schema.members.name, `%${query}%`),
-            ilike(schema.members.memberId, `%${query}%`),
-            ilike(schema.members.phone, `%${query}%`)
+            like(schema.members.name, `%${query}%`),
+            like(schema.members.memberId, `%${query}%`),
+            like(schema.members.phone, `%${query}%`)
           )
         )
         .orderBy(desc(schema.members.createdAt));
@@ -123,9 +123,9 @@ export async function getDonations(query: string = "") {
         .from(schema.donations)
         .where(
           or(
-            ilike(schema.donations.donorName, `%${query}%`),
-            ilike(schema.donations.receiptNo, `%${query}%`),
-            ilike(schema.donations.phone, `%${query}%`)
+            like(schema.donations.donorName, `%${query}%`),
+            like(schema.donations.receiptNo, `%${query}%`),
+            like(schema.donations.phone, `%${query}%`)
           )
         )
         .orderBy(desc(schema.donations.createdAt));
@@ -208,7 +208,7 @@ export async function getEvents(query: string = "") {
       return await db
         .select()
         .from(schema.events)
-        .where(ilike(schema.events.title, `%${query}%`))
+        .where(like(schema.events.title, `%${query}%`))
         .orderBy(desc(schema.events.date));
     }
 
@@ -287,7 +287,7 @@ export async function getNotices(query: string = "") {
       return await db
         .select()
         .from(schema.notices)
-        .where(ilike(schema.notices.title, `%${query}%`))
+        .where(like(schema.notices.title, `%${query}%`))
         .orderBy(desc(schema.notices.createdAt));
     }
 
@@ -365,7 +365,7 @@ export async function getSponsors(query: string = "") {
       return await db
         .select()
         .from(schema.sponsors)
-        .where(ilike(schema.sponsors.name, `%${query}%`))
+        .where(like(schema.sponsors.name, `%${query}%`))
         .orderBy(desc(schema.sponsors.displayOrder));
     }
 
@@ -435,13 +435,13 @@ export async function deleteSponsor(id: string) {
 // ============================================
 
 export async function getGallery(query: string = "") {
-  const db = getDb();
+  const db = getMediaDb();
   try {
     if (query) {
       return await db
         .select()
         .from(schema.gallery)
-        .where(ilike(schema.gallery.title, `%${query}%`))
+        .where(like(schema.gallery.title, `%${query}%`))
         .orderBy(desc(schema.gallery.uploadedAt));
     }
 
@@ -455,7 +455,7 @@ export async function getGallery(query: string = "") {
 }
 
 export async function getGalleryItemById(id: string) {
-  const db = getDb();
+  const db = getMediaDb();
   try {
     const item = await db
       .select()
@@ -470,7 +470,7 @@ export async function getGalleryItemById(id: string) {
 }
 
 export async function createGalleryItem(data: NewGalleryRow) {
-  const db = getDb();
+  const db = getMediaDb();
   try {
     const id = generateId("img");
     await db.insert(schema.gallery).values({ ...data, id });
@@ -482,7 +482,7 @@ export async function createGalleryItem(data: NewGalleryRow) {
 }
 
 export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>) {
-  const db = getDb();
+  const db = getMediaDb();
   try {
     await db
       .update(schema.gallery)
@@ -496,7 +496,7 @@ export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>
 }
 
 export async function deleteGalleryItem(id: string) {
-  const db = getDb();
+  const db = getMediaDb();
   try {
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
     revalidatePath("/admin/gallery");
@@ -517,7 +517,7 @@ export async function getAuctionItems(query: string = "") {
       return await db
         .select()
         .from(schema.auctionItems)
-        .where(ilike(schema.auctionItems.title, `%${query}%`))
+        .where(like(schema.auctionItems.title, `%${query}%`))
         .orderBy(desc(schema.auctionItems.createdAt));
     }
 
@@ -593,7 +593,7 @@ export async function getImportantNotes(query: string = "") {
       return await db
         .select()
         .from(schema.importantNotes)
-        .where(ilike(schema.importantNotes.title, `%${query}%`))
+        .where(like(schema.importantNotes.title, `%${query}%`))
         .orderBy(desc(schema.importantNotes.isPinned), desc(schema.importantNotes.updatedAt));
     }
 

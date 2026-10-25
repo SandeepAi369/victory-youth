@@ -1,6 +1,6 @@
 "use server";
-import { getDb, schema } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { getMediaDb, schema } from "@/db";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { createHash } from "crypto";
@@ -26,7 +26,7 @@ export async function saveGalleryImage(
   year: number
 ) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     await db.insert(schema.gallery).values({
       id: `gal_${randomUUID()}`,
       title: "Photo",
@@ -55,7 +55,7 @@ export async function replaceGalleryImage(
   newPublicId: string
 ) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
 
     // Get old public ID to delete from Cloudinary
     const rows = await db
@@ -87,7 +87,7 @@ export async function replaceGalleryImage(
 
 export async function getGallery() {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     return await db
       .select({
         id: schema.gallery.id,
@@ -97,7 +97,6 @@ export async function getGallery() {
         isPublished: schema.gallery.isPublished,
         uploadedAt: schema.gallery.uploadedAt,
         cloudinaryPublicId: schema.gallery.cloudinaryPublicId,
-        _now: sql`NOW()`,
       })
       .from(schema.gallery)
       .orderBy(schema.gallery.uploadedAt);
@@ -109,7 +108,7 @@ export async function getGallery() {
 
 export async function deleteGalleryItem(id: string) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
 
     const rows = await db
       .select({ cfId: schema.gallery.cloudinaryPublicId })
@@ -132,7 +131,7 @@ export async function deleteGalleryItem(id: string) {
 
 export async function toggleGalleryPublish(id: string, publish: boolean) {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     await db
       .update(schema.gallery)
       .set({ isPublished: publish })
@@ -149,7 +148,7 @@ export async function setAllGalleryVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
   try {
-    const db = getDb();
+    const db = getMediaDb();
     await db.update(schema.gallery).set({ isPublished: publish });
     revalidate();
     return { success: true, newState: publish };

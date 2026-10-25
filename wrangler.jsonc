@@ -10,5 +10,13 @@
   "assets": {
     "directory": ".open-next/assets",
     "binding": "ASSETS"
-  }
+  },
+  // MEDIA database (Cloudinary URLs + metadata) — see src/db/index.ts
+  "d1_databases": [
+    {
+      "binding": "MEDIA_DB",
+      "database_name": "victory-youth-media",
+      "database_id": "4dc7d7ca-db64-4a2f-a405-d016a2e3f819"
+    }
+  ]
 }

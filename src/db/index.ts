@@ -1,35 +1,62 @@
 import { cache } from "react";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { createClient } from "@libsql/client/web";
+import { drizzle as drizzleTurso } from "drizzle-orm/libsql/web";
+import { drizzle as drizzleD1, type AnyD1Database } from "drizzle-orm/d1";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import * as schema from "./schema";
 
 /**
- * Returns the database connection string from DATABASE_URL.
- * Throws a clear error — never silently falls back to hardcoded credentials.
+ * Hybrid database setup:
+ *   - CORE  (getDb)      → Turso, tables in schema-core.ts
+ *   - MEDIA (getMediaDb) → Cloudflare D1, tables in schema-media.ts (gallery,
+ *                          gallery_categories, banners, hero_images, documents)
  *
- * TODO(new-db): No database is configured yet. Wire the new database's
- * connection here (and add its binding/secret to wrangler.jsonc if needed).
+ * Images themselves live in Cloudinary — the media DB only stores their
+ * secure_url / public_id and metadata. Each query must use the database that
+ * holds its table; there are no joins across the two.
  */
-function getConnectionString(): string {
-  const dbUrl = process.env.DATABASE_URL;
-  if (!dbUrl) {
-    throw new Error(
-      "DATABASE_URL environment variable is not set. " +
-        "For local development, add it to your .env file. " +
-        "For Cloudflare production, set it with `wrangler secret put DATABASE_URL`."
-    );
+
+declare global {
+  interface CloudflareEnv {
+    // D1 binding declared in wrangler.jsonc
+    MEDIA_DB: AnyD1Database;
   }
-  return dbUrl;
 }
 
+function readEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(
+      `${name} environment variable is not set. ` +
+        "For local development, add it to your .env file. " +
+        `For Cloudflare production, set it with \`wrangler secret put ${name}\`.`
+    );
+  }
+  return value;
+}
+
+/** Request-scoped connection to the CORE database on Turso (React.cache). */
+export const getDb = cache(() =>
+  drizzleTurso({
+    client: createClient({
+      url: readEnv("TURSO_CORE_DATABASE_URL"),
+      authToken: readEnv("TURSO_CORE_AUTH_TOKEN"),
+    }),
+  })
+);
+
 /**
- * Request-scoped database instance via React.cache().
- *
- * Note on schema: This drizzle-orm RC version does not expose a typed
- * overload for drizzle(connectionString, { schema }). The schema is
- * passed directly in every query (db.select().from(schema.table)) which
- * is how this entire codebase works — no relational query API used.
+ * Request-scoped connection to the MEDIA database on Cloudflare D1 (React.cache).
+ * In `next dev` the binding is a local D1 copy (see initOpenNextCloudflareForDev
+ * in next.config.ts); in production it is the real D1 database.
  */
-export const getDb = cache(() => drizzle(getConnectionString()));
+export const getMediaDb = cache(() => {
+  const { env } = getCloudflareContext();
+  if (!env.MEDIA_DB) {
+    throw new Error("MEDIA_DB D1 binding is missing — check d1_databases in wrangler.jsonc.");
+  }
+  return drizzleD1(env.MEDIA_DB);
+});
 
 // Re-export schema so callers can do: import { getDb, schema } from "@/db"
 export { schema };
