@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq, and } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -19,6 +20,7 @@ function generateReceiptNo(): string {
 }
 
 export async function getChandaEntries() {
+  await requireAdmin();
   try {
     const db = getDb();
     const { desc } = await import("drizzle-orm");
@@ -35,6 +37,7 @@ export async function addChanda(data: {
   donorName: string; phone: string; amount: number;
   paymentMode: string; date: string; purpose?: string;
 }) {
+  await requireAdmin();
   try {
     const db = getDb();
     const id = `don_${randomUUID()}`;
@@ -54,6 +57,7 @@ export async function addChanda(data: {
 }
 
 export async function updateChanda(id: string, data: Record<string, any>) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.donations).set(data).where(eq(schema.donations.id, id));
@@ -66,6 +70,7 @@ export async function updateChanda(id: string, data: Record<string, any>) {
 }
 
 export async function deleteChanda(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(schema.donations).where(eq(schema.donations.id, id));
@@ -78,6 +83,7 @@ export async function deleteChanda(id: string) {
 }
 
 export async function toggleChandaPublish(id: string, publish: boolean) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.donations).set({ isPublished: publish }).where(eq(schema.donations.id, id));
@@ -93,6 +99,7 @@ export async function toggleChandaPublish(id: string, publish: boolean) {
 export async function setAllChandaVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.donations)

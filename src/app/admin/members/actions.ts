@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -11,6 +12,7 @@ function revalidate() {
 }
 
 export async function getMembers() {
+  await requireAdmin();
   try {
     const db = getDb();
     return await db.select({ id: schema.members.id, memberId: schema.members.memberId, name: schema.members.name, fullName: schema.members.fullName, phone: schema.members.phone, membershipFee: schema.members.membershipFee, role: schema.members.role, committeeRole: schema.members.committeeRole, isActive: schema.members.isActive }).from(schema.members).orderBy(schema.members.name);
@@ -27,6 +29,7 @@ export async function addMember(data: {
   membershipFee: number;
   role?: string;
 }) {
+  await requireAdmin();
   try {
     const db = getDb();
     const id = `mem_${randomUUID()}`;
@@ -51,6 +54,7 @@ export async function addMember(data: {
 }
 
 export async function updateMember(id: string, data: Record<string, any>) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db
@@ -66,6 +70,7 @@ export async function updateMember(id: string, data: Record<string, any>) {
 }
 
 export async function deleteMember(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(schema.members).where(eq(schema.members.id, id));
@@ -80,6 +85,7 @@ export async function deleteMember(id: string) {
 export async function setAllMembersVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.members).set({ isActive: publish });

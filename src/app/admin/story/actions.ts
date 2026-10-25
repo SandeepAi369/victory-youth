@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -14,6 +15,7 @@ function revalidate() {
 }
 
 export async function getStoryImage() {
+  await requireAdmin();
   try {
     const db = getDb();
     const rows = await db
@@ -40,6 +42,7 @@ export async function getStoryImage() {
 }
 
 export async function saveStoryImage(secureUrl: string, publicId: string) {
+  await requireAdmin();
   try {
     const db = getDb();
 
@@ -81,6 +84,7 @@ export async function saveStoryImage(secureUrl: string, publicId: string) {
 }
 
 export async function deleteStoryImage() {
+  await requireAdmin();
   try {
     const db = getDb();
     const existing = await getStoryImage();
@@ -124,6 +128,7 @@ async function destroyCloudinaryImage(publicId: string): Promise<void> {
 // ───── Hero Images (Carousel) ─────
 
 export async function getHeroImages() {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     const rows = await db
@@ -138,6 +143,7 @@ export async function getHeroImages() {
 }
 
 export async function addHeroImage(secureUrl: string, publicId: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     // Check count — max 5
@@ -162,6 +168,7 @@ export async function addHeroImage(secureUrl: string, publicId: string) {
 }
 
 export async function deleteHeroImage(id: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     // Get image to destroy on Cloudinary

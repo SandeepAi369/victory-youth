@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -14,6 +15,7 @@ function revalidate() {
 }
 
 export async function getBanners() {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     return await db
@@ -35,6 +37,7 @@ export async function getBanners() {
 }
 
 export async function saveBanner(secureUrl: string, publicId: string, label: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
 
@@ -63,6 +66,7 @@ export async function saveBanner(secureUrl: string, publicId: string, label: str
 }
 
 export async function updateBannerLabel(id: string, label: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     const trimmedLabel = (label || "").slice(0, 10);
@@ -76,6 +80,7 @@ export async function updateBannerLabel(id: string, label: string) {
 }
 
 export async function replaceBannerImage(bannerId: string, newSecureUrl: string, newPublicId: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     const rows = await db.select({ cfId: schema.banners.cloudinaryPublicId })
@@ -98,6 +103,7 @@ export async function replaceBannerImage(bannerId: string, newSecureUrl: string,
 }
 
 export async function deleteBanner(id: string) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     const rows = await db.select({ cfId: schema.banners.cloudinaryPublicId })
@@ -115,6 +121,7 @@ export async function deleteBanner(id: string) {
 }
 
 export async function toggleBannerPublish(id: string, publish: boolean) {
+  await requireAdmin();
   try {
     const db = getMediaDb();
     await db.update(schema.banners).set({ isPublished: publish }).where(eq(schema.banners.id, id));

@@ -4,8 +4,13 @@ import { sendEmailNotification } from "@/lib/email";
 import { logAuditAction } from "@/lib/audit";
 import { getDb, schema } from "@/db";
 import { randomUUID } from "crypto";
+import { isAdmin } from "@/lib/admin-session";
 
 export async function POST(req: NextRequest) {
+  if (!(await isAdmin())) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const { title, body, channel, sentBy } = await req.json();
 

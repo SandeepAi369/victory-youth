@@ -1,5 +1,6 @@
 "use server";
 
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb } from "@/db";
 import { events } from "@/db/schema";
 import { eq, inArray } from "drizzle-orm";
@@ -14,6 +15,7 @@ function revalidate() {
 }
 
 export async function getEvents() {
+  await requireAdmin();
   try {
     const db = getDb();
     return await db.select({ id: events.id, day: events.day, title: events.title, description: events.description, date: events.date, timing: events.timing, location: events.location, inCharge: events.inCharge, isPublished: events.isPublished }).from(events).orderBy(events.day);
@@ -24,6 +26,7 @@ export async function getEvents() {
 }
 
 export async function addEvent(data: any) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.insert(events).values({ id: `evt_${randomUUID()}`, ...data });
@@ -36,6 +39,7 @@ export async function addEvent(data: any) {
 }
 
 export async function updateEvent(id: string, data: any) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(events).set(data).where(eq(events.id, id));
@@ -48,6 +52,7 @@ export async function updateEvent(id: string, data: any) {
 }
 
 export async function togglePublishEvent(id: string, isPublished: boolean) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(events).set({ isPublished }).where(eq(events.id, id));
@@ -60,6 +65,7 @@ export async function togglePublishEvent(id: string, isPublished: boolean) {
 }
 
 export async function bulkPublishEvents(ids: string[], isPublished: boolean) {
+  await requireAdmin();
   if (ids.length === 0) return { success: false, error: "No items" };
   try {
     const db = getDb();
@@ -76,6 +82,7 @@ export async function bulkPublishEvents(ids: string[], isPublished: boolean) {
 export async function setAllEventsVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(events).set({ isPublished: publish });
@@ -88,6 +95,7 @@ export async function setAllEventsVisibility(
 }
 
 export async function deleteEvent(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(events).where(eq(events.id, id));

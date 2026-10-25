@@ -1,4 +1,5 @@
 "use server";
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
@@ -13,6 +14,7 @@ function revalidate() {
 // ===== NOTICES =====
 
 export async function getNotices() {
+  await requireAdmin();
   try {
     const db = getDb();
     return await db.select({ id: schema.notices.id, title: schema.notices.title, body: schema.notices.body, status: schema.notices.status, createdAt: schema.notices.createdAt }).from(schema.notices).orderBy(desc(schema.notices.createdAt));
@@ -23,6 +25,7 @@ export async function getNotices() {
 }
 
 export async function addNotice(data: { title: string; body: string }) {
+  await requireAdmin();
   try {
     const db = getDb();
     const id = `notice_${randomUUID()}`;
@@ -35,6 +38,7 @@ export async function addNotice(data: { title: string; body: string }) {
 }
 
 export async function updateNotice(id: string, data: { title?: string; body?: string }) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.notices).set({ ...data, updatedAt: new Date() }).where(eq(schema.notices.id, id));
@@ -46,6 +50,7 @@ export async function updateNotice(id: string, data: { title?: string; body?: st
 }
 
 export async function deleteNotice(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(schema.notices).where(eq(schema.notices.id, id));
@@ -57,6 +62,7 @@ export async function deleteNotice(id: string) {
 }
 
 export async function toggleNoticePublish(id: string, publish: boolean) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.notices)
@@ -73,6 +79,7 @@ export async function toggleNoticePublish(id: string, publish: boolean) {
 export async function setAllNoticesVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.notices).set({
@@ -90,6 +97,7 @@ export async function setAllNoticesVisibility(
 // ===== NOTES =====
 
 export async function getNotes() {
+  await requireAdmin();
   try {
     const db = getDb();
     return await db.select({ id: schema.importantNotes.id, title: schema.importantNotes.title, content: schema.importantNotes.content, category: schema.importantNotes.category, authorName: schema.importantNotes.authorName, isPublished: schema.importantNotes.isPublished, createdAt: schema.importantNotes.createdAt }).from(schema.importantNotes).orderBy(desc(schema.importantNotes.createdAt));
@@ -100,6 +108,7 @@ export async function getNotes() {
 }
 
 export async function addNote(data: { title: string; content: string; category: string; authorName: string }) {
+  await requireAdmin();
   try {
     const db = getDb();
     const id = `note_${randomUUID()}`;
@@ -115,6 +124,7 @@ export async function addNote(data: { title: string; content: string; category: 
 }
 
 export async function updateNote(id: string, data: { title?: string; content?: string; category?: string }) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.importantNotes).set({ ...data, updatedAt: new Date() }).where(eq(schema.importantNotes.id, id));
@@ -126,6 +136,7 @@ export async function updateNote(id: string, data: { title?: string; content?: s
 }
 
 export async function deleteNote(id: string) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.delete(schema.importantNotes).where(eq(schema.importantNotes.id, id));
@@ -137,6 +148,7 @@ export async function deleteNote(id: string) {
 }
 
 export async function toggleNotePublish(id: string, publish: boolean) {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.importantNotes)
@@ -153,6 +165,7 @@ export async function toggleNotePublish(id: string, publish: boolean) {
 export async function setAllNotesVisibility(
   publish: boolean
 ): Promise<{ success: boolean; newState: boolean; error?: string }> {
+  await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.importantNotes).set({ isPublished: publish, updatedAt: new Date() });

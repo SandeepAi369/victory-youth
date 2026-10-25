@@ -9,6 +9,7 @@
 
 "use server";
 
+import { requireAdmin } from "@/lib/admin-session";
 import { getDb, getMediaDb, schema } from "@/db";
 import type { NewMemberRow, NewDonationRow, NewEventRow, NewNoticeRow, NewSponsorRow, NewGalleryRow, NewAuctionItemRow, NewImportantNoteRow, NewAssociationSettingsRow } from "@/db/schema";
 import { eq, like, or, desc, and, inArray } from "drizzle-orm";
@@ -33,6 +34,7 @@ function handleError(operation: string, error: any): { success: false; error: st
 // ============================================
 
 export async function getMembers(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -59,6 +61,7 @@ export async function getMembers(query: string = "") {
 }
 
 export async function getMemberById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const member = await db
@@ -74,6 +77,7 @@ export async function getMemberById(id: string) {
 }
 
 export async function createMember(data: NewMemberRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("mem");
@@ -86,6 +90,7 @@ export async function createMember(data: NewMemberRow) {
 }
 
 export async function updateMember(id: string, data: Partial<NewMemberRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -100,6 +105,7 @@ export async function updateMember(id: string, data: Partial<NewMemberRow>) {
 }
 
 export async function deleteMember(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.members).where(eq(schema.members.id, id));
@@ -115,6 +121,7 @@ export async function deleteMember(id: string) {
 // ============================================
 
 export async function getDonations(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -141,6 +148,7 @@ export async function getDonations(query: string = "") {
 }
 
 export async function getDonationById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const donation = await db
@@ -156,6 +164,7 @@ export async function getDonationById(id: string) {
 }
 
 export async function createDonation(data: NewDonationRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("don");
@@ -171,6 +180,7 @@ export async function createDonation(data: NewDonationRow) {
 }
 
 export async function updateDonation(id: string, data: Partial<NewDonationRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -186,6 +196,7 @@ export async function updateDonation(id: string, data: Partial<NewDonationRow>) 
 }
 
 export async function deleteDonation(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.donations).where(eq(schema.donations.id, id));
@@ -202,6 +213,7 @@ export async function deleteDonation(id: string) {
 // ============================================
 
 export async function getEvents(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -222,6 +234,7 @@ export async function getEvents(query: string = "") {
 }
 
 export async function getEventById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const event = await db
@@ -237,6 +250,7 @@ export async function getEventById(id: string) {
 }
 
 export async function createEvent(data: NewEventRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("evt");
@@ -250,6 +264,7 @@ export async function createEvent(data: NewEventRow) {
 }
 
 export async function updateEvent(id: string, data: Partial<NewEventRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -265,6 +280,7 @@ export async function updateEvent(id: string, data: Partial<NewEventRow>) {
 }
 
 export async function deleteEvent(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.events).where(eq(schema.events.id, id));
@@ -281,6 +297,7 @@ export async function deleteEvent(id: string) {
 // ============================================
 
 export async function getNotices(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -301,6 +318,7 @@ export async function getNotices(query: string = "") {
 }
 
 export async function getNoticeById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const notice = await db
@@ -316,6 +334,7 @@ export async function getNoticeById(id: string) {
 }
 
 export async function createNotice(data: NewNoticeRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("ntc");
@@ -329,6 +348,7 @@ export async function createNotice(data: NewNoticeRow) {
 }
 
 export async function updateNotice(id: string, data: Partial<NewNoticeRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     const now = data.status === "PUBLISHED" ? { publishedAt: new Date() } : {};
@@ -344,6 +364,7 @@ export async function updateNotice(id: string, data: Partial<NewNoticeRow>) {
 }
 
 export async function deleteNotice(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.notices).where(eq(schema.notices.id, id));
@@ -359,6 +380,7 @@ export async function deleteNotice(id: string) {
 // ============================================
 
 export async function getSponsors(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -379,6 +401,7 @@ export async function getSponsors(query: string = "") {
 }
 
 export async function getSponsorById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const sponsor = await db
@@ -394,6 +417,7 @@ export async function getSponsorById(id: string) {
 }
 
 export async function createSponsor(data: NewSponsorRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("spn");
@@ -406,6 +430,7 @@ export async function createSponsor(data: NewSponsorRow) {
 }
 
 export async function updateSponsor(id: string, data: Partial<NewSponsorRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -420,6 +445,7 @@ export async function updateSponsor(id: string, data: Partial<NewSponsorRow>) {
 }
 
 export async function deleteSponsor(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.sponsors).where(eq(schema.sponsors.id, id));
@@ -435,6 +461,7 @@ export async function deleteSponsor(id: string) {
 // ============================================
 
 export async function getGallery(query: string = "") {
+  await requireAdmin();
   const db = getMediaDb();
   try {
     if (query) {
@@ -455,6 +482,7 @@ export async function getGallery(query: string = "") {
 }
 
 export async function getGalleryItemById(id: string) {
+  await requireAdmin();
   const db = getMediaDb();
   try {
     const item = await db
@@ -470,6 +498,7 @@ export async function getGalleryItemById(id: string) {
 }
 
 export async function createGalleryItem(data: NewGalleryRow) {
+  await requireAdmin();
   const db = getMediaDb();
   try {
     const id = generateId("img");
@@ -482,6 +511,7 @@ export async function createGalleryItem(data: NewGalleryRow) {
 }
 
 export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>) {
+  await requireAdmin();
   const db = getMediaDb();
   try {
     await db
@@ -496,6 +526,7 @@ export async function updateGalleryItem(id: string, data: Partial<NewGalleryRow>
 }
 
 export async function deleteGalleryItem(id: string) {
+  await requireAdmin();
   const db = getMediaDb();
   try {
     await db.delete(schema.gallery).where(eq(schema.gallery.id, id));
@@ -511,6 +542,7 @@ export async function deleteGalleryItem(id: string) {
 // ============================================
 
 export async function getAuctionItems(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -531,6 +563,7 @@ export async function getAuctionItems(query: string = "") {
 }
 
 export async function getAuctionItemById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const item = await db
@@ -546,6 +579,7 @@ export async function getAuctionItemById(id: string) {
 }
 
 export async function createAuctionItem(data: NewAuctionItemRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("auc");
@@ -558,6 +592,7 @@ export async function createAuctionItem(data: NewAuctionItemRow) {
 }
 
 export async function updateAuctionItem(id: string, data: Partial<NewAuctionItemRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -572,6 +607,7 @@ export async function updateAuctionItem(id: string, data: Partial<NewAuctionItem
 }
 
 export async function deleteAuctionItem(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.auctionItems).where(eq(schema.auctionItems.id, id));
@@ -587,6 +623,7 @@ export async function deleteAuctionItem(id: string) {
 // ============================================
 
 export async function getImportantNotes(query: string = "") {
+  await requireAdmin();
   const db = getDb();
   try {
     if (query) {
@@ -607,6 +644,7 @@ export async function getImportantNotes(query: string = "") {
 }
 
 export async function getImportantNoteById(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     const note = await db
@@ -622,6 +660,7 @@ export async function getImportantNoteById(id: string) {
 }
 
 export async function createImportantNote(data: NewImportantNoteRow) {
+  await requireAdmin();
   const db = getDb();
   try {
     const id = generateId("note");
@@ -634,6 +673,7 @@ export async function createImportantNote(data: NewImportantNoteRow) {
 }
 
 export async function updateImportantNote(id: string, data: Partial<NewImportantNoteRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db
@@ -648,6 +688,7 @@ export async function updateImportantNote(id: string, data: Partial<NewImportant
 }
 
 export async function deleteImportantNote(id: string) {
+  await requireAdmin();
   const db = getDb();
   try {
     await db.delete(schema.importantNotes).where(eq(schema.importantNotes.id, id));
@@ -663,6 +704,7 @@ export async function deleteImportantNote(id: string) {
 // ============================================
 
 export async function getAssociationSettings() {
+  await requireAdmin();
   const db = getDb();
   try {
     const settings = await db
@@ -677,6 +719,7 @@ export async function getAssociationSettings() {
 }
 
 export async function updateAssociationSettings(data: Partial<NewAssociationSettingsRow>) {
+  await requireAdmin();
   const db = getDb();
   try {
     const existing = await getAssociationSettings();
