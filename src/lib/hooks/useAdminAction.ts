@@ -19,10 +19,13 @@ export function useAdminAction<T extends { id: string }>(initialData: T[]) {
   const [isPending, startTransition] = useTransition();
   const lastClickRef = useRef<number>(0);
 
-  // Sync local state when server re-renders with fresh data
-  useEffect(() => {
+  // Sync local state when the server re-renders with fresh data
+  // (adjusting state during render, as React recommends, instead of in an effect)
+  const [serverData, setServerData] = useState<T[]>(initialData);
+  if (serverData !== initialData) {
+    setServerData(initialData);
     setData(initialData);
-  }, [initialData]);
+  }
 
   // Fire YouTube-style top loading bar
   useEffect(() => {
@@ -74,8 +77,8 @@ export function useAdminAction<T extends { id: string }>(initialData: T[]) {
               router.refresh();
             }
           }
-        } catch (err: any) {
-          toast.error(err?.message || "Network error");
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : "Network error");
           router.refresh();
         }
       });

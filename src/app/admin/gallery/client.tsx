@@ -1,14 +1,17 @@
 "use client";
+import { errorMessage } from "@/lib/utils";
 
 import { useState, useRef } from "react";
 import { Trash2, X, Eye, EyeOff, Upload, Image as ImageIcon, Loader2, RefreshCw, Check, CloudUpload } from "lucide-react";
 import { saveGalleryImage, replaceGalleryImage, deleteGalleryItem, toggleGalleryPublish, setAllGalleryVisibility } from "./actions";
+import type { getGallery } from "./actions";
+
+type Row = Awaited<ReturnType<typeof getGallery>>[number];
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 
-const CLOUD_NAME = "y5dnsgyb";
-const UPLOAD_PRESET = "victory_youth_unsigned";
+import { CLOUDINARY_CLOUD_NAME as CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET as UPLOAD_PRESET } from "@/lib/cloudinary-config";
 
-export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
+export function GalleryClient({ gallery: initialGallery }: { gallery: Row[] }) {
   const { data: gallery, isPending, execute } = useAdminAction(initialGallery);
   const [isAdding, setIsAdding] = useState(false);
   const [replacingId, setReplacingId] = useState<string | null>(null);
@@ -24,7 +27,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const [year, setYear] = useState(2026);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const isAllPublished = gallery.length > 0 && gallery.every((g: any) => g.isPublished);
+  const isAllPublished = gallery.length > 0 && gallery.every((g) => g.isPublished);
   const isBusy = step === "uploading" || step === "saving";
 
   const resetForm = () => {
@@ -76,10 +79,10 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       setUploadedPublicId(data.public_id);
       setStep("uploaded");
       setStatusMsg("");
-    } catch (err: any) {
+    } catch (err) {
       setStep("select");
       setStatusMsg("");
-      alert("Upload error: " + err.message);
+      alert("Upload error: " + errorMessage(err));
     }
   };
 
@@ -99,17 +102,17 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       }
       resetForm();
       window.location.reload();
-    } catch (err: any) {
+    } catch (err) {
       setStep("uploaded");
       setStatusMsg("");
-      alert("Save error: " + err.message);
+      alert("Save error: " + errorMessage(err));
     }
   };
 
   const handleMasterToggle = () => {
     const newState = !isAllPublished;
     execute({
-      optimisticUpdate: (prev) => prev.map((g: any) => ({ ...g, isPublished: newState })),
+      optimisticUpdate: (prev) => prev.map((g) => ({ ...g, isPublished: newState })),
       serverAction: () => setAllGalleryVisibility(newState),
       successMsg: newState ? "All published" : "All unpublished",
     });
@@ -117,7 +120,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
 
   const handleTogglePublish = (id: string, current: boolean) => {
     execute({
-      optimisticUpdate: (prev) => prev.map((g: any) => g.id === id ? { ...g, isPublished: !current } : g),
+      optimisticUpdate: (prev) => prev.map((g) => g.id === id ? { ...g, isPublished: !current } : g),
       serverAction: () => toggleGalleryPublish(id, !current),
       successMsg: current ? "Unpublished" : "Published",
     });
@@ -126,7 +129,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
   const handleDelete = (id: string) => {
     if (!confirm("Delete this image permanently?")) return;
     execute({
-      optimisticUpdate: (prev) => prev.filter((g: any) => g.id !== id),
+      optimisticUpdate: (prev) => prev.filter((g) => g.id !== id),
       serverAction: () => deleteGalleryItem(id),
       successMsg: "Deleted",
     });
@@ -160,7 +163,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       {/* Upload / Replace Modal */}
       {(isAdding || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && !isBusy && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{replacingId ? "Replace Image" : "Upload New Image"}</h2>
@@ -272,7 +275,7 @@ export function GalleryClient({ gallery: initialGallery }: { gallery: any[] }) {
       {/* Gallery Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {gallery.length === 0 && <p className="col-span-full text-center text-muted-foreground py-12">No images yet. Click &quot;Upload Image&quot; to add your first photo.</p>}
-        {gallery.map((g: any) => (
+        {gallery.map((g) => (
           <div key={g.id} className="bg-card border rounded-2xl overflow-hidden shadow-sm group relative">
             {g.url && <img src={g.url} alt="Gallery" className="w-full h-48 object-cover" />}
             <div className="p-3">

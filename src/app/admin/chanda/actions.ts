@@ -1,7 +1,9 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
-import { eq, and } from "drizzle-orm";
+import type { NewDonationRow } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 
@@ -27,7 +29,7 @@ export async function getChandaEntries() {
     return await db.select({ id: schema.donations.id, receiptNo: schema.donations.receiptNo, donorName: schema.donations.donorName, phone: schema.donations.phone, amount: schema.donations.amount, category: schema.donations.category, purpose: schema.donations.purpose, paymentMode: schema.donations.paymentMode, date: schema.donations.date, isPublished: schema.donations.isPublished, isAnonymous: schema.donations.isAnonymous, createdAt: schema.donations.createdAt }).from(schema.donations)
       .where(eq(schema.donations.category, "CHANDA"))
       .orderBy(desc(schema.donations.createdAt));
-  } catch (error: any) {
+  } catch (error) {
     console.error("getChandaEntries error:", error);
     return [];
   }
@@ -51,22 +53,22 @@ export async function addChanda(data: {
     });
     revalidate();
     return { success: true, receiptNo };
-  } catch (error: any) {
+  } catch (error) {
     console.error("addChanda error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
-export async function updateChanda(id: string, data: Record<string, any>) {
+export async function updateChanda(id: string, data: Partial<NewDonationRow>) {
   await requireAdmin();
   try {
     const db = getDb();
     await db.update(schema.donations).set(data).where(eq(schema.donations.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("updateChanda error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -77,9 +79,9 @@ export async function deleteChanda(id: string) {
     await db.delete(schema.donations).where(eq(schema.donations.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteChanda error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -90,9 +92,9 @@ export async function toggleChandaPublish(id: string, publish: boolean) {
     await db.update(schema.donations).set({ isPublished: publish }).where(eq(schema.donations.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("toggleChandaPublish error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -104,9 +106,9 @@ export async function toggleChandaAnonymous(id: string, anonymous: boolean) {
     await db.update(schema.donations).set({ isAnonymous: anonymous }).where(eq(schema.donations.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("toggleChandaAnonymous error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -122,8 +124,8 @@ export async function setAllChandaVisibility(
       .where(eq(schema.donations.category, "CHANDA"));
     revalidate();
     return { success: true, newState: publish };
-  } catch (error: any) {
+  } catch (error) {
     console.error("setAllChandaVisibility error:", error);
-    return { success: false, newState: !publish, error: error.message };
+    return { success: false, newState: !publish, error: errorMessage(error) };
   }
 }

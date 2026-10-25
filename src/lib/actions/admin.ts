@@ -10,10 +10,11 @@ import { getDb, schema } from "@/db";
 import type { NewAssociationSettingsRow } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { errorMessage } from "@/lib/utils";
 
-function handleError(operation: string, error: any): { success: false; error: string } {
+function handleError(operation: string, error: unknown): { success: false; error: string } {
   console.error(`Error ${operation}:`, error);
-  return { success: false, error: error.message || "An error occurred" };
+  return { success: false, error: errorMessage(error) };
 }
 
 // ============================================

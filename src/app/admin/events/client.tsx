@@ -4,17 +4,23 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, Clock, MapPin, X, Eye, EyeOff } from "lucide-react";
 import {
   addEvent, updateEvent, togglePublishEvent, deleteEvent,
-  bulkPublishEvents, setAllEventsVisibility,
+  setAllEventsVisibility,
 } from "./actions";
-import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import type { getEvents } from "./actions";
 
-export function EventsClient({ events: initialEvents }: { events: any[] }) {
+type Row = Awaited<ReturnType<typeof getEvents>>[number];
+import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
+
+export function EventsClient({ events: initialEvents }: { events: Row[] }) {
   const { data: events, isPending, execute } = useAdminAction(initialEvents);
+  const [search, setSearch] = useState("");
+  const visible = filterRows(events, search, (e) => [e.title, e.description, e.location, e.inCharge, e.date]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  const publishedCount = events.filter((e: any) => e.isPublished).length;
+  const publishedCount = events.filter((e) => e.isPublished).length;
   const isAllPublished = events.length > 0 && publishedCount === events.length;
 
   const [formData, setFormData] = useState({
@@ -23,25 +29,16 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   });
 
   const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedIds(e.target.checked ? events.map((evt: any) => evt.id) : []);
+    setSelectedIds(e.target.checked ? events.map((evt) => evt.id) : []);
   };
   const handleSelect = (id: string) => {
     setSelectedIds((prev) => prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]);
   };
 
-  const handleBulkPublish = (publish: boolean) => {
-    execute({
-      optimisticUpdate: (prev) => prev.map((e: any) => selectedIds.includes(e.id) ? { ...e, isPublished: publish } : e),
-      serverAction: async () => { await bulkPublishEvents(selectedIds, publish); return { success: true }; },
-      successMsg: publish ? "Selected events published" : "Selected events unpublished",
-      onSuccess: () => setSelectedIds([]),
-    });
-  };
-
   const handleMasterToggle = () => {
     const newState = !isAllPublished;
     execute({
-      optimisticUpdate: (prev) => prev.map((e: any) => ({ ...e, isPublished: newState })),
+      optimisticUpdate: (prev) => prev.map((e) => ({ ...e, isPublished: newState })),
       serverAction: () => setAllEventsVisibility(newState),
       successMsg: newState ? "All events published" : "All events unpublished",
     });
@@ -59,7 +56,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
   const handleDelete = (id: string) => {
     if (!confirm("Delete this event?")) return;
     execute({
-      optimisticUpdate: (prev) => prev.filter((e: any) => e.id !== id),
+      optimisticUpdate: (prev) => prev.filter((e) => e.id !== id),
       serverAction: () => deleteEvent(id),
       successMsg: "Event deleted",
     });
@@ -67,7 +64,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
 
   const handleTogglePublish = (id: string, current: boolean) => {
     execute({
-      optimisticUpdate: (prev) => prev.map((ev: any) => ev.id === id ? { ...ev, isPublished: !current } : ev),
+      optimisticUpdate: (prev) => prev.map((ev) => ev.id === id ? { ...ev, isPublished: !current } : ev),
       serverAction: () => togglePublishEvent(id, !current),
       successMsg: current ? "Unpublished" : "Published",
     });
@@ -100,7 +97,7 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
 
       {(isAdding || editingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && (() => { setIsAdding(false); setEditingId(null); })()}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{editingId ? "Edit Event" : "New Event"}</h2>
@@ -180,6 +177,8 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
         </div>
       )}
 
+      <AdminSearch value={search} onChange={setSearch} placeholder="Search events by title, place, person or date…" shown={visible.length} total={events.length} />
+
       <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -197,10 +196,11 @@ export function EventsClient({ events: initialEvents }: { events: any[] }) {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {search && visible.length === 0 && events.length > 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</td></tr>}
               {events.length === 0 && (
                 <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No events yet.</td></tr>
               )}
-              {events.map((evt: any) => (
+              {visible.map((evt) => (
                 <tr key={evt.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <input type="checkbox" checked={selectedIds.includes(evt.id)}

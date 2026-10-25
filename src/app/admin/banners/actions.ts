@@ -1,4 +1,5 @@
 "use server";
+import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getMediaDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
@@ -27,7 +28,7 @@ export async function getBanners() {
       })
       .from(schema.banners)
       .orderBy(schema.banners.sortOrder);
-  } catch (error: any) {
+  } catch (error) {
     console.error("getBanners error:", error);
     return [];
   }
@@ -56,9 +57,9 @@ export async function saveBanner(secureUrl: string, publicId: string, label: str
     });
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("saveBanner error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -70,9 +71,9 @@ export async function updateBannerLabel(id: string, label: string) {
     await db.update(schema.banners).set({ label: trimmedLabel, updatedAt: new Date() }).where(eq(schema.banners.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("updateBannerLabel error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -93,9 +94,9 @@ export async function replaceBannerImage(bannerId: string, newSecureUrl: string,
 
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("replaceBannerImage error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -111,9 +112,9 @@ export async function deleteBanner(id: string) {
     await db.delete(schema.banners).where(eq(schema.banners.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("deleteBanner error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 
@@ -124,9 +125,9 @@ export async function toggleBannerPublish(id: string, publish: boolean) {
     await db.update(schema.banners).set({ isPublished: publish }).where(eq(schema.banners.id, id));
     revalidate();
     return { success: true };
-  } catch (error: any) {
+  } catch (error) {
     console.error("toggleBannerPublish error:", error);
-    return { success: false, error: error.message };
+    return { success: false, error: errorMessage(error) };
   }
 }
 

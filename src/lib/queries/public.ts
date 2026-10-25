@@ -6,13 +6,23 @@
  */
 
 import { getDb, getMediaDb, schema } from "@/db";
-import { eq, desc, and, ne, or, sql } from "drizzle-orm";
+import type { AssociationSettingsRow } from "@/db/schema";
+import { eq, desc, and, ne, or, sql, type SQLWrapper } from "drizzle-orm";
 
 /**
  * Public donor name: anonymous donations are masked inside the SQL query, so
  * the real name never leaves the database for public pages.
  */
 const publicDonorName = sql<string>`CASE WHEN ${schema.donations.isAnonymous} = 1 THEN 'Anonymous Devotee' ELSE ${schema.donations.donorName} END`;
+
+/**
+ * Case-insensitive "contains" match for category search. User input is escaped,
+ * so % and _ are matched literally.
+ */
+function contains(column: SQLWrapper, query: string) {
+  const pattern = `%${query.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  return sql`${column} LIKE ${pattern} ESCAPE '\\'`;
+}
 
 // ============================================
 // ASSOCIATION SETTINGS
@@ -33,7 +43,7 @@ export async function getAssociationSettings() {
 // PUBLIC STATS (homepage counters)
 // ============================================
 
-async function getPublicStats(existingSettings?: any) {
+async function getPublicStats(existingSettings?: AssociationSettingsRow | null) {
   try {
     const db = getDb();
     const settings = existingSettings !== undefined
@@ -73,13 +83,17 @@ async function getPublicStats(existingSettings?: any) {
 // EVENTS
 // ============================================
 
-export async function getPublishedEvents() {
+export async function getPublishedEvents(search = "") {
   try {
     const db = getDb();
+    const e = schema.events;
     return await db
       .select()
       .from(schema.events)
-      .where(eq(schema.events.isPublished, true))
+      .where(and(
+        eq(schema.events.isPublished, true),
+        search ? or(contains(e.title, search), contains(e.description, search), contains(e.location, search), contains(e.type, search)) : undefined
+      ))
       .orderBy(schema.events.day);
   } catch (error) {
     console.error("❌ getPublishedEvents error:", error);
@@ -91,13 +105,16 @@ export async function getPublishedEvents() {
 // NOTICES
 // ============================================
 
-export async function getPublishedNotices(limit: number = 10) {
+export async function getPublishedNotices(limit: number = 10, search = "") {
   try {
     const db = getDb();
     return await db
       .select()
       .from(schema.notices)
-      .where(eq(schema.notices.status, "PUBLISHED"))
+      .where(and(
+        eq(schema.notices.status, "PUBLISHED"),
+        search ? or(contains(schema.notices.title, search), contains(schema.notices.body, search)) : undefined
+      ))
       .orderBy(desc(schema.notices.createdAt))
       .limit(limit);
   } catch (error) {
@@ -110,13 +127,17 @@ export async function getPublishedNotices(limit: number = 10) {
 // NOTES (Important Notes / Committee Updates)
 // ============================================
 
-export async function getPublishedNotes(limit: number = 10) {
+export async function getPublishedNotes(limit: number = 10, search = "") {
   try {
     const db = getDb();
+    const n = schema.importantNotes;
     return await db
       .select()
       .from(schema.importantNotes)
-      .where(eq(schema.importantNotes.isPublished, true))
+      .where(and(
+        eq(schema.importantNotes.isPublished, true),
+        search ? or(contains(n.title, search), contains(n.content, search), contains(n.category, search)) : undefined
+      ))
       .orderBy(desc(schema.importantNotes.createdAt))
       .limit(limit);
   } catch (error) {
@@ -148,7 +169,7 @@ export async function getPublishedGallery(limit: number = 12) {
 // DONATIONS (public-facing)
 // ============================================
 
-export async function getPublishedDonations(limit = 20) {
+export async function getPublishedDonations(limit = 20, search = "") {
   try {
     const db = getDb();
     return await db
@@ -159,7 +180,12 @@ export async function getPublishedDonations(limit = 20) {
         date: schema.donations.date,
       })
       .from(schema.donations)
-      .where(and(eq(schema.donations.isPublished, true), ne(schema.donations.category, "CHANDA")))
+      .where(and(
+        eq(schema.donations.isPublished, true),
+        ne(schema.donations.category, "CHANDA"),
+        // Search the MASKED name, so an anonymous donor can never be found by their real name
+        search ? or(contains(publicDonorName, search), contains(schema.donations.purpose, search), contains(schema.donations.category, search)) : undefined
+      ))
       .orderBy(desc(schema.donations.createdAt))
       .limit(limit);
   } catch (error) {
@@ -193,7 +219,7 @@ export async function getReceiptDonation(idOrReceiptNo: string) {
   }
 }
 
-export async function getPublishedChanda(limit = 100) {
+export async function getPublishedChanda(limit = 100, search = "") {
   try {
     const db = getDb();
     // Only the columns the public chanda page shows — no phone, address or PAN
@@ -206,7 +232,11 @@ export async function getPublishedChanda(limit = 100) {
         date: schema.donations.date,
       })
       .from(schema.donations)
-      .where(and(eq(schema.donations.isPublished, true), eq(schema.donations.category, "CHANDA")))
+      .where(and(
+        eq(schema.donations.isPublished, true),
+        eq(schema.donations.category, "CHANDA"),
+        search ? or(contains(publicDonorName, search), contains(schema.donations.purpose, search)) : undefined
+      ))
       .orderBy(desc(schema.donations.createdAt))
       .limit(limit);
   } catch (error) {
@@ -237,7 +267,7 @@ export async function getActiveDonationPurposes() {
 // HERO & FEATURED GALLERY (homepage)
 // ============================================
 
-export async function getHeroSection(existingSettings?: any) {
+export async function getHeroSection(existingSettings?: AssociationSettingsRow | null) {
   const defaultHero = {
     title: "Victory Youth",
     subtitleEn: "50th Golden Jubilee Celebrations",
@@ -265,7 +295,7 @@ export async function getHeroSection(existingSettings?: any) {
   }
 }
 
-export async function getFeaturedGallery(existingSettings?: any) {
+export async function getFeaturedGallery(existingSettings?: AssociationSettingsRow | null) {
   try {
     const settings = existingSettings !== undefined
       ? existingSettings
@@ -305,7 +335,7 @@ export async function getPublishedBanners() {
       .from(schema.banners)
       .where(eq(schema.banners.isPublished, true))
       .orderBy(schema.banners.sortOrder);
-  } catch (error: any) {
+  } catch (error) {
     console.error("getPublishedBanners error:", error);
     return [];
   }

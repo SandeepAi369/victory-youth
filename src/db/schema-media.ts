@@ -1,6 +1,6 @@
 import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
-import { boolean, timestamp, json, now, emptyJsonObject, emptyJsonArray } from "./columns";
+import { boolean, timestamp, json, now, emptyJsonArray } from "./columns";
 
 /**
  * MEDIA database schema (Turso / SQLite).

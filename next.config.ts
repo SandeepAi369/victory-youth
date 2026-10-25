@@ -2,6 +2,8 @@ import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 
 const nextConfig: NextConfig = {
+  // Hide the dev-tools badge in demo mode (clean screenshots)
+  devIndicators: process.env.VY_DEMO ? false : undefined,
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
@@ -28,5 +30,7 @@ const nextConfig: NextConfig = {
 };
 export default nextConfig;
 
-// Gives `next dev` the Cloudflare bindings (a local copy of the MEDIA_DB D1 database)
-initOpenNextCloudflareForDev();
+// Gives `next dev` the Cloudflare bindings (a local copy of the MEDIA_DB D1 database).
+// Demo mode (npm run demo) keeps its own copy in .demo/ so it never mixes with your data.
+// (wrangler `--persist-to .demo/wrangler` stores data under .demo/wrangler/v3, which is what the proxy expects)
+initOpenNextCloudflareForDev(process.env.VY_DEMO ? { persist: { path: ".demo/wrangler/v3" } } : undefined);

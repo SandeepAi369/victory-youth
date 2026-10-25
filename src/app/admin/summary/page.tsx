@@ -1,11 +1,13 @@
 import { getDb, schema } from "@/db";
 import { eq, count, sum } from "drizzle-orm";
-import { IndianRupee, ArrowDownLeft, ArrowUpRight, Scale } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, Scale } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+type CategoryTotal = { category: string; total: number; count: number };
+
 export default async function SummaryPage() {
-  let totalIn = 0, totalOut = 0, inByCategory: any[] = [], outByCategory: any[] = [];
+  let totalIn = 0, totalOut = 0, inByCategory: CategoryTotal[] = [], outByCategory: CategoryTotal[] = [];
     try {
       const db = getDb();
       const inResult = await db.select({ total: sum(schema.donations.amount) }).from(schema.donations);

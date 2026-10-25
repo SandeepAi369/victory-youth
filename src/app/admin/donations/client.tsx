@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Plus, Pencil, Trash2, X, Eye, EyeOff, User, UserX } from "lucide-react";
 import { addDonation, updateDonation, deleteDonation, toggleDonationPublish, toggleDonationAnonymous, setAllDonationsVisibility } from "./actions";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
+import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 
 type Entry = {
   id: string; receiptNo: string | null; donorName: string; phone: string | null;
@@ -17,6 +18,8 @@ const emptyForm = { donorName: "", phone: "", amount: "", category: "DONATION", 
 
 export default function DonationsClient({ initialData }: { initialData: Entry[] }) {
   const { data, isPending, execute } = useAdminAction<Entry>(initialData);
+  const [search, setSearch] = useState("");
+  const visible = filterRows(data, search, (e) => [e.donorName, e.receiptNo, e.phone, e.purpose, e.category, e.paymentMode]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
@@ -100,7 +103,7 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && resetForm()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">{editingId ? "Edit Donation" : "New Donation"}</h2>
@@ -163,6 +166,8 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
         </div>
       )}
 
+      <AdminSearch value={search} onChange={setSearch} placeholder="Search donations by donor, receipt no., phone or purpose…" shown={visible.length} total={data.length} />
+
       <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -177,8 +182,9 @@ export default function DonationsClient({ initialData }: { initialData: Entry[] 
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
+              {search && visible.length === 0 && data.length > 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</td></tr>}
               {data.length === 0 && <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No donations yet.</td></tr>}
-              {data.map((e) => (
+              {visible.map((e) => (
                 <tr key={e.id} className="hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <p className="font-bold text-foreground">{e.donorName}</p>

@@ -32,3 +32,7 @@ yarn-error.log*
 
 # TypeScript build info (build artifact)
 *.tsbuildinfo
+
+# Local databases created by npm run setup -- --local and npm run demo
+.local/
+.demo/

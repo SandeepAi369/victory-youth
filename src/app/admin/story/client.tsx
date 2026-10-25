@@ -1,12 +1,12 @@
 "use client";
+import { errorMessage } from "@/lib/utils";
 
 import { useState, useRef } from "react";
 import { CloudUpload, Trash2, Loader2, X, Check, ImageIcon, RefreshCw } from "lucide-react";
 import { addHeroImage, deleteHeroImage, getHeroImages } from "./actions";
 import type { HeroImageRow } from "@/db/schema";
 
-const CLOUD_NAME = "y5dnsgyb";
-const UPLOAD_PRESET = "victory_youth_unsigned";
+import { CLOUDINARY_CLOUD_NAME as CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET as UPLOAD_PRESET } from "@/lib/cloudinary-config";
 
 export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImageRow[] }) {
   const [images, setImages] = useState<HeroImageRow[]>(initialHeroImages);
@@ -65,10 +65,10 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
       setUploadedPublicId(data.public_id);
       setStep("uploaded");
       setStatusMsg("");
-    } catch (err: any) {
+    } catch (err) {
       setStep("select");
       setStatusMsg("");
-      alert("Upload error: " + err.message);
+      alert("Upload error: " + errorMessage(err));
     }
   };
 
@@ -86,10 +86,10 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
       const updated = await getHeroImages();
       setImages(updated);
       resetForm();
-    } catch (err: any) {
+    } catch (err) {
       setStep("uploaded");
       setStatusMsg("");
-      alert("Save error: " + err.message);
+      alert("Save error: " + errorMessage(err));
     }
   };
 
@@ -100,8 +100,8 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
       const result = await deleteHeroImage(id);
       if (!result.success) throw new Error(result.error || "Failed to delete");
       setImages((prev) => prev.filter((img) => img.id !== id));
-    } catch (err: any) {
-      alert("Delete error: " + err.message);
+    } catch (err) {
+      alert("Delete error: " + errorMessage(err));
     }
     setIsPending(false);
   };
@@ -129,7 +129,7 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
       {/* Upload Modal */}
       {(showUpload || replacingId) && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={(e: any) => e.target === e.currentTarget && !isBusy && resetForm()}>
+          onClick={(e: { target: EventTarget; currentTarget: EventTarget }) => e.target === e.currentTarget && !isBusy && resetForm()}>
           <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold">

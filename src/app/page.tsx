@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getHomepageData } from "@/lib/queries/public";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
+import { CalculatorLauncher } from "@/components/public/Calculator";
 import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
 import { BannerCarousel } from "@/components/public/BannerCarousel";
 import { HeroCarousel } from "@/components/public/HeroCarousel";
@@ -35,7 +36,7 @@ export default async function HomePage() {
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-default select-none">
-            <HamburgerNotesPanel notesCount={(notes as any[])?.length || 0} />
+            <HamburgerNotesPanel notesCount={notes.length} />
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-white" />
             </div>
@@ -190,6 +191,10 @@ export default async function HomePage() {
                 </Link>
               ))}
             </div>
+            {/* Calculator, right below the five icons */}
+            <div className="flex justify-center mt-4">
+              <CalculatorLauncher />
+            </div>
           </div>
         </div>
 
@@ -339,7 +344,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {events.slice(0, 3).map((evt: any) => (
+              {events.slice(0, 3).map((evt) => (
                 <div key={evt.id} className="group bg-white dark:bg-stone-800 rounded-2xl overflow-hidden shadow-sm border border-stone-100 dark:border-stone-700 hover:shadow-lg transition-shadow flex flex-col">
                   <div className="relative aspect-video bg-stone-100 dark:bg-stone-700 overflow-hidden">
                     {evt.imageUrl ? (
@@ -379,7 +384,7 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {publishedDonations.slice(0, 6).map((d: any, i: number) => (
+              {publishedDonations.slice(0, 6).map((d, i) => (
                 <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-stone-800 border border-orange-100 dark:border-stone-700 shadow-sm">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-lg">

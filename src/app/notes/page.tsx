@@ -1,14 +1,16 @@
 import Link from "next/link";
+import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getPublishedNotes } from "@/lib/queries/public";
 import { ArrowLeft, BookOpen } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function NotesPage() {
-  let notes: any[] = [];
+export default async function NotesPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const q = searchQuery(await searchParams);
+  let notes: Awaited<ReturnType<typeof getPublishedNotes>> = [];
   try {
-    notes = await getPublishedNotes(50);
-  } catch (e: any) {
+    notes = await getPublishedNotes(50, q);
+  } catch (e) {
     console.error("Notes page error:", e);
   }
 
@@ -24,6 +26,8 @@ export default async function NotesPage() {
       </nav>
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
+
+        <SearchBox basePath="/notes" query={q} resultCount={notes.length} placeholder="Search notes…" />
         <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
           <div className="flex items-center gap-3 mb-2">
             <BookOpen className="w-6 h-6 text-white/80" />
@@ -38,7 +42,7 @@ export default async function NotesPage() {
         )}
 
         <div className="space-y-4">
-          {notes.map((note: any) => (
+          {notes.map((note) => (
             <div key={note.id} className="p-5 rounded-2xl bg-white dark:bg-stone-800 border border-stone-100 dark:border-stone-700 shadow-sm">
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/30 dark:to-orange-900/30 flex items-center justify-center flex-shrink-0">

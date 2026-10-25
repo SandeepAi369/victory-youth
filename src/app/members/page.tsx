@@ -1,17 +1,19 @@
 import Link from "next/link";
+import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getDb, schema } from "@/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, like, or } from "drizzle-orm";
 import { ArrowLeft, Users } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-function formatAmount(val: any): string {
+function formatAmount(val: unknown): string {
   const num = parseInt(String(val || 0), 10);
   return num.toLocaleString("en-IN");
 }
 
-export default async function MembersPage() {
-  let members: any[] = [];
+export default async function MembersPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
+  const q = searchQuery(await searchParams);
+  let members: { id: string; name: string; fullName: string | null; role: string | null; committeeRole: string | null; membershipFee: number | null }[] = [];
   try {
     const db = getDb();
     // Only what the public page shows — never phone numbers or addresses
@@ -23,14 +25,17 @@ export default async function MembersPage() {
       committeeRole: schema.members.committeeRole,
       membershipFee: schema.members.membershipFee,
     }).from(schema.members)
-      .where(eq(schema.members.isActive, true))
+      .where(and(
+        eq(schema.members.isActive, true),
+        q ? or(like(schema.members.name, `%${q}%`), like(schema.members.fullName, `%${q}%`), like(schema.members.committeeRole, `%${q}%`)) : undefined
+      ))
       .orderBy(schema.members.name);
-  } catch (e: any) {
+  } catch (e) {
     console.error("Members page error:", e);
   }
 
   const totalContribution = members.reduce(
-    (sum: number, m: any) => sum + parseInt(String(m.membershipFee || 0), 10), 0
+    (sum: number, m) => sum + parseInt(String(m.membershipFee || 0), 10), 0
   );
 
   return (
@@ -45,6 +50,8 @@ export default async function MembersPage() {
       </nav>
 
       <div className="container mx-auto max-w-4xl px-4 py-8">
+
+        <SearchBox basePath="/members" query={q} resultCount={members.length} placeholder="Search committee members by name or role…" />
         <div className="bg-gradient-to-r from-indigo-600 to-blue-700 rounded-2xl p-6 mb-8 text-white shadow-lg">
           <div className="flex items-center gap-3 mb-2">
             <Users className="w-6 h-6 text-white/80" />
@@ -59,7 +66,7 @@ export default async function MembersPage() {
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {members.map((m: any) => (
+          {members.map((m) => (
             <div key={m.id} className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-stone-800 border border-indigo-100 dark:border-stone-700 shadow-sm hover:shadow-md transition-shadow">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold text-lg">

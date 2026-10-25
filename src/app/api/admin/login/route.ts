@@ -5,7 +5,7 @@ export async function POST(request: Request) {
   let body: { password?: string };
   try {
     body = await request.json();
-  } catch (e) {
+  } catch {
     return NextResponse.json(
       { success: false, error: "Invalid request body. Expected JSON with 'password' field." },
       { status: 400 }
