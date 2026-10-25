@@ -21,8 +21,13 @@ npm install && npm run demo
 
 ## Screenshots
 
-| Home: quick links + calculator | Photo gallery grouped by month |
-|---|---|
+| Home screen | Calculator (history auto-deletes after 24 h) | Admin panel |
+|---|---|---|
+| ![Home screen with quick links and the calculator](docs/screenshots/home-mobile.jpg) | ![Calculator with history and 24-hour notice](docs/screenshots/calculator.jpg) | ![Admin panel: active members](docs/screenshots/admin-active-members.jpg) |
+
+<sub>Screenshots are from `npm run demo`: all names, numbers and images are fictional.</sub>
+
+---|---|
 | ![Home page quick links with the calculator below them](docs/screenshots/home-icons.jpg) | ![Gallery grouped into month sections with dates](docs/screenshots/gallery.jpg) |
 | **Calculator (history auto-deletes after 24 h)** | **Category search: Donations** |
 | ![Calculator with history and 24-hour notice](docs/screenshots/calculator.jpg) | ![Donations page search results](docs/screenshots/donations-search.jpg) |
