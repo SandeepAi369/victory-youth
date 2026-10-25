@@ -1,33 +1,30 @@
 "use client";
 
-import React, { useState } from "react";
-import { ganeshStore } from "@/lib/store";
-import { Member } from "@/types";
+import React, { useState, useTransition } from "react";
+import { AssociationSettings, Member } from "@/types";
 import { generateMemberIdCardPdf } from "@/lib/pdf-generator";
 import { getQrCodeImageUrl } from "@/lib/qr-util";
+import { findMemberCard } from "./actions";
 import Link from "next/link";
 import { Search, Download, ArrowLeft } from "lucide-react";
 
 export default function MemberIdPage() {
   const [query, setQuery] = useState("");
   const [foundMember, setFoundMember] = useState<Member | null>(null);
+  const [settings, setSettings] = useState<AssociationSettings | null>(null);
   const [searched, setSearched] = useState(false);
-
-  const settings = ganeshStore.getSettings();
+  const [isSearching, startSearch] = useTransition();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!query.trim()) return;
 
-    const members = ganeshStore.getMembers();
-    const m = members.find(
-      (item) =>
-        (item.phone || item.mobile || "").includes(query.trim()) ||
-        item.memberId.toLowerCase().includes(query.trim().toLowerCase())
-    );
-
-    setFoundMember(m || null);
-    setSearched(true);
+    startSearch(async () => {
+      const result = await findMemberCard(query);
+      setFoundMember(result?.member ?? null);
+      setSettings(result?.settings ?? null);
+      setSearched(true);
+    });
   };
 
   return (
@@ -62,14 +59,15 @@ export default function MemberIdPage() {
           />
           <button
             type="submit"
-            className="px-6 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-bold text-sm flex items-center gap-2 shadow-lg"
+            disabled={isSearching}
+            className="px-6 py-3 rounded-2xl bg-amber-500 text-zinc-950 font-bold text-sm flex items-center gap-2 shadow-lg disabled:opacity-60"
           >
-            <Search className="w-4 h-4" /> Verify
+            <Search className="w-4 h-4" /> {isSearching ? "Checking..." : "Verify"}
           </button>
         </form>
 
         {searched && (
-          foundMember ? (
+          foundMember && settings ? (
             <div className="space-y-4">
               <div className="p-6 rounded-3xl bg-gradient-to-br from-[#3c0a0f] via-[#200508] to-[#0a0204] border-2 border-amber-500 shadow-2xl space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-amber-500/30">
@@ -99,7 +97,6 @@ export default function MemberIdPage() {
                 <div className="flex items-center justify-between pt-3 border-t border-zinc-800">
                   <div className="text-[11px] text-zinc-400">
                     <p>Gotram: {foundMember.gotram || "-"}</p>
-                    <p>Blood Group: {foundMember.bloodGroup || "O+"}</p>
                   </div>
                   <div className="w-16 h-16 p-1 bg-white rounded-xl">
                     <img

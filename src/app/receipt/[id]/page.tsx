@@ -1,22 +1,19 @@
-"use client";
-
-import React from "react";
-import { useParams } from "next/navigation";
-import { ganeshStore } from "@/lib/store";
-import { formatCurrency } from "@/lib/utils";
-import { generateDonationReceiptPdf } from "@/lib/pdf-generator";
 import Link from "next/link";
-import { Download, ArrowLeft, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ShieldCheck } from "lucide-react";
+import { formatCurrency } from "@/lib/utils";
+import { getAssociationSettings, getReceiptDonation } from "@/lib/queries/public";
+import { toAssociationSettings } from "@/lib/settings-view";
+import type { Donation } from "@/types";
+import ReceiptDownloadButton from "./download-button";
 
-export default function PublicReceiptPage() {
-  const params = useParams();
-  const id = params?.id as string;
+export const dynamic = "force-dynamic";
 
-  const donations = ganeshStore.getDonations();
-  const donation = donations.find((d) => d.id === id || d.receiptNo.replace("#", "") === id);
-  const settings = ganeshStore.getSettings();
+export default async function PublicReceiptPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const [row, settingsRow] = await Promise.all([getReceiptDonation(decodeURIComponent(id)), getAssociationSettings()]);
+  const settings = toAssociationSettings(settingsRow);
 
-  if (!donation) {
+  if (!row) {
     return (
       <div className="min-h-screen bg-[#120406] text-white py-16 px-4 text-center">
         <h2 className="text-xl font-bold text-red-400 mb-2">Receipt Not Found</h2>
@@ -27,6 +24,22 @@ export default function PublicReceiptPage() {
       </div>
     );
   }
+
+  const donation: Donation = {
+    id: row.id,
+    receiptNo: row.receiptNo,
+    date: row.date || row.createdAt?.toISOString().slice(0, 10) || "",
+    donorName: row.isAnonymous ? "Anonymous Devotee" : row.donorName,
+    phone: row.isAnonymous ? undefined : row.phone,
+    donorPhone: row.isAnonymous ? undefined : row.donorPhone ?? undefined,
+    amount: row.amount,
+    paymentMode: row.paymentMode || "",
+    status: row.status ?? undefined,
+    purpose: row.purpose || "",
+    gotram: row.gotram ?? undefined,
+    transactionId: row.transactionId ?? undefined,
+    taxExempt80G: row.taxExempt80G ?? undefined,
+  };
 
   return (
     <div className="min-h-screen bg-[#120406] text-white py-12 px-4 sm:px-6 lg:px-8">
@@ -74,12 +87,7 @@ export default function PublicReceiptPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => generateDonationReceiptPdf(donation, settings)}
-            className="w-full py-3.5 rounded-2xl bg-amber-500 text-zinc-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20"
-          >
-            <Download className="w-4 h-4" /> Download 80G Receipt PDF
-          </button>
+          <ReceiptDownloadButton donation={donation} settings={settings} />
         </div>
       </div>
     </div>

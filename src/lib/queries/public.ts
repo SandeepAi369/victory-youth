@@ -6,7 +6,7 @@
  */
 
 import { getDb, getMediaDb, schema } from "@/db";
-import { eq, desc, and, ne, sql } from "drizzle-orm";
+import { eq, desc, and, ne, or, sql } from "drizzle-orm";
 
 // ============================================
 // ASSOCIATION SETTINGS
@@ -159,6 +159,31 @@ export async function getPublishedDonations(limit = 20) {
   } catch (error) {
     console.error("❌ getPublishedDonations error:", error);
     return [];
+  }
+}
+
+/** A single successful donation for the public receipt page, by id or receipt number. */
+export async function getReceiptDonation(idOrReceiptNo: string) {
+  try {
+    const db = getDb();
+    const rows = await db
+      .select()
+      .from(schema.donations)
+      .where(
+        and(
+          eq(schema.donations.status, "SUCCESS"),
+          or(
+            eq(schema.donations.id, idOrReceiptNo),
+            eq(schema.donations.receiptNo, idOrReceiptNo),
+            eq(schema.donations.receiptNo, `#${idOrReceiptNo}`)
+          )
+        )
+      )
+      .limit(1);
+    return rows[0] || null;
+  } catch (error) {
+    console.error("❌ getReceiptDonation error:", error);
+    return null;
   }
 }
 

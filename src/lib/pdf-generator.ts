@@ -35,7 +35,10 @@ export function generateDonationReceiptPdf(donation: Donation, settings: Associa
   doc.setTextColor(220, 220, 220);
   doc.setFontSize(7.5);
   doc.setFont("helvetica", "normal");
-  doc.text(`Reg No: $ssettings.regNo || settings.registrationNo || "TS/NZB/2008/4892"} | Estd. 1974 | 50+ Years Golden Jubilee`, 74, 34, { align: "center" });
+  const regNo = settings.registrationNo || settings.regNo;
+  const estd = settings.establishedYear || settings.estYear;
+  const legalLine = [regNo && `Reg No: ${regNo}`, estd && `Estd. ${estd}`, "50+ Years Golden Jubilee"].filter(Boolean).join(" | ");
+  doc.text(legalLine, 74, 34, { align: "center" });
   doc.setFillColor(gold[0], gold[1], gold[2]);
   doc.roundedRect(42, 44, 64, 8, 2, 2, "F");
   doc.setTextColor(dark[0], dark[1], dark[2]);
@@ -92,7 +95,10 @@ export function generateDonationReceiptPdf(donation: Donation, settings: Associa
   doc.setTextColor(100, 100, 100);
   doc.setFontSize(6.5);
   doc.setFont("helvetica", "normal");
-  doc.text(`80G Exemption: 80G/AAATV1234F/2020-21 | PAN: AAATV1234F | 100% Tax Deductible under Sec 80G`, 14, 158);
+  // Only print the 80G line when the real exemption number is configured in settings
+  if (settings.tax80GNo) {
+    doc.text(`80G Exemption: ${settings.tax80GNo} | Tax Deductible under Sec 80G`, 14, 158);
+  }
 
   doc.setDrawColor(200, 200, 200);
   doc.line(14, 178, 50, 178);
