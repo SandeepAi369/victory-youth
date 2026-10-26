@@ -34,6 +34,7 @@ npm install && npm run demo
 - [Architecture](#architecture)
 - [Tech stack](#tech-stack)
 - [Getting started](#getting-started)
+- [Run it for your own association](docs/own-association.md)
 - [Deployment](#deployment)
 - [Project structure](#project-structure)
 - [Roadmap](#roadmap)
@@ -195,6 +196,10 @@ flowchart TD
 ## Getting started
 
 **Prerequisite:** Node.js 22+.
+
+Running this for your own youth group or temple committee? Start with
+[Run it for your own association](docs/own-association.md)
+(template → free accounts → `npm run setup` → deploy → Settings).
 
 ### Option A: Demo (fake data, no accounts)
 
