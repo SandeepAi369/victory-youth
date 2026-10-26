@@ -11,3 +11,10 @@ export function todayIST(): string {
 
 /** The current year in India. */
 export const currentYearIST = () => Number(todayIST().slice(0, 4));
+
+/** Human label for the public year selection: null → "All Years", [2025, 2026] → "2025 & 2026". */
+export function describeYears(years: number[] | null): string {
+  if (!years || years.length === 0) return "All Years";
+  const sorted = [...years].sort((a, b) => a - b).map(String);
+  return sorted.length === 1 ? sorted[0] : `${sorted.slice(0, -1).join(", ")} & ${sorted.at(-1)}`;
+}

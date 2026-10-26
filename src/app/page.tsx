@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { DonorName } from "@/components/public/DonorName";
+import { YearScope, yearScopeNote } from "@/components/public/ContributionTotals";
 import { getHomepageData } from "@/lib/queries/public";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -12,7 +13,7 @@ import { Sparkles, Calendar, Heart } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const { settings, stats, hero, events, publishedDonations, notes, banners, heroImages } = await getHomepageData();
+  const { settings, years, stats, hero, events, publishedDonations, notes, banners, heroImages } = await getHomepageData();
 
   const progressPercentage = stats.donationTarget > 0
     ? Math.min(Math.round((stats.totalAmount / stats.donationTarget) * 100), 100)
@@ -326,7 +327,10 @@ export default async function HomePage() {
                 <h3 className="font-bold text-stone-900 dark:text-white flex items-center gap-2">
                   <Heart className="w-5 h-5 text-red-500" /> Donation Progress
                 </h3>
-                <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{progressPercentage}%</span>
+                <div className="flex items-center gap-2">
+                  <YearScope years={years} tone="card" />
+                  <span className="text-sm font-bold text-orange-600 dark:text-orange-400">{progressPercentage}%</span>
+                </div>
               </div>
               <div className="h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
                 <div className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }} />
@@ -338,6 +342,7 @@ export default async function HomePage() {
                 </span>
                 <span>Target: {formatCurrency(stats.donationTarget)}</span>
               </div>
+              <p className="mt-3 text-[11px] text-stone-500 dark:text-stone-400">{yearScopeNote(years)}</p>
             </div>
           </div>
         </section>
