@@ -1,6 +1,13 @@
-/** Shared by the contributor server actions and the admin contribution forms. */
-export const CONTRIBUTION_CATEGORIES = ["CHANDA", "DONATION", "SPONSORSHIP", "OTHER"] as const;
+/**
+ * Shared by the contributor server actions and the admin contribution forms.
+ * The two categories are fully independent books: separate profiles, history,
+ * anonymity, totals and search.
+ */
+export const CONTRIBUTION_CATEGORIES = ["CHANDA", "DONATION"] as const;
 export type ContributionCategory = (typeof CONTRIBUTION_CATEGORIES)[number];
+
+/** The book a donation row belongs to (older rows may carry SPONSORSHIP / OTHER — those are Donations). */
+export const bookOf = (category: string | null | undefined): ContributionCategory => (category === "CHANDA" ? "CHANDA" : "DONATION");
 
 export const PAYMENT_MODES = ["CASH", "UPI", "BANK_TRANSFER", "CHEQUE"];
 

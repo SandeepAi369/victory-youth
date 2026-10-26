@@ -8,7 +8,7 @@ export default function ChandaClient({ initialData, contributors }: { initialDat
   return (
     <ContributionsAdmin
       title="Chanda (Donations)" subtitle="Chanda Collections" noun="Chanda"
-      categories={["CHANDA"]} showCategory={false}
+      category="CHANDA"
       initialData={initialData} contributors={contributors}
       actions={{ remove: deleteChanda, togglePublish: toggleChandaPublish, setAllVisibility: setAllChandaVisibility }}
     />

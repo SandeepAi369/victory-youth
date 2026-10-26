@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
+import Link from "next/link";
 import { UserPlus, Pencil, Trash2, User, UserX, CirclePlus, ChevronDown, ChevronRight, X } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
@@ -9,7 +10,7 @@ import {
   addContribution, createContributor, updateContributor, deleteContributor,
   setContributorAnonymous, getContributorHistory,
 } from "@/lib/actions/contributors";
-import { CONTRIBUTION_CATEGORIES } from "@/lib/contributions";
+import type { ContributionCategory } from "@/lib/contributions";
 
 type Contributor = {
   id: string; name: string; phone: string | null; isAnonymous: boolean; notes: string | null;
@@ -19,7 +20,13 @@ type HistoryRow = Awaited<ReturnType<typeof getContributorHistory>>["rows"][numb
 
 const inr = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
-export default function ContributorsClient({ initialData }: { initialData: Contributor[] }) {
+const TABS: { category: ContributionCategory; label: string; href: string }[] = [
+  { category: "CHANDA", label: "Chanda", href: "/admin/contributors" },
+  { category: "DONATION", label: "Donations", href: "/admin/contributors?tab=donations" },
+];
+
+export default function ContributorsClient({ category, initialData }: { category: ContributionCategory; initialData: Contributor[] }) {
+  const book = category === "CHANDA" ? "Chanda" : "Donations";
   const { data, isPending, execute } = useAdminAction<Contributor>(initialData);
   const [search, setSearch] = useState("");
   const visible = filterRows(data, search, (c) => [c.name, c.phone, c.notes]);
@@ -59,7 +66,7 @@ export default function ContributorsClient({ initialData }: { initialData: Contr
     if (!profile) return;
     const { id, ...fields } = profile;
     execute({
-      serverAction: () => id ? updateContributor(id, fields) : createContributor(fields),
+      serverAction: () => id ? updateContributor(id, fields) : createContributor({ ...fields, category }),
       successMsg: id ? "Contributor updated" : "Contributor added",
       onSuccess: () => setProfile(null),
     });
@@ -75,7 +82,7 @@ export default function ContributorsClient({ initialData }: { initialData: Contr
         <div>
           <h1 className="text-2xl font-bold">Contributors</h1>
           <p className="text-muted-foreground text-sm">
-            {data.length} profiles · {anonymousCount} anonymous · {inr(totalAmount)} in total
+            {book}: {data.length} profiles · {anonymousCount} anonymous · {inr(totalAmount)} in total
           </p>
         </div>
         <button onClick={() => setProfile({ id: null, name: "", phone: "", notes: "", isAnonymous: false })} disabled={isPending}
@@ -84,11 +91,21 @@ export default function ContributorsClient({ initialData }: { initialData: Contr
         </button>
       </div>
 
+      {/* Separate books: a person who gives to both has one profile on each tab */}
+      <div className="flex gap-1 p-1 rounded-xl bg-muted w-fit" role="tablist" aria-label="Category">
+        {TABS.map((t) => (
+          <Link key={t.category} href={t.href} role="tab" aria-selected={t.category === category}
+            className={"px-4 py-1.5 rounded-lg text-sm font-bold transition-colors " + (t.category === category ? "bg-card shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground")}>
+            {t.label}
+          </Link>
+        ))}
+      </div>
+
       {contributionFor && (
         <ContributionForm
-          title="Add Contribution"
-          contributors={data} categories={CONTRIBUTION_CATEGORIES}
-          initial={emptyDraft("CHANDA", contributionFor)} isPending={isPending}
+          title={category === "CHANDA" ? "Add Chanda" : "Add Donation"}
+          contributors={data} category={category}
+          initial={emptyDraft(contributionFor)} isPending={isPending}
           onCancel={() => setContributionFor(null)}
           onSubmit={(input) => execute({
             serverAction: () => addContribution(input),
@@ -103,7 +120,7 @@ export default function ContributorsClient({ initialData }: { initialData: Contr
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && setProfile(null)}>
           <div className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">{profile.id ? "Edit Contributor" : "New Contributor"}</h2>
+              <h2 className="text-lg font-bold">{profile.id ? "Edit Contributor" : `New ${book} Contributor`}</h2>
               <button type="button" onClick={() => setProfile(null)} aria-label="Close" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
             </div>
             <form onSubmit={handleProfileSubmit} className="space-y-4">
@@ -151,7 +168,7 @@ export default function ContributorsClient({ initialData }: { initialData: Contr
             </thead>
             <tbody className="divide-y divide-border">
               {search && visible.length === 0 && data.length > 0 && <tr><td colSpan={5} className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</td></tr>}
-              {data.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No contributors yet. They are created when you add a chanda or donation.</td></tr>}
+              {data.length === 0 && <tr><td colSpan={5} className="px-4 py-12 text-center text-muted-foreground">No {book.toLowerCase()} contributors yet. They are created when you add a {category === "CHANDA" ? "chanda" : "donation"}.</td></tr>}
               {visible.map((c) => {
                 const rows = history[c.id];
                 return (

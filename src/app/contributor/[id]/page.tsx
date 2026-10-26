@@ -6,7 +6,6 @@ import { ArrowLeft, Infinity as AllTime } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 const inr = (n: number) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
-const CATEGORY_LABEL: Record<string, string> = { CHANDA: "Chanda", DONATION: "Donation", SPONSORSHIP: "Sponsorship", OTHER: "Other" };
 
 /**
  * Public profile of one named contributor: their complete all-time history and
@@ -16,6 +15,10 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const person = await getPublicContributor(id);
   if (!person) notFound();
+  // A profile belongs to ONE category: chanda profiles never show donations, and vice versa
+  const book = person.kind === "CHANDA"
+    ? { label: "Chanda", href: "/chanda", noun: "chanda" }
+    : { label: "Donations", href: "/donations", noun: "donation" };
 
   // Group by year, newest first, with a subtotal per year
   const byYear = new Map<string, { total: number; rows: typeof person.contributions }>();
@@ -32,8 +35,8 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
       <nav className="sticky top-0 z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-14 flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
-            <ArrowLeft className="w-4 h-4" /> Home
+          <Link href={book.href} className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
+            <ArrowLeft className="w-4 h-4" /> {book.label}
           </Link>
           <span className="text-lg font-bold text-stone-900 dark:text-white truncate">🙏 {person.name}</span>
         </div>
@@ -47,7 +50,7 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
               <div>
                 <p className="text-xl font-black">{person.name}</p>
                 <p className="text-sm text-white/80">
-                  {person.contributions.length} contribution{person.contributions.length === 1 ? "" : "s"}
+                  {book.label} · {person.contributions.length} {book.noun}{person.contributions.length === 1 ? "" : "s"}
                   {firstYear ? ` · since ${firstYear}` : ""}
                 </p>
               </div>
@@ -56,12 +59,12 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
               <AllTime className="w-3.5 h-3.5" /> All-time
             </span>
           </div>
-          <p className="text-sm text-white/80 mt-4">All-time total contribution</p>
+          <p className="text-sm text-white/80 mt-4">All-time {book.noun} total</p>
           <p className="text-3xl font-black">{inr(person.total)}</p>
-          <p className="text-[11px] text-white/70 mt-1">Includes every year — not only the year shown on the main pages.</p>
+          <p className="text-[11px] text-white/70 mt-1">Every year of {book.label} only — not only the year shown on the main pages.</p>
         </div>
 
-        <h2 className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-3">Complete contribution history</h2>
+        <h2 className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-3">Complete {book.noun} history</h2>
         <div className="space-y-5">
           {[...byYear.entries()].map(([year, group]) => (
             <section key={year} aria-label={`Contributions in ${year}`}>
@@ -74,7 +77,7 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
                   <li key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
                     <div className="min-w-0">
                       <p className="font-bold text-stone-900 dark:text-white">{c.date || "—"}</p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{CATEGORY_LABEL[c.category ?? ""] ?? c.category} · {c.purpose}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{c.purpose}</p>
                     </div>
                     <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">{inr(c.amount)}</span>
                   </li>

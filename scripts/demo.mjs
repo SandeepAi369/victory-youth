@@ -43,7 +43,6 @@ const chanda = [
   ["Arjun Reddy", 500], ["Kiran Kumar", 500], ["Suresh Goud", 500], ["Ravi Teja", 300],
   ["Mahesh Yadav", 300], ["Naveen Rao", 300], ["Prakash Varma", 200], ["Srikanth Naidu", 200],
 ];
-const sponsors = [["Lakshmi Textiles", 50000], ["Vijaya Medicals", 25000], ["Hidden Sponsor C", 30000]];
 const events = [
   [1, "Ganesh Sthapana & Pran Pratishtha", "POOJA", "06:00 AM – 09:00 AM"],
   [2, "Ganapathi Homam", "POOJA", "07:00 AM – 10:00 AM"],
@@ -107,27 +106,30 @@ async function seedCore() {
   for (const [i, name] of inactiveMembers.entries())
     await exec("INSERT INTO members (id, member_id, name, phone, is_active) VALUES (?, ?, ?, ?, 0)", [`mem_demo_old_${i}`, `VY-9${i}`, name, `90000${i}9999`]);
 
-  // One contributor profile per name; repeat contributions reuse it
+  // One contributor profile per name PER CATEGORY (Chanda and Donations are separate books)
   const contributorIds = new Map();
-  const contributor = async (name, anonymous) => {
-    if (!contributorIds.has(name)) {
+  const contributor = async (name, category, anonymous) => {
+    const book = category === "CHANDA" ? "CHANDA" : "DONATION";
+    const key = `${book}:${name}`;
+    if (!contributorIds.has(key)) {
       const id = `ctr_demo_${contributorIds.size}`;
-      await exec("INSERT INTO contributors (id, name, phone, is_anonymous, created_at) VALUES (?, ?, '9000000000', ?, ?)", [id, name, anonymous ? 1 : 0, daysAgo(500)]);
-      contributorIds.set(name, id);
+      await exec("INSERT INTO contributors (id, name, phone, category, is_anonymous, created_at) VALUES (?, ?, '9000000000', ?, ?, ?)", [id, name, book, anonymous ? 1 : 0, daysAgo(500)]);
+      contributorIds.set(key, id);
     }
-    return contributorIds.get(name);
+    return contributorIds.get(key);
   };
   const donation = async (id, name, amount, purpose, category, ago, { anonymous = false, published = true } = {}) =>
     exec(`INSERT INTO donations (id, receipt_no, contributor_id, donor_name, phone, amount, purpose, category, payment_mode, status, is_published, is_anonymous, date, created_at)
           VALUES (?, ?, ?, ?, '9000000000', ?, ?, ?, ?, 'SUCCESS', ?, ?, ?, ?)`,
-      [id, `DEMO-${id.toUpperCase()}`, await contributor(name, anonymous), name, amount, purpose, category, ago % 2 ? "UPI" : "CASH", published ? 1 : 0, anonymous ? 1 : 0, isoDate(daysAgo(ago)), daysAgo(ago)]);
+      [id, `DEMO-${id.toUpperCase()}`, await contributor(name, category, anonymous), name, amount, purpose, category, ago % 2 ? "UPI" : "CASH", published ? 1 : 0, anonymous ? 1 : 0, isoDate(daysAgo(ago)), daysAgo(ago)]);
   for (const [i, [name, amount, purpose]] of donors.entries()) await donation(`don${i}`, name, amount, purpose, "DONATION", 2 + i * 3);
   for (const [i, [name, amount, purpose]] of anonymousDonors.entries()) await donation(`anon${i}`, name, amount, purpose, "DONATION", 5 + i * 7, { anonymous: true });
   await donation("draft0", "Not Yet Published", 999, "Golden Jubilee Utsav Seva", "DONATION", 1, { published: false });
   for (const [i, [name, amount]] of chanda.entries()) await donation(`ch${i}`, name, amount, "Monthly Chanda", "CHANDA", 4 + i * 2, { anonymous: i === 7 });
-  // Recurring contributors: last year's chanda from the same people, plus sponsorships
+  // Recurring contributors: last year's chanda from the same people
   for (const [i, [name, amount]] of chanda.slice(0, 5).entries()) await donation(`ch_prev${i}`, name, amount, "Monthly Chanda", "CHANDA", 370 + i * 5);
-  for (const [i, [name, amount]] of sponsors.entries()) await donation(`sp${i}`, name, amount, "Sponsorship", "SPONSORSHIP", 10 + i * 4, { anonymous: i === 2 });
+  // Arjun also donates: a separate Donations profile, independent of his Chanda one
+  await donation("don_arjun", "Arjun Reddy", 5000, "Golden Jubilee Utsav Seva", "DONATION", 6);
 
   for (const [day, title, type, timing] of events)
     await exec("INSERT INTO events (id, day, title, type, description, date, timing, location, in_charge, is_published, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, 'Gudem Gally Mandapam', ?, 1, ?)",
@@ -165,7 +167,7 @@ function seedMedia() {
 console.log("Building demo data in .demo/ (local only) ...");
 const contributorCount = await seedCore();
 seedMedia();
-console.log(`\n✔ Demo data ready: ${members.length + inactiveMembers.length} members, ${donors.length + anonymousDonors.length + 1} donations, ${sponsors.length} sponsorships, ${chanda.length + 5} chanda (5 from last year), ${contributorCount} contributors, ${events.length} events, 12 photos.`);
+console.log(`\n✔ Demo data ready: ${members.length + inactiveMembers.length} members, ${donors.length + anonymousDonors.length + 2} donations, ${chanda.length + 5} chanda (5 from last year), ${contributorCount} contributors, ${events.length} events, 12 photos.`);
 console.log(`  Admin login for the demo: \x1b[1m${ADMIN_PASSWORD}\x1b[0m`);
 
 if (!SEED_ONLY) {
