@@ -27,18 +27,25 @@ export function emptyDraft(contributorId: string | null = null): ContributionDra
  * phone) or created on the spot; the anonymous switch belongs to the profile.
  */
 export function ContributionForm({
-  title, contributors, category, initial, isPending, onCancel, onSubmit,
+  title, contributors, category, initial, currentAmount, isPending, onCancel, onSubmit,
 }: {
   title: string;
   /** Profiles of this category only */
   contributors: ContributorOption[];
   category: ContributionCategory;
   initial: ContributionDraft;
+  /**
+   * Edit mode: the entry's current total. The form then asks for an amount to
+   * ADD (never overwrites), and `amount` in onSubmit is that added amount.
+   */
+  currentAmount?: number;
   isPending: boolean;
   onCancel: () => void;
   onSubmit: (input: ContributionInput) => void;
 }) {
   const [form, setForm] = useState(initial);
+  const editing = currentAmount !== undefined;
+  const added = parseInt(form.amount) || 0;
   const [query, setQuery] = useState("");
   const [newPerson, setNewPerson] = useState<{ name: string; phone: string } | null>(null);
   const selected = contributors.find((c) => c.id === form.contributorId) ?? null;
@@ -66,7 +73,7 @@ export function ContributionForm({
       contributorId: selected?.id,
       newContributor: selected ? undefined : { name: newPerson!.name, phone: newPerson!.phone },
       isAnonymous: anonymous,
-      category, amount: parseInt(form.amount) || 0,
+      category, amount: added,
       paymentMode: form.paymentMode, purpose: form.purpose,
     });
   };
@@ -133,11 +140,30 @@ export function ContributionForm({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className={label}>Amount (₹) *</label>
-              <input type="number" required min={1} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={input} placeholder="500" />
+          {editing && (
+            <div className="rounded-xl border bg-muted/40 p-3 space-y-2">
+              <div className="flex items-baseline justify-between">
+                <span className="text-xs font-bold text-muted-foreground">Current total</span>
+                <span className="text-xl font-black text-emerald-600">₹{currentAmount.toLocaleString("en-IN")}</span>
+              </div>
+              <div>
+                <label className={label} htmlFor="add-amount">Add amount (₹)</label>
+                <input id="add-amount" type="number" min={0} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={input} placeholder="0" />
+              </div>
+              <div className="flex items-baseline justify-between text-sm">
+                <span className="text-muted-foreground">New total</span>
+                <span className="font-black">₹{(currentAmount + Math.max(added, 0)).toLocaleString("en-IN")}</span>
+              </div>
             </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            {!editing && (
+              <div>
+                <label className={label}>Amount (₹) *</label>
+                <input type="number" required min={1} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={input} placeholder="500" />
+              </div>
+            )}
             <div>
               <label className={label}>Payment Mode</label>
               <select value={form.paymentMode} onChange={(e) => setForm({ ...form, paymentMode: e.target.value })} className={input}>

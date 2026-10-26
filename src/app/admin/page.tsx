@@ -1,39 +1,35 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowDownLeft, ArrowUpRight, Scale, Users, Calendar, StickyNote } from "lucide-react";
+import { ArrowUpRight, IndianRupee, HandCoins, Scale, Users, Calendar, StickyNote } from "lucide-react";
 import { getDb, schema } from "@/db";
-import { count, sum, eq } from "drizzle-orm";
+import { count } from "drizzle-orm";
 import Link from "next/link";
+import { getCategoryLedger, getExpenseLedger } from "@/lib/queries/ledger";
+import { LedgerCard } from "@/components/admin/LedgerCard";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboard() {
-  let totalIn = 0, totalOut = 0, donorCount = 0, eventCount = 0, noteCount = 0, memberCount = 0;
-
-    try {
-      const db = getDb();
-      const [inRes, outRes, donors, events, notes, members] = await Promise.all([
-        db.select({ total: sum(schema.donations.amount) }).from(schema.donations),
-        db.select({ total: sum(schema.transactions.amount) }).from(schema.transactions).where(eq(schema.transactions.type, "EXPENSE")),
-        db.select({ cnt: count() }).from(schema.donations),
-        db.select({ cnt: count() }).from(schema.events),
-        db.select({ cnt: count() }).from(schema.importantNotes),
-        db.select({ cnt: count() }).from(schema.members),
-      ]);
-      totalIn = Number(inRes[0]?.total || 0);
-      totalOut = Number(outRes[0]?.total || 0);
-      donorCount = donors[0]?.cnt || 0;
-      eventCount = events[0]?.cnt || 0;
-      noteCount = notes[0]?.cnt || 0;
-      memberCount = members[0]?.cnt || 0;
+  let eventCount = 0, noteCount = 0, memberCount = 0;
+  // Chanda and Donations are separate books — shown side by side, never summed
+  const [chanda, donations, expenses] = await Promise.all([getCategoryLedger("CHANDA"), getCategoryLedger("DONATION"), getExpenseLedger()]);
+  try {
+    const db = getDb();
+    const [events, notes, members] = await Promise.all([
+      db.select({ cnt: count() }).from(schema.events),
+      db.select({ cnt: count() }).from(schema.importantNotes),
+      db.select({ cnt: count() }).from(schema.members),
+    ]);
+    eventCount = events[0]?.cnt || 0;
+    noteCount = notes[0]?.cnt || 0;
+    memberCount = members[0]?.cnt || 0;
   } catch (e) { console.error("Dashboard query error:", e); }
 
   const fmt = (n: number) => new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(n);
-  const netBalance = totalIn - totalOut;
 
   const quickLinks = [
-    { href: "/admin/money-in", label: "Money In", icon: ArrowDownLeft, desc: `${donorCount} entries · ${fmt(totalIn)}`, color: "text-emerald-600" },
-    { href: "/admin/money-out", label: "Money Out", icon: ArrowUpRight, desc: `${fmt(totalOut)} spent`, color: "text-red-600" },
-    { href: "/admin/summary", label: "Summary", icon: Scale, desc: `Balance: ${fmt(netBalance)}`, color: netBalance >= 0 ? "text-blue-600" : "text-orange-600" },
+    { href: "/admin/chanda", label: "Chanda", icon: IndianRupee, desc: `${chanda.count} entries · ${fmt(chanda.total)}`, color: "text-amber-600" },
+    { href: "/admin/donations", label: "Donations", icon: HandCoins, desc: `${donations.count} entries · ${fmt(donations.total)}`, color: "text-emerald-600" },
+    { href: "/admin/summary", label: "Summary", icon: Scale, desc: "Per-category ledgers", color: "text-blue-600" },
     { href: "/admin/members", label: "Members", icon: Users, desc: `${memberCount} members`, color: "text-purple-600" },
     { href: "/admin/events", label: "Events", icon: Calendar, desc: `${eventCount} events`, color: "text-indigo-600" },
     { href: "/admin/notes", label: "Notes", icon: StickyNote, desc: `${noteCount} notes`, color: "text-amber-600" },
@@ -46,19 +42,13 @@ export default async function AdminDashboard() {
         <p className="text-muted-foreground text-sm mt-1">50th Golden Jubilee Ganesh Utsav — Live Overview</p>
       </div>
 
-      {/* Top Cards */}
+      {/* Top Cards: each category on its own */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-900/10">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-2"><ArrowDownLeft className="w-4 h-4" /> Total Money In</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-black text-emerald-700 dark:text-emerald-300">{fmt(totalIn)}</p></CardContent>
-        </Card>
+        <LedgerCard title="Chanda" href="/admin/chanda" ledger={chanda} tone="amber" />
+        <LedgerCard title="Donations" href="/admin/donations" ledger={donations} tone="emerald" />
         <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center gap-2"><ArrowUpRight className="w-4 h-4" /> Total Money Out</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-black text-red-700 dark:text-red-300">{fmt(totalOut)}</p></CardContent>
-        </Card>
-        <Card className={`${netBalance >= 0 ? "border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/10" : "border-orange-200 dark:border-orange-800 bg-orange-50/50 dark:bg-orange-900/10"}`}>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium flex items-center gap-2"><Scale className="w-4 h-4" /> Net Balance</CardTitle></CardHeader>
-          <CardContent><p className={`text-3xl font-black ${netBalance >= 0 ? "text-blue-700 dark:text-blue-300" : "text-orange-700 dark:text-orange-300"}`}>{fmt(netBalance)}</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center gap-2"><ArrowUpRight className="w-4 h-4" /> Expenses (Money Out)</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-black text-red-700 dark:text-red-300">{fmt(expenses.total)}</p></CardContent>
         </Card>
       </div>
 

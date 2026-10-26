@@ -92,7 +92,7 @@ function cleanContributor(data: NewContributor) {
 }
 
 /** Resolves the contributor for a contribution: the chosen one, or a newly created one. */
-async function resolveContributor(input: ContributionInput) {
+async function resolveContributor(input: Pick<ContributionInput, "contributorId" | "newContributor" | "isAnonymous" | "category">) {
   const db = getDb();
   if (input.contributorId) {
     const [row] = await db.select().from(c).where(eq(c.id, input.contributorId)).limit(1);
@@ -112,21 +112,19 @@ async function resolveContributor(input: ContributionInput) {
   return row;
 }
 
-function contributionFields(input: ContributionInput) {
+/** Validated non-amount fields of a contribution. */
+function contributionFields(input: Pick<ContributionInput, "category" | "paymentMode" | "purpose">) {
   if (!CONTRIBUTION_CATEGORIES.includes(input.category)) throw new Error("Invalid category");
-  if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error("Amount must be greater than 0");
   const defaultPurpose = input.category === "CHANDA" ? "Monthly Chanda" : "General Donation";
-  return {
-    amount: Math.round(input.amount), paymentMode: input.paymentMode,
-    purpose: input.purpose?.trim() || defaultPurpose,
-  };
+  return { paymentMode: input.paymentMode, purpose: input.purpose?.trim() || defaultPurpose };
 }
 
 /** Adds a contribution to one category for an existing (same-category) or new contributor. */
 export async function addContribution(input: ContributionInput) {
   await requireAdmin();
   try {
-    const fields = contributionFields(input);
+    if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error("Amount must be greater than 0");
+    const fields = { ...contributionFields(input), amount: Math.round(input.amount) };
     const contributor = await resolveContributor(input);
     const receiptNo = generateReceiptNo();
     await getDb().insert(d).values({
@@ -143,15 +141,20 @@ export async function addContribution(input: ContributionInput) {
   }
 }
 
-/** Edits a contribution (its original date is kept); it can also be moved to another (or a new) contributor. */
-export async function updateContribution(id: string, input: ContributionInput) {
+/**
+ * Edits a contribution. The amount is never overwritten: `addAmount` (≥ 0) is
+ * added to the current total in SQL. The original date and category are kept;
+ * the entry can be moved to another (or a new) contributor of the same category.
+ */
+export async function updateContribution(id: string, input: Omit<ContributionInput, "amount"> & { addAmount: number }) {
   await requireAdmin();
   try {
-    // The row keeps its own category; it can only be edited from its own category's page
+    if (!Number.isFinite(input.addAmount) || input.addAmount < 0) throw new Error("Amount to add must be 0 or more");
     const fields = contributionFields(input);
     const contributor = await resolveContributor(input);
     const updated = await getDb().update(d).set({
-      ...fields, contributorId: contributor.id, donorName: contributor.name,
+      ...fields, amount: sql`${d.amount} + ${Math.round(input.addAmount)}`,
+      contributorId: contributor.id, donorName: contributor.name,
       phone: contributor.phone ?? "", isAnonymous: contributor.isAnonymous,
     }).where(and(eq(d.id, id), inBook(input.category))).returning({ id: d.id });
     if (updated.length === 0) throw new Error("Contribution not found in this category");
@@ -172,19 +175,6 @@ async function applyAnonymous(contributorId: string, anonymous: boolean) {
   ]);
 }
 
-/** Hide (true) or show (false) this person's name on ALL their contributions, past and future. */
-export async function setContributorAnonymous(contributorId: string, anonymous: boolean) {
-  await requireAdmin();
-  try {
-    await applyAnonymous(contributorId, anonymous);
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("setContributorAnonymous error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
-
 export async function createContributor(data: NewContributor & { notes?: string; category: ContributionCategory }) {
   await requireAdmin();
   try {
@@ -200,15 +190,18 @@ export async function createContributor(data: NewContributor & { notes?: string;
   }
 }
 
-/** Renames / edits a contributor; the name and phone are copied onto all their contributions. */
-export async function updateContributor(id: string, data: { name: string; phone?: string; notes?: string }) {
+/**
+ * Edits a contributor profile; name, phone and the anonymous setting are copied
+ * onto all of this profile's contributions (which are all in its own category).
+ */
+export async function updateContributor(id: string, data: { name: string; phone?: string; notes?: string; isAnonymous: boolean }) {
   await requireAdmin();
   try {
     const { name, phone } = cleanContributor(data);
     const db = getDb();
     await db.batch([
-      db.update(c).set({ name, phone, notes: data.notes?.trim() || null, updatedAt: new Date() }).where(eq(c.id, id)),
-      db.update(d).set({ donorName: name, phone: phone ?? "" }).where(eq(d.contributorId, id)),
+      db.update(c).set({ name, phone, notes: data.notes?.trim() || null, isAnonymous: data.isAnonymous, updatedAt: new Date() }).where(eq(c.id, id)),
+      db.update(d).set({ donorName: name, phone: phone ?? "", isAnonymous: data.isAnonymous }).where(eq(d.contributorId, id)),
     ]);
     revalidate();
     return { success: true };
@@ -230,6 +223,48 @@ export async function deleteContributor(id: string) {
     return { success: true };
   } catch (error) {
     console.error("deleteContributor error:", error);
+    return { success: false, error: errorMessage(error) };
+  }
+}
+
+/** Publish or unpublish one contribution — only if it belongs to `category`. */
+export async function setContributionPublished(id: string, category: ContributionCategory, publish: boolean) {
+  await requireAdmin();
+  try {
+    const updated = await getDb().update(d).set({ isPublished: publish })
+      .where(and(eq(d.id, id), inBook(category))).returning({ id: d.id });
+    if (updated.length === 0) throw new Error("Contribution not found in this category");
+    revalidate();
+    return { success: true };
+  } catch (error) {
+    console.error("setContributionPublished error:", error);
+    return { success: false, error: errorMessage(error) };
+  }
+}
+
+/** Publish or unpublish every contribution of ONE category. */
+export async function setAllContributionsPublished(category: ContributionCategory, publish: boolean) {
+  await requireAdmin();
+  try {
+    await getDb().update(d).set({ isPublished: publish }).where(inBook(category));
+    revalidate();
+    return { success: true, newState: publish };
+  } catch (error) {
+    console.error("setAllContributionsPublished error:", error);
+    return { success: false, newState: !publish, error: errorMessage(error) };
+  }
+}
+
+/** Permanently deletes one contribution — only if it belongs to `category`. */
+export async function deleteContribution(id: string, category: ContributionCategory) {
+  await requireAdmin();
+  try {
+    const deleted = await getDb().delete(d).where(and(eq(d.id, id), inBook(category))).returning({ id: d.id });
+    if (deleted.length === 0) throw new Error("Contribution not found in this category");
+    revalidate();
+    return { success: true };
+  } catch (error) {
+    console.error("deleteContribution error:", error);
     return { success: false, error: errorMessage(error) };
   }
 }

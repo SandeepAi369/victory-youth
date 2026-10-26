@@ -1,15 +1,7 @@
 "use server";
-import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
-import { eq, ne } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-
-function revalidate() {
-  revalidatePath("/admin/donations");
-  revalidatePath("/donations");
-  revalidatePath("/");
-}
+import { ne } from "drizzle-orm";
 
 export async function getDonationEntries() {
   await requireAdmin();
@@ -22,49 +14,5 @@ export async function getDonationEntries() {
   } catch (error) {
     console.error("getDonationEntries error:", error);
     return [];
-  }
-}
-
-export async function deleteDonation(id: string) {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.delete(schema.donations).where(eq(schema.donations.id, id));
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("deleteDonation error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
-
-export async function toggleDonationPublish(id: string, publish: boolean) {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.update(schema.donations).set({ isPublished: publish }).where(eq(schema.donations.id, id));
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("toggleDonationPublish error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
-
-/** Master toggle: publish or unpublish ALL donations (non-CHANDA) at once */
-export async function setAllDonationsVisibility(
-  publish: boolean
-): Promise<{ success: boolean; newState: boolean; error?: string }> {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.update(schema.donations)
-      .set({ isPublished: publish })
-      .where(ne(schema.donations.category, "CHANDA"));
-    revalidate();
-    return { success: true, newState: publish };
-  } catch (error) {
-    console.error("setAllDonationsVisibility error:", error);
-    return { success: false, newState: !publish, error: errorMessage(error) };
   }
 }
