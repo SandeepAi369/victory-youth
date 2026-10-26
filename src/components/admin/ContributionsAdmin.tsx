@@ -43,7 +43,6 @@ export function ContributionsAdmin({
   const [search, setSearch] = useState("");
   const [adding, setAdding] = useState(false);
   const unit = noun.toLowerCase();
-  const from = category === "CHANDA" ? "chanda" : "donations";
 
   // Group entries by person (server order = newest first, so people are newest-first too)
   const people = useMemo(() => {
@@ -157,7 +156,7 @@ export function ContributionsAdmin({
             return (
               <li key={p.key} data-person={p.name} className="flex items-center gap-2 pr-3 hover:bg-muted/50 transition-colors">
                 {p.contributorId ? (
-                  <Link href={`/admin/contributors/${p.contributorId}?from=${from}`} className={row} aria-label={`Open ${p.name}'s profile`}>{body}</Link>
+                  <Link href={`/admin/contributors/${p.contributorId}`} className={row} aria-label={`Open ${p.name}'s profile`}>{body}</Link>
                 ) : (
                   <div className={row}>{body}</div>
                 )}

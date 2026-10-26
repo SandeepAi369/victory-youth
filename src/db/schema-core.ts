@@ -143,11 +143,29 @@ export const members = sqliteTable("members", {
   isActive: boolean("is_active").default(true),
   // Shown on the public "Active Members" list — off until an admin publishes it
   listedPublicly: boolean("listed_publicly").default(false),
+  // Admin-only: an anonymous member is never shown on the public Committee page
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
   isIdCardIssued: boolean("is_id_card_issued").default(false),
   
   createdAt: timestamp("created_at").default(now),
   updatedAt: timestamp("updated_at").default(now),
 });
+
+// ============================================
+// 2a. MEMBER PAYMENTS (each payment of a member is its own entry;
+//     members.membership_fee is kept equal to their sum)
+// ============================================
+
+export const memberPayments = sqliteTable("member_payments", {
+  id: text("id").primaryKey(),
+  memberId: text("member_id").notNull().references(() => members.id, { onDelete: "cascade" }),
+  receiptNo: text("receipt_no").notNull().unique(),
+  amount: integer("amount").notNull(),
+  paymentMode: text("payment_mode").default("CASH"),
+  purpose: text("purpose").default("Membership"),
+  date: text("date").notNull(),
+  createdAt: timestamp("created_at").default(now),
+}, (t) => [index("member_payments_member_idx").on(t.memberId)]);
 
 // ============================================
 // 3. ROLES AUDIT TABLE
@@ -639,6 +657,7 @@ export const importantNotes = sqliteTable("important_notes", {
 export type AssociationSettingsRow = InferSelectModel<typeof associationSettings>;
 export type NewAssociationSettingsRow = InferInsertModel<typeof associationSettings>;
 export type MemberRow = InferSelectModel<typeof members>;
+export type MemberPaymentRow = InferSelectModel<typeof memberPayments>;
 export type NewMemberRow = InferInsertModel<typeof members>;
 export type ContributorRow = InferSelectModel<typeof contributors>;
 export type NewContributorRow = InferInsertModel<typeof contributors>;

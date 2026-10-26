@@ -3,7 +3,7 @@ import { ArrowUpRight, IndianRupee, HandCoins, Scale, Users, Calendar, StickyNot
 import { getDb, schema } from "@/db";
 import { count } from "drizzle-orm";
 import Link from "next/link";
-import { getCategoryLedger, getExpenseLedger } from "@/lib/queries/ledger";
+import { getCategoryLedger, getExpenseLedger, getMemberLedger } from "@/lib/queries/ledger";
 import { LedgerCard } from "@/components/admin/LedgerCard";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function AdminDashboard() {
   let eventCount = 0, noteCount = 0, memberCount = 0;
   // Chanda and Donations are separate books — shown side by side, never summed
-  const [chanda, donations, expenses] = await Promise.all([getCategoryLedger("CHANDA"), getCategoryLedger("DONATION"), getExpenseLedger()]);
+  const [chanda, donations, membersLedger, expenses] = await Promise.all([getCategoryLedger("CHANDA"), getCategoryLedger("DONATION"), getMemberLedger(), getExpenseLedger()]);
   try {
     const db = getDb();
     const [events, notes, members] = await Promise.all([
@@ -43,9 +43,10 @@ export default async function AdminDashboard() {
       </div>
 
       {/* Top Cards: each category on its own */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
         <LedgerCard title="Chanda" href="/admin/chanda" ledger={chanda} tone="amber" />
         <LedgerCard title="Donations" href="/admin/donations" ledger={donations} tone="emerald" />
+        <LedgerCard title="Members" href="/admin/members" ledger={membersLedger} tone="emerald" />
         <Card className="border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-red-700 dark:text-red-400 flex items-center gap-2"><ArrowUpRight className="w-4 h-4" /> Expenses (Money Out)</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-black text-red-700 dark:text-red-300">{fmt(expenses.total)}</p></CardContent>

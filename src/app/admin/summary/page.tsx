@@ -1,5 +1,5 @@
 import { ArrowUpRight } from "lucide-react";
-import { getCategoryLedger, getExpenseLedger } from "@/lib/queries/ledger";
+import { getCategoryLedger, getExpenseLedger, getMemberLedger } from "@/lib/queries/ledger";
 import { LedgerCard } from "@/components/admin/LedgerCard";
 
 export const dynamic = "force-dynamic";
@@ -8,7 +8,7 @@ const fmt = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
 /** Per-category ledgers. Chanda and Donations are independent and never added together. */
 export default async function SummaryPage() {
-  const [chanda, donations, expenses] = await Promise.all([getCategoryLedger("CHANDA"), getCategoryLedger("DONATION"), getExpenseLedger()]);
+  const [chanda, donations, membersLedger, expenses] = await Promise.all([getCategoryLedger("CHANDA"), getCategoryLedger("DONATION"), getMemberLedger(), getExpenseLedger()]);
 
   return (
     <div className="space-y-6">
@@ -17,9 +17,10 @@ export default async function SummaryPage() {
         <p className="text-sm text-muted-foreground">Each category is a separate book — complete ledger (all years, published and unpublished).</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
         <LedgerCard title="Chanda" href="/admin/chanda" ledger={chanda} tone="amber" detailed />
         <LedgerCard title="Donations" href="/admin/donations" ledger={donations} tone="emerald" detailed />
+        <LedgerCard title="Members" href="/admin/members" ledger={membersLedger} tone="emerald" detailed />
       </div>
 
       <div className="p-5 rounded-xl bg-card border border-border">
