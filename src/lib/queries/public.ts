@@ -92,26 +92,29 @@ async function getPublicStats(existingSettings?: AssociationSettingsRow | null, 
       ? existingSettings
       : await getAssociationSettings();
 
-    const [memberRows, totals, eventRows] = await Promise.all([
+    const [memberRows, [donationTotals, chandaTotals], eventRows] = await Promise.all([
       db.select({ count: sql<number>`count(*)` })
         .from(schema.members).where(eq(schema.members.isActive, true)),
-      getContributionTotals("ALL", years),
+      // Kept apart: Chanda and Donations totals are never added together
+      Promise.all([getContributionTotals("DONATIONS", years), getContributionTotals("CHANDA", years)]),
       db.select({ count: sql<number>`count(*)` })
         .from(schema.events).where(and(eq(schema.events.isPublished, true), inPublicYears(schema.events.date, years))),
     ]);
 
     return {
       totalMembers: Number(memberRows[0]?.count ?? 0),
-      totalAmount: totals.grandTotal,
-      anonymousAmount: totals.anonymousTotal,
-      totalDonations: totals.totalCount,
+      // Donation progress (vs. the donation target) counts Donations only
+      totalAmount: donationTotals.grandTotal,
+      anonymousAmount: donationTotals.anonymousTotal,
+      totalDonations: donationTotals.totalCount,
+      chandaAmount: chandaTotals.grandTotal,
       totalEvents: Number(eventRows[0]?.count ?? 0),
       donationTarget: Math.round(Number(settings?.donationTarget ?? 2500000)),
     };
   } catch (error) {
     console.error("❌ getPublicStats error:", error);
     return {
-      totalMembers: 0, totalAmount: 0, anonymousAmount: 0, totalDonations: 0,
+      totalMembers: 0, totalAmount: 0, anonymousAmount: 0, totalDonations: 0, chandaAmount: 0,
       totalEvents: 0, donationTarget: 2500000,
     };
   }
@@ -228,13 +231,14 @@ export async function getPublishedGallery(limit: number = 12) {
 // DONATIONS (public-facing)
 // ============================================
 
-export type ContributionKind = "CHANDA" | "DONATIONS" | "ALL";
+/** Chanda and Donations are independent: every public query covers exactly one of them, never both. */
+export type ContributionKind = "CHANDA" | "DONATIONS";
 
 /** Published contributions of one kind (chanda vs. everything else) in the visible years. */
 function publishedContributions(kind: ContributionKind, years: PublicYears) {
   return and(
     eq(d.isPublished, true),
-    kind === "CHANDA" ? eq(d.category, "CHANDA") : kind === "DONATIONS" ? ne(d.category, "CHANDA") : undefined,
+    kind === "CHANDA" ? eq(d.category, "CHANDA") : ne(d.category, "CHANDA"),
     inPublicYears(contributionDate, years),
   );
 }
@@ -295,25 +299,26 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
 
 /**
  * A named contributor's public profile: their complete, all-time history of
- * published, non-anonymous contributions (deliberately NOT limited to the
- * public year selection). Returns null for an anonymous (or unknown)
- * contributor, so an anonymous person never has a public page.
+ * published, non-anonymous contributions IN THEIR PROFILE'S CATEGORY ONLY
+ * (deliberately NOT limited to the public year selection). Returns null for an
+ * anonymous (or unknown) contributor, so an anonymous person never has a page.
  */
 export async function getPublicContributor(id: string) {
   try {
     const db = getDb();
-    const [person] = await db.select({ name: ctr.name }).from(ctr)
+    const [person] = await db.select({ name: ctr.name, category: ctr.category }).from(ctr)
       .where(and(eq(ctr.id, id), eq(ctr.isAnonymous, false))).limit(1);
     if (!person) return null;
+    const kind: ContributionKind = person.category === "CHANDA" ? "CHANDA" : "DONATIONS";
     const contributions = await db
       .select({ id: d.id, amount: d.amount, category: d.category, purpose: d.purpose, date: d.date })
       .from(d)
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
-      .where(and(eq(d.contributorId, id), publishedContributions("ALL", null), sql`NOT ${isAnonymousContribution}`))
+      .where(and(eq(d.contributorId, id), publishedContributions(kind, null), sql`NOT ${isAnonymousContribution}`))
       .orderBy(desc(d.date), desc(d.createdAt));
     if (contributions.length === 0) return null;
     const total = contributions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
-    return { name: person.name, contributions, total };
+    return { name: person.name, kind, contributions, total };
   } catch (error) {
     console.error("❌ getPublicContributor error:", error);
     return null;
@@ -504,7 +509,7 @@ export async function getHomepageData() {
     return {
       settings: null,
       years: null,
-      stats: { totalDonations: 0, totalAmount: 0, anonymousAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
+      stats: { totalDonations: 0, totalAmount: 0, anonymousAmount: 0, chandaAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
       hero: {
         title: "Victory Youth",
         subtitleEn: "50th Golden Jubilee Celebrations",

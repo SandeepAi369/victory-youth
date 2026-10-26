@@ -10,29 +10,29 @@ export type ContributorOption = {
 };
 
 export type ContributionDraft = {
-  contributorId: string | null; category: string; amount: string;
+  contributorId: string | null; amount: string;
   paymentMode: string; date: string; purpose: string;
 };
 
 export const today = todayIST;
 
-export function emptyDraft(category: string, contributorId: string | null = null): ContributionDraft {
-  return { contributorId, category, amount: "", paymentMode: "CASH", date: today(), purpose: "" };
+export function emptyDraft(contributorId: string | null = null): ContributionDraft {
+  return { contributorId, amount: "", paymentMode: "CASH", date: today(), purpose: "" };
 }
 
-const CATEGORY_LABEL: Record<string, string> = { CHANDA: "Chanda", DONATION: "Donation", SPONSORSHIP: "Sponsorship", OTHER: "Other" };
-
 /**
- * Add / edit one contribution. The contributor is picked from existing
- * profiles (search by name or phone) or created on the spot; the anonymous
- * switch belongs to the contributor, so it applies to all their contributions.
+ * Add / edit one contribution of a FIXED category (no category choice: the
+ * Chanda form only adds chanda, the Donations form only donations). The
+ * contributor is picked from that category's profiles (search by name or
+ * phone) or created on the spot; the anonymous switch belongs to the profile.
  */
 export function ContributionForm({
-  title, contributors, categories, initial, isPending, onCancel, onSubmit,
+  title, contributors, category, initial, isPending, onCancel, onSubmit,
 }: {
   title: string;
+  /** Profiles of this category only */
   contributors: ContributorOption[];
-  categories: readonly ContributionCategory[];
+  category: ContributionCategory;
   initial: ContributionDraft;
   isPending: boolean;
   onCancel: () => void;
@@ -66,7 +66,7 @@ export function ContributionForm({
       contributorId: selected?.id,
       newContributor: selected ? undefined : { name: newPerson!.name, phone: newPerson!.phone },
       isAnonymous: anonymous,
-      category: form.category, amount: parseInt(form.amount) || 0,
+      category, amount: parseInt(form.amount) || 0,
       paymentMode: form.paymentMode, purpose: form.purpose,
     });
   };
@@ -134,14 +134,6 @@ export function ContributionForm({
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {categories.length > 1 && (
-              <div>
-                <label className={label}>Category</label>
-                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={input}>
-                  {categories.map((c) => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
-                </select>
-              </div>
-            )}
             <div>
               <label className={label}>Amount (₹) *</label>
               <input type="number" required min={1} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={input} placeholder="500" />
@@ -159,14 +151,14 @@ export function ContributionForm({
           </div>
           <div>
             <label className={label}>Purpose</label>
-            <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className={input} placeholder={form.category === "CHANDA" ? "Monthly Chanda" : form.category === "SPONSORSHIP" ? "Sponsorship" : "General Donation"} />
+            <input type="text" value={form.purpose} onChange={(e) => setForm({ ...form, purpose: e.target.value })} className={input} placeholder={category === "CHANDA" ? "Monthly Chanda" : "General Donation"} />
           </div>
           <label className="flex items-start gap-2 text-sm cursor-pointer">
             <input type="checkbox" checked={anonymous} onChange={(e) => setAnonymous(e.target.checked)} className="mt-0.5" />
             <span>
               <span className="font-bold">Anonymous contributor</span>
               <span className="block text-xs text-muted-foreground">
-                Applies to this person&apos;s <b>all</b> contributions, past and future — shown as &quot;Anonymous Devotee&quot; on the public site.
+                Applies to <b>all</b> of this profile&apos;s {category === "CHANDA" ? "chanda" : "donation"} entries, past and future — shown as &quot;Anonymous Devotee&quot; on the public site.
               </span>
             </span>
           </label>

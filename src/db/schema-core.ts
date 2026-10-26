@@ -171,12 +171,15 @@ export const contributors = sqliteTable("contributors", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   phone: text("phone"),
-  // Hides the name on EVERY contribution of this person on the public site
+  // Which book this profile belongs to: "CHANDA" or "DONATION". Categories are
+  // independent — a person who gives to both has one profile in each.
+  category: text("category").notNull().default("DONATION"),
+  // Hides the name on EVERY contribution of this profile on the public site
   isAnonymous: boolean("is_anonymous").notNull().default(false),
   notes: text("notes"),
   createdAt: timestamp("created_at").default(now),
   updatedAt: timestamp("updated_at").default(now),
-}, (t) => [index("contributors_name_idx").on(t.name)]);
+}, (t) => [index("contributors_name_idx").on(t.name), index("contributors_category_idx").on(t.category)]);
 
 // ============================================
 // 4. DONATIONS TABLE

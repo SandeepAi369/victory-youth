@@ -342,7 +342,12 @@ export default async function HomePage() {
                 </span>
                 <span>Target: {formatCurrency(stats.donationTarget)}</span>
               </div>
-              <p className="mt-3 text-[11px] text-stone-500 dark:text-stone-400">{yearScopeNote(years)}</p>
+              {stats.chandaAmount > 0 && (
+                <p className="mt-3 text-xs text-stone-600 dark:text-stone-300">
+                  Chanda is counted separately: <Link href="/chanda" className="font-bold text-orange-600 dark:text-orange-400 hover:underline">{formatCurrency(stats.chandaAmount)} collected →</Link>
+                </p>
+              )}
+              <p className="mt-3 text-[11px] text-stone-500 dark:text-stone-400">{yearScopeNote(years)} Donations only — Chanda is not included.</p>
             </div>
           </div>
         </section>

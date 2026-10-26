@@ -2,14 +2,15 @@
 import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { and, eq, ne, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
 import { CONTRIBUTION_CATEGORIES, todayIST, type ContributionCategory } from "@/lib/contributions";
 
 /**
- * Contributor profiles: one row per person, linked from every donation /
- * chanda / sponsorship they make. A donation's donorName, phone and
+ * Contributor profiles: one row per person PER CATEGORY (Chanda or Donations),
+ * linked from every contribution they make in that category. Categories never
+ * mix: a profile only ever holds contributions of its own category. A donation's donorName, phone and
  * isAnonymous are copies of its contributor's, kept in sync here, so receipts,
  * exports and public queries never see a stale name or anonymity flag.
  */
@@ -27,20 +28,24 @@ function generateReceiptNo(): string {
   return `REC-${year}-${unique}`;
 }
 
-/** Every contributor with their number of contributions and total amount (admin only). */
-export async function getContributors() {
+/** Donation rows of one category's book ("DONATION" also covers older SPONSORSHIP / OTHER rows). */
+const inBook = (category: ContributionCategory) => (category === "CHANDA" ? eq(d.category, "CHANDA") : ne(d.category, "CHANDA"));
+
+/** The contributors of one category with their number of contributions and total amount (admin only). */
+export async function getContributors(category: ContributionCategory) {
   await requireAdmin();
   try {
     const db = getDb();
     return await db
       .select({
-        id: c.id, name: c.name, phone: c.phone, isAnonymous: c.isAnonymous, notes: c.notes,
+        id: c.id, name: c.name, phone: c.phone, category: c.category, isAnonymous: c.isAnonymous, notes: c.notes,
         count: sql<number>`count(${d.id})`,
         total: sql<number>`coalesce(sum(${d.amount}), 0)`,
         lastDate: sql<string | null>`max(${d.date})`,
       })
       .from(c)
       .leftJoin(d, eq(d.contributorId, c.id))
+      .where(eq(c.category, category))
       .groupBy(c.id)
       .orderBy(c.name);
   } catch (error) {
@@ -69,12 +74,12 @@ export async function getContributorHistory(contributorId: string) {
 type NewContributor = { name: string; phone?: string; isAnonymous?: boolean };
 
 export type ContributionInput = {
-  /** An existing contributor, or `newContributor` to create one */
+  /** An existing contributor of the same category, or `newContributor` to create one */
   contributorId?: string;
   newContributor?: NewContributor;
   /** Applied to the contributor (and so to all their contributions) when set */
   isAnonymous?: boolean;
-  category: string;
+  category: ContributionCategory;
   amount: number;
   paymentMode: string;
   purpose?: string;
@@ -92,6 +97,8 @@ async function resolveContributor(input: ContributionInput) {
   if (input.contributorId) {
     const [row] = await db.select().from(c).where(eq(c.id, input.contributorId)).limit(1);
     if (!row) throw new Error("Contributor not found");
+    // Never attach a contribution to another category's profile
+    if (row.category !== input.category) throw new Error("This contributor belongs to a different category");
     if (input.isAnonymous !== undefined && input.isAnonymous !== row.isAnonymous) {
       await applyAnonymous(row.id, input.isAnonymous);
       row.isAnonymous = input.isAnonymous;
@@ -100,22 +107,22 @@ async function resolveContributor(input: ContributionInput) {
   }
   if (!input.newContributor) throw new Error("Choose a contributor or add a new one");
   const { name, phone } = cleanContributor(input.newContributor);
-  const row = { id: `ctr_${randomUUID()}`, name, phone, isAnonymous: !!(input.isAnonymous ?? input.newContributor.isAnonymous) };
+  const row = { id: `ctr_${randomUUID()}`, name, phone, category: input.category, isAnonymous: !!(input.isAnonymous ?? input.newContributor.isAnonymous) };
   await db.insert(c).values(row);
   return row;
 }
 
 function contributionFields(input: ContributionInput) {
-  if (!CONTRIBUTION_CATEGORIES.includes(input.category as ContributionCategory)) throw new Error("Invalid category");
+  if (!CONTRIBUTION_CATEGORIES.includes(input.category)) throw new Error("Invalid category");
   if (!Number.isFinite(input.amount) || input.amount <= 0) throw new Error("Amount must be greater than 0");
-  const defaultPurpose = input.category === "CHANDA" ? "Monthly Chanda" : input.category === "SPONSORSHIP" ? "Sponsorship" : "General Donation";
+  const defaultPurpose = input.category === "CHANDA" ? "Monthly Chanda" : "General Donation";
   return {
-    category: input.category, amount: Math.round(input.amount), paymentMode: input.paymentMode,
+    amount: Math.round(input.amount), paymentMode: input.paymentMode,
     purpose: input.purpose?.trim() || defaultPurpose,
   };
 }
 
-/** Adds a contribution (chanda, donation, sponsorship…) for an existing or new contributor. */
+/** Adds a contribution to one category for an existing (same-category) or new contributor. */
 export async function addContribution(input: ContributionInput) {
   await requireAdmin();
   try {
@@ -124,7 +131,7 @@ export async function addContribution(input: ContributionInput) {
     const receiptNo = generateReceiptNo();
     await getDb().insert(d).values({
       // The date is always set here (today, India time) — never taken from the browser
-      id: `don_${randomUUID()}`, receiptNo, ...fields, date: todayIST(),
+      id: `don_${randomUUID()}`, receiptNo, ...fields, category: input.category, date: todayIST(),
       contributorId: contributor.id, donorName: contributor.name, phone: contributor.phone ?? "",
       isAnonymous: contributor.isAnonymous, status: "SUCCESS", isPublished: false,
     });
@@ -140,12 +147,14 @@ export async function addContribution(input: ContributionInput) {
 export async function updateContribution(id: string, input: ContributionInput) {
   await requireAdmin();
   try {
+    // The row keeps its own category; it can only be edited from its own category's page
     const fields = contributionFields(input);
     const contributor = await resolveContributor(input);
-    await getDb().update(d).set({
+    const updated = await getDb().update(d).set({
       ...fields, contributorId: contributor.id, donorName: contributor.name,
       phone: contributor.phone ?? "", isAnonymous: contributor.isAnonymous,
-    }).where(eq(d.id, id));
+    }).where(and(eq(d.id, id), inBook(input.category))).returning({ id: d.id });
+    if (updated.length === 0) throw new Error("Contribution not found in this category");
     revalidate();
     return { success: true };
   } catch (error) {
@@ -176,12 +185,13 @@ export async function setContributorAnonymous(contributorId: string, anonymous: 
   }
 }
 
-export async function createContributor(data: NewContributor & { notes?: string }) {
+export async function createContributor(data: NewContributor & { notes?: string; category: ContributionCategory }) {
   await requireAdmin();
   try {
     const { name, phone } = cleanContributor(data);
+    if (!CONTRIBUTION_CATEGORIES.includes(data.category)) throw new Error("Invalid category");
     const id = `ctr_${randomUUID()}`;
-    await getDb().insert(c).values({ id, name, phone, isAnonymous: !!data.isAnonymous, notes: data.notes?.trim() || null });
+    await getDb().insert(c).values({ id, name, phone, category: data.category, isAnonymous: !!data.isAnonymous, notes: data.notes?.trim() || null });
     revalidate();
     return { success: true, id };
   } catch (error) {

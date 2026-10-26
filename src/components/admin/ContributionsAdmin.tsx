@@ -18,11 +18,11 @@ type Result = Promise<{ success: boolean; error?: string }>;
 
 /** Admin list + add/edit for one kind of contribution (the Chanda and Donations pages). */
 export function ContributionsAdmin({
-  title, subtitle, noun, categories, showCategory, initialData, contributors, actions,
+  title, subtitle, noun, category, initialData, contributors, actions,
 }: {
   title: string; subtitle: string; noun: string;
-  categories: readonly ContributionCategory[];
-  showCategory: boolean;
+  /** The one category this page records — there is no category choice */
+  category: ContributionCategory;
   initialData: ContributionEntry[];
   contributors: ContributorOption[];
   actions: {
@@ -40,10 +40,10 @@ export function ContributionsAdmin({
   // Each row's isAnonymous is a synced copy of its contributor's flag
   const anonymousOf = (e: ContributionEntry) => !!e.isAnonymous;
 
-  const openNew = (contributorId: string | null = null) => setForm({ editingId: null, draft: emptyDraft(categories[0], contributorId) });
+  const openNew = (contributorId: string | null = null) => setForm({ editingId: null, draft: emptyDraft(contributorId) });
   const openEdit = (e: ContributionEntry) => setForm({
     editingId: e.id,
-    draft: { contributorId: e.contributorId, category: e.category || categories[0], amount: String(e.amount), paymentMode: e.paymentMode || "CASH", date: e.date || today(), purpose: e.purpose || "" },
+    draft: { contributorId: e.contributorId, amount: String(e.amount), paymentMode: e.paymentMode || "CASH", date: e.date || today(), purpose: e.purpose || "" },
   });
 
   const handleMasterToggle = () => {
@@ -110,7 +110,7 @@ export function ContributionsAdmin({
       {form && (
         <ContributionForm
           title={form.editingId ? `Edit ${noun}` : `New ${noun}`}
-          contributors={contributors} categories={categories} initial={form.draft} isPending={isPending}
+          contributors={contributors} category={category} initial={form.draft} isPending={isPending}
           onCancel={() => setForm(null)}
           onSubmit={(input) => execute({
             serverAction: () => form.editingId ? updateContribution(form.editingId, input) : addContribution(input),
@@ -129,7 +129,6 @@ export function ContributionsAdmin({
               <tr>
                 <th className="px-4 py-3">Contributor</th>
                 <th className="px-4 py-3">Amount</th>
-                {showCategory && <th className="px-4 py-3">Category</th>}
                 <th className="px-4 py-3">Date</th>
                 <th className="px-4 py-3">Status</th>
                 <th className="px-4 py-3 text-right">Actions</th>
@@ -156,7 +155,6 @@ export function ContributionsAdmin({
                       {e.receiptNo && <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo}</p>}
                     </td>
                     <td className="px-4 py-3 font-bold text-emerald-600">₹{e.amount?.toLocaleString("en-IN")}</td>
-                    {showCategory && <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400 text-xs font-bold">{e.category}</span></td>}
                     <td className="px-4 py-3 text-muted-foreground text-xs">{e.date || "-"}</td>
                     <td className="px-4 py-3">
                       <button onClick={() => handleTogglePublish(e.id, !!e.isPublished)} disabled={isPending}
