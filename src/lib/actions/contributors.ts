@@ -290,3 +290,17 @@ export async function deleteContribution(id: string, category: ContributionCateg
     return { success: false, error: errorMessage(error) };
   }
 }
+
+/** Publish or unpublish ALL of one person's entries in ONE category (anonymous entries are never published). */
+export async function setPersonPublished(contributorId: string, category: ContributionCategory, publish: boolean) {
+  await requireAdmin();
+  try {
+    await getDb().update(d).set({ isPublished: publish })
+      .where(and(eq(d.contributorId, contributorId), inBook(category), publish ? notAnonymous : undefined));
+    revalidate();
+    return { success: true };
+  } catch (error) {
+    console.error("setPersonPublished error:", error);
+    return { success: false, error: errorMessage(error) };
+  }
+}
