@@ -8,7 +8,7 @@ import { requireAdmin } from "@/lib/admin-session";
 
 import { getDb, schema } from "@/db";
 import type { NewAssociationSettingsRow } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { errorMessage } from "@/lib/utils";
 
@@ -61,4 +61,32 @@ export async function updateAssociationSettings(data: Partial<NewAssociationSett
   } catch (error) {
     return handleError("updating settings", error);
   }
+}
+
+// ============================================
+// YEAR-WISE PUBLIC VISIBILITY
+// ============================================
+
+/** Years that have contributions or events, plus the current year, newest first. */
+export async function getYearsWithData(): Promise<number[]> {
+  await requireAdmin();
+  const years = new Set([new Date().getFullYear()]);
+  try {
+    const rows = await getDb().all<{ year: number | null }>(sql`
+      SELECT DISTINCT cast(substr(coalesce(date, date(created_at, 'unixepoch')), 1, 4) as integer) AS year FROM donations
+      UNION SELECT DISTINCT cast(substr(date, 1, 4) as integer) FROM events`);
+    for (const { year } of rows) if (year && year >= 1900 && year <= 9999) years.add(Number(year));
+  } catch (error) {
+    console.error("Error reading years:", error);
+  }
+  return [...years].sort((a, b) => b - a);
+}
+
+/** Years shown on the public site; an empty list means all years. */
+export async function setPublicYears(years: number[]) {
+  await requireAdmin();
+  const clean = [...new Set(years.map(Number))].filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999).sort();
+  const result = await updateAssociationSettings({ publicYears: clean.length > 0 ? clean : null });
+  if (result.success) for (const path of ["/chanda", "/donations", "/events"]) revalidatePath(path);
+  return result;
 }

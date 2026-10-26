@@ -9,11 +9,48 @@ import { getDb, getMediaDb, schema } from "@/db";
 import type { AssociationSettingsRow } from "@/db/schema";
 import { eq, desc, and, ne, or, sql, type SQLWrapper } from "drizzle-orm";
 
+const d = schema.donations;
+const ctr = schema.contributors;
+
+/**
+ * A contribution is anonymous when its own flag OR its contributor's flag is
+ * set (the two are kept in sync; checking both fails closed). Every donation
+ * query below LEFT JOINs contributors so this can be evaluated.
+ */
+const isAnonymousContribution = sql`(coalesce(${d.isAnonymous}, 0) = 1 OR coalesce(${ctr.isAnonymous}, 0) = 1)`;
+
 /**
  * Public donor name: anonymous donations are masked inside the SQL query, so
  * the real name never leaves the database for public pages.
  */
-const publicDonorName = sql<string>`CASE WHEN ${schema.donations.isAnonymous} = 1 THEN 'Anonymous Devotee' ELSE ${schema.donations.donorName} END`;
+const publicDonorName = sql<string>`CASE WHEN ${isAnonymousContribution} THEN 'Anonymous Devotee' ELSE ${d.donorName} END`;
+
+// ============================================
+// YEAR-WISE VISIBILITY (admin setting public_years)
+// ============================================
+
+/** Years the admin made visible on the public site, or null for all years. */
+export type PublicYears = number[] | null;
+
+function parsePublicYears(value: unknown): PublicYears {
+  if (!Array.isArray(value)) return null;
+  const years = value.map(Number).filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999);
+  return years.length > 0 ? years : null;
+}
+
+export async function getPublicYears(existingSettings?: AssociationSettingsRow | null): Promise<PublicYears> {
+  const settings = existingSettings !== undefined ? existingSettings : await getAssociationSettings();
+  return parsePublicYears(settings?.publicYears);
+}
+
+/** SQL condition "the year of this date column is one of the visible years" (undefined = no filter). */
+function inPublicYears(dateExpr: SQLWrapper, years: PublicYears) {
+  if (!years) return undefined;
+  return sql`cast(substr(${dateExpr}, 1, 4) as integer) in (${sql.join(years.map((y) => sql`${y}`), sql`, `)})`;
+}
+
+/** A contribution's date; entries without one fall back to the day they were recorded. */
+const contributionDate = sql`coalesce(${d.date}, date(${d.createdAt}, 'unixepoch'))`;
 
 /**
  * Case-insensitive "contains" match for category search. User input is escaped,
@@ -43,37 +80,33 @@ export async function getAssociationSettings() {
 // PUBLIC STATS (homepage counters)
 // ============================================
 
-async function getPublicStats(existingSettings?: AssociationSettingsRow | null) {
+async function getPublicStats(existingSettings?: AssociationSettingsRow | null, years: PublicYears = null) {
   try {
     const db = getDb();
     const settings = existingSettings !== undefined
       ? existingSettings
       : await getAssociationSettings();
 
-    const [memberRows, donationRows, eventRows] = await Promise.all([
+    const [memberRows, totals, eventRows] = await Promise.all([
       db.select({ count: sql<number>`count(*)` })
         .from(schema.members).where(eq(schema.members.isActive, true)),
-      db.select({
-          total: sql<number>`coalesce(sum(amount), 0)`,
-          count: sql<number>`count(*)`,
-        })
-        .from(schema.donations)
-        .where(eq(schema.donations.isPublished, true)),
+      getContributionTotals("ALL", years),
       db.select({ count: sql<number>`count(*)` })
-        .from(schema.events).where(eq(schema.events.isPublished, true)),
+        .from(schema.events).where(and(eq(schema.events.isPublished, true), inPublicYears(schema.events.date, years))),
     ]);
 
     return {
       totalMembers: Number(memberRows[0]?.count ?? 0),
-      totalAmount: Math.round(Number(donationRows[0]?.total ?? 0)),
-      totalDonations: Number(donationRows[0]?.count ?? 0),
+      totalAmount: totals.grandTotal,
+      anonymousAmount: totals.anonymousTotal,
+      totalDonations: totals.totalCount,
       totalEvents: Number(eventRows[0]?.count ?? 0),
       donationTarget: Math.round(Number(settings?.donationTarget ?? 2500000)),
     };
   } catch (error) {
     console.error("❌ getPublicStats error:", error);
     return {
-      totalMembers: 0, totalAmount: 0, totalDonations: 0,
+      totalMembers: 0, totalAmount: 0, anonymousAmount: 0, totalDonations: 0,
       totalEvents: 0, donationTarget: 2500000,
     };
   }
@@ -83,7 +116,7 @@ async function getPublicStats(existingSettings?: AssociationSettingsRow | null) 
 // EVENTS
 // ============================================
 
-export async function getPublishedEvents(search = "") {
+export async function getPublishedEvents(search = "", years: PublicYears = null) {
   try {
     const db = getDb();
     const e = schema.events;
@@ -92,6 +125,7 @@ export async function getPublishedEvents(search = "") {
       .from(schema.events)
       .where(and(
         eq(schema.events.isPublished, true),
+        inPublicYears(e.date, years),
         search ? or(contains(e.title, search), contains(e.description, search), contains(e.location, search), contains(e.type, search)) : undefined
       ))
       .orderBy(schema.events.day);
@@ -189,24 +223,63 @@ export async function getPublishedGallery(limit: number = 12) {
 // DONATIONS (public-facing)
 // ============================================
 
-export async function getPublishedDonations(limit = 20, search = "") {
+export type ContributionKind = "CHANDA" | "DONATIONS" | "ALL";
+
+/** Published contributions of one kind (chanda vs. everything else) in the visible years. */
+function publishedContributions(kind: ContributionKind, years: PublicYears) {
+  return and(
+    eq(d.isPublished, true),
+    kind === "CHANDA" ? eq(d.category, "CHANDA") : kind === "DONATIONS" ? ne(d.category, "CHANDA") : undefined,
+    inPublicYears(contributionDate, years),
+  );
+}
+
+/**
+ * Totals for a public page, split into named and anonymous contributions —
+ * summed in SQL over ALL matching rows, not just the ones listed on the page.
+ */
+export async function getContributionTotals(kind: ContributionKind, years: PublicYears = null) {
+  const empty = { publicTotal: 0, publicCount: 0, anonymousTotal: 0, anonymousCount: 0, grandTotal: 0, totalCount: 0 };
+  try {
+    const db = getDb();
+    const [row] = await db
+      .select({
+        publicTotal: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 0 ELSE ${d.amount} END), 0)`,
+        publicCount: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 0 ELSE 1 END), 0)`,
+        anonymousTotal: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN ${d.amount} ELSE 0 END), 0)`,
+        anonymousCount: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 1 ELSE 0 END), 0)`,
+      })
+      .from(d)
+      .leftJoin(ctr, eq(ctr.id, d.contributorId))
+      .where(publishedContributions(kind, years));
+    if (!row) return empty;
+    const publicTotal = Math.round(Number(row.publicTotal)), anonymousTotal = Math.round(Number(row.anonymousTotal));
+    const publicCount = Number(row.publicCount), anonymousCount = Number(row.anonymousCount);
+    return { publicTotal, publicCount, anonymousTotal, anonymousCount, grandTotal: publicTotal + anonymousTotal, totalCount: publicCount + anonymousCount };
+  } catch (error) {
+    console.error("❌ getContributionTotals error:", error);
+    return empty;
+  }
+}
+
+export async function getPublishedDonations(limit = 20, search = "", years: PublicYears = null) {
   try {
     const db = getDb();
     return await db
       .select({
         donorName: publicDonorName,
-        amount: schema.donations.amount,
-        category: schema.donations.category,
-        date: schema.donations.date,
+        amount: d.amount,
+        category: d.category,
+        date: d.date,
       })
-      .from(schema.donations)
+      .from(d)
+      .leftJoin(ctr, eq(ctr.id, d.contributorId))
       .where(and(
-        eq(schema.donations.isPublished, true),
-        ne(schema.donations.category, "CHANDA"),
+        publishedContributions("DONATIONS", years),
         // Search the MASKED name, so an anonymous donor can never be found by their real name
-        search ? or(contains(publicDonorName, search), contains(schema.donations.purpose, search), contains(schema.donations.category, search)) : undefined
+        search ? or(contains(publicDonorName, search), contains(d.purpose, search), contains(d.category, search)) : undefined
       ))
-      .orderBy(desc(schema.donations.createdAt))
+      .orderBy(desc(d.createdAt))
       .limit(limit);
   } catch (error) {
     console.error("❌ getPublishedDonations error:", error);
@@ -239,25 +312,25 @@ export async function getReceiptDonation(idOrReceiptNo: string) {
   }
 }
 
-export async function getPublishedChanda(limit = 100, search = "") {
+export async function getPublishedChanda(limit = 100, search = "", years: PublicYears = null) {
   try {
     const db = getDb();
     // Only the columns the public chanda page shows — no phone, address or PAN
     return await db
       .select({
-        id: schema.donations.id,
+        id: d.id,
         donorName: publicDonorName,
-        amount: schema.donations.amount,
-        purpose: schema.donations.purpose,
-        date: schema.donations.date,
+        amount: d.amount,
+        purpose: d.purpose,
+        date: d.date,
       })
-      .from(schema.donations)
+      .from(d)
+      .leftJoin(ctr, eq(ctr.id, d.contributorId))
       .where(and(
-        eq(schema.donations.isPublished, true),
-        eq(schema.donations.category, "CHANDA"),
-        search ? or(contains(publicDonorName, search), contains(schema.donations.purpose, search)) : undefined
+        publishedContributions("CHANDA", years),
+        search ? or(contains(publicDonorName, search), contains(d.purpose, search)) : undefined
       ))
-      .orderBy(desc(schema.donations.createdAt))
+      .orderBy(desc(d.createdAt))
       .limit(limit);
   } catch (error) {
     console.error("❌ getPublishedChanda error:", error);
@@ -378,24 +451,26 @@ export async function getHeroImages() {
 export async function getHomepageData() {
   try {
     const settings = await getAssociationSettings();
+    const years = await getPublicYears(settings);
     const [stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners, heroImages] =
       await Promise.all([
-        getPublicStats(settings),
+        getPublicStats(settings, years),
         getHeroSection(settings),
         getFeaturedGallery(settings),
-        getPublishedEvents(),
+        getPublishedEvents("", years),
         getPublishedNotices(3),
         getPublishedNotes(5),
-        getPublishedDonations(20),
+        getPublishedDonations(20, "", years),
         getPublishedBanners(),
       getHeroImages(),
       ]);
-    return { settings, stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners, heroImages };
+    return { settings, years, stats, hero, featuredGallery, events, notices, notes, publishedDonations, banners, heroImages };
   } catch (err) {
     console.error("❌ getHomepageData top-level error:", err);
     return {
       settings: null,
-      stats: { totalDonations: 0, totalAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
+      years: null,
+      stats: { totalDonations: 0, totalAmount: 0, anonymousAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
       hero: {
         title: "Victory Youth",
         subtitleEn: "50th Golden Jubilee Celebrations",

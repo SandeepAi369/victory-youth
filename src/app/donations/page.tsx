@@ -1,23 +1,25 @@
 import { errorMessage } from "@/lib/utils";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import Link from "next/link";
-import { getPublishedDonations } from "@/lib/queries/public";
-import { ArrowLeft, Heart } from "lucide-react";
+import { getPublishedDonations, getContributionTotals, getPublicYears, type PublicYears } from "@/lib/queries/public";
+import { ContributionTotals } from "@/components/public/ContributionTotals";
+import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 export default async function DonationsPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const q = searchQuery(await searchParams);
   let donations: Awaited<ReturnType<typeof getPublishedDonations>> = [];
+  let totals: Awaited<ReturnType<typeof getContributionTotals>> | null = null;
+  let years: PublicYears = null;
   let error = "";
   try {
-    donations = await getPublishedDonations(100, q);
+    years = await getPublicYears();
+    [donations, totals] = await Promise.all([getPublishedDonations(100, q, years), getContributionTotals("DONATIONS", years)]);
   } catch (e) {
     error = errorMessage(e) || "Failed to load donations.";
     console.error("Donations page error:", e);
   }
-
-  const totalAmount = donations.reduce((sum: number, d) => sum + (Number(d.amount) || 0), 0);
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -33,15 +35,7 @@ export default async function DonationsPage({ searchParams }: { searchParams: Pr
       <div className="container mx-auto max-w-4xl px-4 py-8">
 
         <SearchBox basePath="/donations" query={q} resultCount={donations.length} placeholder="Search donations by donor, purpose or category…" />
-        {/* Summary Card */}
-        <div className="bg-gradient-to-r from-orange-500 to-red-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
-          <div className="flex items-center gap-3 mb-2">
-            <Heart className="w-6 h-6 text-white/80" />
-            <p className="text-sm font-medium text-white/80">Total Donations Received</p>
-          </div>
-          <p className="text-3xl font-black mt-1">₹{Math.round(totalAmount).toLocaleString("en-IN")}</p>
-          <p className="text-sm text-white/70 mt-1">{donations.length} generous donors</p>
-        </div>
+        {totals && <ContributionTotals label="Donations Received" totals={totals} years={years} gradient="from-orange-500 to-red-600" />}
 
         {error && <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 text-red-700 dark:text-red-400">{error}</div>}
 

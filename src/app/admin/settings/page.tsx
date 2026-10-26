@@ -1,10 +1,11 @@
-import { getAssociationSettings } from "@/lib/actions/admin";
+import { getAssociationSettings, getYearsWithData } from "@/lib/actions/admin";
 import SettingsForm, { type SettingsFormValues } from "./client";
+import YearVisibility from "./year-visibility";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSettingsPage() {
-  const row = await getAssociationSettings();
+  const [row, years] = await Promise.all([getAssociationSettings(), getYearsWithData()]);
 
   const initial: SettingsFormValues = {
     associationName: row?.associationName ?? "",
@@ -21,5 +22,12 @@ export default async function AdminSettingsPage() {
     contactEmail: row?.contactEmail ?? "",
   };
 
-  return <SettingsForm initial={initial} />;
+  const publicYears = Array.isArray(row?.publicYears) && row.publicYears.length > 0 ? row.publicYears : null;
+
+  return (
+    <div className="space-y-6">
+      <SettingsForm initial={initial} />
+      <YearVisibility years={years} initial={publicYears} />
+    </div>
+  );
 }
