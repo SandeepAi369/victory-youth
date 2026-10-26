@@ -23,7 +23,7 @@ const c = schema.contributors;
 const d = schema.donations;
 
 function revalidate() {
-  for (const path of ["/admin/contributors", "/admin/chanda", "/admin/donations", "/chanda", "/donations", "/"]) revalidatePath(path);
+  for (const path of ["/admin/chanda", "/admin/donations", "/chanda", "/donations", "/"]) revalidatePath(path);
 }
 
 function generateReceiptNo(): string {
@@ -201,21 +201,6 @@ async function applyAnonymous(contributorId: string, anonymous: boolean) {
     db.update(c).set({ isAnonymous: anonymous, updatedAt: new Date() }).where(eq(c.id, contributorId)),
     db.update(d).set({ isAnonymous: anonymous, isPublished: publish }).where(eq(d.contributorId, contributorId)),
   ]);
-}
-
-export async function createContributor(data: NewContributor & { notes?: string; category: ContributionCategory }) {
-  await requireAdmin();
-  try {
-    const { name, phone } = cleanContributor(data);
-    if (!CONTRIBUTION_CATEGORIES.includes(data.category)) throw new Error("Invalid category");
-    const id = `ctr_${randomUUID()}`;
-    await getDb().insert(c).values({ id, name, phone, category: data.category, isAnonymous: !!data.isAnonymous, notes: data.notes?.trim() || null });
-    revalidate();
-    return { success: true, id };
-  } catch (error) {
-    console.error("createContributor error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
 }
 
 /**

@@ -1,6 +1,6 @@
 /**
- * Admin ledger figures, ONE category at a time. Chanda and Donations are
- * independent books, so nothing here ever adds the two together.
+ * Admin ledger figures, ONE money section at a time (Chanda, Donations,
+ * Members). They are independent books, so nothing here ever adds them together.
  * (Admin pages only — they are protected by the admin layout / middleware.)
  */
 import { getDb, schema } from "@/db";
@@ -53,5 +53,32 @@ export async function getExpenseLedger() {
   } catch (error) {
     console.error("getExpenseLedger error:", error);
     return { total: 0, byCategory: [] };
+  }
+}
+
+/** Members (Committee) ledger: all member payments; "published" = payments of visible, non-anonymous members. */
+export async function getMemberLedger(): Promise<CategoryLedger> {
+  const empty = { total: 0, count: 0, publishedTotal: 0, publishedCount: 0, byPaymentMode: [] };
+  try {
+    const db = getDb();
+    const p = schema.memberPayments, m = schema.members;
+    const visible = sql`${m.isActive} = 1 AND coalesce(${m.isAnonymous}, 0) = 0`;
+    const [[row], modes] = await Promise.all([
+      db.select({
+        total: sql<number>`coalesce(sum(${p.amount}), 0)`,
+        count: sql<number>`count(*)`,
+        publishedTotal: sql<number>`coalesce(sum(CASE WHEN ${visible} THEN ${p.amount} ELSE 0 END), 0)`,
+        publishedCount: sql<number>`coalesce(sum(CASE WHEN ${visible} THEN 1 ELSE 0 END), 0)`,
+      }).from(p).innerJoin(m, eq(m.id, p.memberId)),
+      db.select({ mode: p.paymentMode, total: sql<number>`coalesce(sum(${p.amount}), 0)`, count: sql<number>`count(*)` }).from(p).groupBy(p.paymentMode),
+    ]);
+    return {
+      total: Number(row?.total ?? 0), count: Number(row?.count ?? 0),
+      publishedTotal: Number(row?.publishedTotal ?? 0), publishedCount: Number(row?.publishedCount ?? 0),
+      byPaymentMode: modes.map((x) => ({ mode: (x.mode || "OTHER").replace("_", " "), total: Number(x.total), count: Number(x.count) })),
+    };
+  } catch (error) {
+    console.error("getMemberLedger error:", error);
+    return empty;
   }
 }

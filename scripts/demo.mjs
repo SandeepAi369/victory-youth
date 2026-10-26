@@ -105,6 +105,12 @@ async function seedCore() {
       [`mem_demo_${i}`, `VY-${String(i + 1).padStart(3, "0")}`, name, `90000${String(10000 + i)}`, role === "MEMBER" ? "MEMBER" : "COMMITTEE", role, i < 10 ? 1 : 0, isoDate(daysAgo(300 - i * 9)), daysAgo(300 - i * 9)]);
   for (const [i, name] of inactiveMembers.entries())
     await exec("INSERT INTO members (id, member_id, name, phone, is_active) VALUES (?, ?, ?, ?, 0)", [`mem_demo_old_${i}`, `VY-9${i}`, name, `90000${i}9999`]);
+  // Every member's fee is their first payment; Arjun (mem_demo_0) also paid again last year
+  await exec(`INSERT INTO member_payments (id, member_id, receipt_no, amount, payment_mode, purpose, date, created_at)
+    SELECT 'mpay_' || id, id, 'MEM-DEMO-' || member_id, membership_fee, 'CASH', 'Membership', coalesce(join_date, date(created_at, 'unixepoch'), date('now')), coalesce(created_at, unixepoch())
+    FROM members WHERE coalesce(membership_fee, 0) > 0`);
+  await exec("INSERT INTO member_payments (id, member_id, receipt_no, amount, payment_mode, purpose, date, created_at) VALUES ('mpay_demo_extra', 'mem_demo_0', 'MEM-DEMO-EXTRA', 1000, 'UPI', 'Festival fund', ?, ?)", [isoDate(daysAgo(380)), daysAgo(380)]);
+  await exec("UPDATE members SET membership_fee = (SELECT sum(amount) FROM member_payments WHERE member_id = members.id) WHERE id = 'mem_demo_0'");
 
   // One contributor profile per name PER CATEGORY (Chanda and Donations are separate books)
   const contributorIds = new Map();

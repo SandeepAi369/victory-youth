@@ -191,11 +191,58 @@ export async function getPublicActiveMembers(search = "") {
     return await db
       .select({ id: m.id, name: m.name })
       .from(m)
-      .where(and(eq(m.isActive, true), eq(m.listedPublicly, true), search ? contains(m.name, search) : undefined))
+      .where(and(eq(m.isActive, true), eq(m.listedPublicly, true), eq(m.isAnonymous, false), search ? contains(m.name, search) : undefined))
       .orderBy(m.name);
   } catch (error) {
     console.error("❌ getPublicActiveMembers error:", error);
     return [];
+  }
+}
+
+// ============================================
+// COMMITTEE (members) — a money section: one row per member, payments itemized
+// ============================================
+
+/**
+ * Public Committee list: ONE row per published, non-anonymous member with
+ * their payment total and count. Never returns phone numbers or addresses.
+ */
+export async function getPublicCommittee(search = "") {
+  try {
+    const db = getDb();
+    const m = schema.members, p = schema.memberPayments;
+    return await db
+      .select({
+        id: m.id, name: sql<string>`trim(coalesce(${m.fullName}, ${m.name}))`, role: sql<string>`coalesce(${m.role}, ${m.committeeRole}, 'Member')`,
+        total: sql<number>`coalesce(sum(${p.amount}), 0)`, count: sql<number>`count(${p.id})`, lastDate: sql<string | null>`max(${p.date})`,
+      })
+      .from(m)
+      .leftJoin(p, eq(p.memberId, m.id))
+      .where(and(eq(m.isActive, true), eq(m.isAnonymous, false),
+        search ? or(contains(m.name, search), contains(m.fullName, search), contains(m.role, search), contains(m.committeeRole, search)) : undefined))
+      .groupBy(m.id)
+      .orderBy(sql`trim(coalesce(${m.fullName}, ${m.name}))`);
+  } catch (error) {
+    console.error("❌ getPublicCommittee error:", error);
+    return [];
+  }
+}
+
+/** One published, non-anonymous member's public page: name, role and itemized payments. */
+export async function getPublicMember(id: string) {
+  try {
+    const db = getDb();
+    const m = schema.members, p = schema.memberPayments;
+    const [member] = await db
+      .select({ name: sql<string>`trim(coalesce(${m.fullName}, ${m.name}))`, role: sql<string>`coalesce(${m.role}, ${m.committeeRole}, 'Member')` })
+      .from(m).where(and(eq(m.id, id), eq(m.isActive, true), eq(m.isAnonymous, false))).limit(1);
+    if (!member) return null;
+    const payments = await db.select({ id: p.id, amount: p.amount, purpose: p.purpose, date: p.date })
+      .from(p).where(eq(p.memberId, id)).orderBy(desc(p.date), desc(p.createdAt));
+    return { ...member, payments, total: payments.reduce((s, x) => s + (Number(x.amount) || 0), 0) };
+  } catch (error) {
+    console.error("❌ getPublicMember error:", error);
+    return null;
   }
 }
 
