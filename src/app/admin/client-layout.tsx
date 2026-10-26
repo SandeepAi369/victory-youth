@@ -29,6 +29,14 @@ const navItems = [
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
+/** Header title: the menu label of the current section (never a raw id from the URL). */
+function pageTitle(pathname: string) {
+  if (pathname === "/admin") return "Dashboard";
+  if (/^\/admin\/contributors\/[^/]+/.test(pathname)) return "Contributor Profile";
+  const item = navItems.filter((n) => n.href !== "/admin" && pathname.startsWith(n.href)).sort((a, b) => b.href.length - a.href.length)[0];
+  return item?.label ?? "Admin Panel";
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -125,7 +133,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 flex flex-col min-w-0">
         <header className="h-14 md:h-16 bg-card border-b border-border flex items-center justify-between px-4 md:px-6 shrink-0">
           <h1 className="font-semibold text-lg text-foreground capitalize">
-            {pathname === "/admin" ? "Dashboard" : pathname.split("/").pop()?.replace(/-/g, " ") || "Admin Panel"}
+            {pageTitle(pathname)}
           </h1>
           <ModeToggle />
         </header>
