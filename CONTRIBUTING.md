@@ -40,14 +40,21 @@ Both modes run entirely on your machine (a local SQLite file plus a local D1 cop
 - **Two databases.** Core records live in Turso (`src/db/schema-core.ts`, accessed with `getDb()`); media metadata lives in Cloudflare D1 (`src/db/schema-media.ts`, `getMediaDb()`). A query must use the database that owns its table; there are no cross-database joins.
 - **Images go to Cloudinary**, uploaded straight from the browser. Store only the `secure_url` / `public_id`, never image data.
 - **Admin actions must call `requireAdmin()`** first (see `src/lib/admin-session.ts`), and admin pages must export `dynamic = "force-dynamic"`.
-- **Public pages must never expose private data.** Select only the columns a page shows, and keep anonymous donors masked (see `publicDonorName` in `src/lib/queries/public.ts`).
+- **Public pages must never expose private data.** Select only the columns a page shows. Anonymous contributors are admin-only: public queries exclude them inside SQL (see `isAnonymousContribution` in `src/lib/queries/public.ts`).
+- **Money sections (Chanda, Donations, Members) are independent.** Never mix their profiles, totals or search; every server action is scoped to one category.
+- **Amounts are itemized.** New money is a new dated entry (date set on the server, India time); never merge or overwrite an amount.
+- **Publishing is one button per section.** Don't add per-entry publish controls; new entries follow the section's state.
 - **No secrets in code.** Everything sensitive comes from environment variables / Worker secrets. See `.env.example`.
 - **Schema changes:** edit the schema file, then run `npm run db:generate` and commit the generated migration in `drizzle/`.
 - TypeScript strict, no `any`; lint and type check must pass with zero problems.
 
+## Finding something to work on
+
+Look for issues labelled [**good first issue**](https://github.com/SandeepAi369/victory-youth/labels/good%20first%20issue) or [**help wanted**](https://github.com/SandeepAi369/victory-youth/labels/help%20wanted). Comment on the issue before you start so work isn't duplicated. Questions and ideas are welcome in [Discussions](https://github.com/SandeepAi369/victory-youth/discussions).
+
 ## Reporting bugs and requesting features
 
-Use the issue templates. For security problems, **do not open a public issue**; see [SECURITY.md](SECURITY.md).
+Use the issue forms. For security problems, **do not open a public issue**; see [SECURITY.md](SECURITY.md).
 
 ## Code of Conduct
 

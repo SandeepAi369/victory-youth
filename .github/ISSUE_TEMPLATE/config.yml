@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Ask a question or share an idea
+    url: https://github.com/SandeepAi369/victory-youth/discussions
+    about: Questions, setup help and early ideas belong in Discussions.
   - name: Report a security vulnerability
     url: https://github.com/SandeepAi369/victory-youth/security/advisories/new
     about: Please report security issues privately, not as public issues.

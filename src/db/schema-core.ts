@@ -5,7 +5,6 @@ import { boolean, timestamp, json, now, emptyJsonObject, emptyJsonArray } from "
 /**
  * CORE database schema (Turso / SQLite).
  * Application data: settings, members, finance, events, notices, auctions, audit, categories, notes.
- * Converted from the Postgres schema kept in schema_postgres_backup.txt.
  */
 
 // ============================================

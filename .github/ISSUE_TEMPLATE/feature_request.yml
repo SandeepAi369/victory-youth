@@ -1,0 +1,31 @@
+name: Feature request
+description: Suggest an idea or improvement.
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Who is it for (visitors, admins, contributors) and what is hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What should happen? Mock-ups or examples are welcome.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: fit
+    attributes:
+      label: Project fit
+      options:
+        - label: It works on the free tiers (Cloudflare Workers, Turso, D1, Cloudinary).
+        - label: It keeps anonymous contributors and private data out of the public site.
+        - label: I would like to work on this myself.
