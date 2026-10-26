@@ -61,23 +61,6 @@ export async function getContributors(category: ContributionCategory) {
   }
 }
 
-/** All contributions of one contributor, newest first (admin only). */
-export async function getContributorHistory(contributorId: string) {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    const rows = await db
-      .select({ id: d.id, receiptNo: d.receiptNo, amount: d.amount, category: d.category, purpose: d.purpose, date: d.date, isPublished: d.isPublished })
-      .from(d)
-      .where(eq(d.contributorId, contributorId))
-      .orderBy(desc(d.date), desc(d.createdAt));
-    return { success: true, rows };
-  } catch (error) {
-    console.error("getContributorHistory error:", error);
-    return { success: false, rows: [], error: errorMessage(error) };
-  }
-}
-
 type NewContributor = { name: string; phone?: string; isAnonymous?: boolean };
 
 export type ContributionInput = {
@@ -302,5 +285,29 @@ export async function setPersonPublished(contributorId: string, category: Contri
   } catch (error) {
     console.error("setPersonPublished error:", error);
     return { success: false, error: errorMessage(error) };
+  }
+}
+
+/** One contributor profile and ALL of its entries (its own category only), for the admin profile page. */
+export async function getContributorProfile(id: string) {
+  await requireAdmin();
+  try {
+    const db = getDb();
+    const [profile] = await db.select().from(c).where(eq(c.id, id)).limit(1);
+    if (!profile) return null;
+    const category: ContributionCategory = profile.category === "CHANDA" ? "CHANDA" : "DONATION";
+    const entries = await db
+      .select({
+        id: d.id, receiptNo: d.receiptNo, donorName: d.donorName, phone: d.phone, amount: d.amount, category: d.category,
+        purpose: d.purpose, paymentMode: d.paymentMode, date: d.date, isPublished: d.isPublished, isAnonymous: d.isAnonymous,
+        contributorId: d.contributorId,
+      })
+      .from(d)
+      .where(and(eq(d.contributorId, id), inBook(category)))
+      .orderBy(desc(d.date), desc(d.createdAt));
+    return { profile: { ...profile, category }, entries };
+  } catch (error) {
+    console.error("getContributorProfile error:", error);
+    return null;
   }
 }
