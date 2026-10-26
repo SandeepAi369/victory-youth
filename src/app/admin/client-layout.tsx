@@ -33,6 +33,7 @@ const navItems = [
 function pageTitle(pathname: string) {
   if (pathname === "/admin") return "Dashboard";
   if (/^\/admin\/contributors\/[^/]+/.test(pathname)) return "Contributor Profile";
+  if (/^\/admin\/members\/[^/]+/.test(pathname)) return "Member";
   const item = navItems.filter((n) => n.href !== "/admin" && pathname.startsWith(n.href)).sort((a, b) => b.href.length - a.href.length)[0];
   return item?.label ?? "Admin Panel";
 }

@@ -6,6 +6,7 @@ import type { NewMemberRow } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
+import { todayIST } from "@/lib/contributions";
 
 function revalidate() {
   revalidatePath("/admin/members");
@@ -23,6 +24,18 @@ export async function getMembers() {
   } catch (error) {
     console.error("getMembers error:", error);
     return [];
+  }
+}
+
+/** One member's full record, for the admin member page. */
+export async function getMember(id: string) {
+  await requireAdmin();
+  try {
+    const [row] = await getDb().select().from(schema.members).where(eq(schema.members.id, id)).limit(1);
+    return row ?? null;
+  } catch (error) {
+    console.error("getMember error:", error);
+    return null;
   }
 }
 
@@ -47,6 +60,8 @@ export async function addMember(data: {
       membershipFee: data.membershipFee || 0,
       role: data.role || "Member",
       committeeRole: data.role || "Member",
+      // The join date is always today (India time), set on the server
+      joinDate: todayIST(),
       isActive: false,
     });
     revalidate();
