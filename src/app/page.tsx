@@ -336,10 +336,7 @@ export default async function HomePage() {
                 <div className="h-full bg-gradient-to-r from-orange-500 to-red-500 rounded-full transition-all duration-1000" style={{ width: `${progressPercentage}%` }} />
               </div>
               <div className="flex justify-between mt-2 text-xs text-stone-500 dark:text-stone-400">
-                <span>
-                  Raised: {formatCurrency(stats.totalAmount)}
-                  {stats.anonymousAmount > 0 && <> (incl. {formatCurrency(stats.anonymousAmount)} anonymous)</>}
-                </span>
+                <span>Raised: {formatCurrency(stats.totalAmount)}</span>
                 <span>Target: {formatCurrency(stats.donationTarget)}</span>
               </div>
               {stats.chandaAmount > 0 && (

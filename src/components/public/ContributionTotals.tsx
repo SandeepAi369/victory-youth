@@ -1,4 +1,4 @@
-import { Users, UserX, CalendarDays, Info } from "lucide-react";
+import { CalendarDays, Info } from "lucide-react";
 import type { getContributionTotals, PublicYears } from "@/lib/queries/public";
 import { describeYears } from "@/lib/contributions";
 
@@ -25,7 +25,7 @@ export function yearScopeNote(years: PublicYears) {
     : "This total covers contributions from all years.";
 }
 
-/** Grand total with the named / anonymous split side by side (public pages). */
+/** The page's total for the selected year(s) — published entries only. */
 export function ContributionTotals({ label, totals, years, gradient }: {
   label: string;
   totals: Awaited<ReturnType<typeof getContributionTotals>>;
@@ -36,23 +36,11 @@ export function ContributionTotals({ label, totals, years, gradient }: {
     <div className={`bg-gradient-to-r ${gradient} rounded-2xl p-6 mb-8 text-white shadow-lg`}>
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium text-white/80">{label} — Grand Total</p>
-          <p className="text-3xl font-black mt-1">{inr(totals.grandTotal)}</p>
-          <p className="text-sm text-white/70 mt-1">{plural(totals.totalCount)}</p>
+          <p className="text-sm font-medium text-white/80">{label}</p>
+          <p className="text-3xl font-black mt-1">{inr(totals.total)}</p>
+          <p className="text-sm text-white/70 mt-1">{plural(totals.count)}</p>
         </div>
         <YearScope years={years} />
-      </div>
-      <div className="grid grid-cols-2 gap-3 mt-5">
-        <div className="rounded-xl bg-white/15 p-3">
-          <p className="text-xs font-medium text-white/80 flex items-center gap-1"><Users className="w-3.5 h-3.5" /> Public Contributions</p>
-          <p className="text-xl font-black mt-0.5">{inr(totals.publicTotal)}</p>
-          <p className="text-[11px] text-white/70">{plural(totals.publicCount)}</p>
-        </div>
-        <div className="rounded-xl bg-black/15 p-3">
-          <p className="text-xs font-medium text-white/80 flex items-center gap-1"><UserX className="w-3.5 h-3.5" /> Anonymous Contributions</p>
-          <p className="text-xl font-black mt-0.5">{inr(totals.anonymousTotal)}</p>
-          <p className="text-[11px] text-white/70">{plural(totals.anonymousCount)}</p>
-        </div>
       </div>
       <p className="mt-4 pt-3 border-t border-white/20 text-xs text-white/85 flex items-start gap-1.5">
         <Info className="w-3.5 h-3.5 mt-px shrink-0" aria-hidden /> {yearScopeNote(years)}

@@ -2,7 +2,7 @@ import Link from "next/link";
 
 /**
  * A contributor's public name, linking to their contribution history.
- * Anonymous entries arrive without a contributorId, so they are plain text.
+ * Entries without a contributor profile (very old data) are plain text.
  */
 export function DonorName({ name, contributorId }: { name: string; contributorId: string | null }) {
   if (!contributorId) return <p className="font-bold text-stone-900 dark:text-white">{name}</p>;

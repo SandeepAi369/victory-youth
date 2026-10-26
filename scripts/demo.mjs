@@ -121,7 +121,7 @@ async function seedCore() {
   const donation = async (id, name, amount, purpose, category, ago, { anonymous = false, published = true } = {}) =>
     exec(`INSERT INTO donations (id, receipt_no, contributor_id, donor_name, phone, amount, purpose, category, payment_mode, status, is_published, is_anonymous, date, created_at)
           VALUES (?, ?, ?, ?, '9000000000', ?, ?, ?, ?, 'SUCCESS', ?, ?, ?, ?)`,
-      [id, `DEMO-${id.toUpperCase()}`, await contributor(name, category, anonymous), name, amount, purpose, category, ago % 2 ? "UPI" : "CASH", published ? 1 : 0, anonymous ? 1 : 0, isoDate(daysAgo(ago)), daysAgo(ago)]);
+      [id, `DEMO-${id.toUpperCase()}`, await contributor(name, category, anonymous), name, amount, purpose, category, ago % 2 ? "UPI" : "CASH", published && !anonymous ? 1 : 0, anonymous ? 1 : 0, isoDate(daysAgo(ago)), daysAgo(ago)]);
   for (const [i, [name, amount, purpose]] of donors.entries()) await donation(`don${i}`, name, amount, purpose, "DONATION", 2 + i * 3);
   for (const [i, [name, amount, purpose]] of anonymousDonors.entries()) await donation(`anon${i}`, name, amount, purpose, "DONATION", 5 + i * 7, { anonymous: true });
   await donation("draft0", "Not Yet Published", 999, "Golden Jubilee Utsav Seva", "DONATION", 1, { published: false });

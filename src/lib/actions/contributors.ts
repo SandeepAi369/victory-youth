@@ -8,6 +8,10 @@ import { randomUUID } from "crypto";
 import { CONTRIBUTION_CATEGORIES, todayIST, type ContributionCategory } from "@/lib/contributions";
 
 /**
+ * Anonymous entries are an ADMIN-ONLY record: they are never published (marking
+ * a profile anonymous unpublishes its entries, and they cannot be published
+ * until it is unticked), and public queries exclude them entirely.
+ *
  * Contributor profiles: one row per person PER CATEGORY (Chanda or Donations),
  * linked from every contribution they make in that category. Categories never
  * mix: a profile only ever holds contributions of its own category. A donation's donorName, phone and
@@ -27,6 +31,9 @@ function generateReceiptNo(): string {
   const unique = randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
   return `REC-${year}-${unique}`;
 }
+
+/** Rows that are not anonymous — the only ones that may ever be published. */
+const notAnonymous = sql`coalesce(${d.isAnonymous}, 0) = 0`;
 
 /** Donation rows of one category's book ("DONATION" also covers older SPONSORSHIP / OTHER rows). */
 const inBook = (category: ContributionCategory) => (category === "CHANDA" ? eq(d.category, "CHANDA") : ne(d.category, "CHANDA"));
@@ -142,22 +149,35 @@ export async function addContribution(input: ContributionInput) {
 }
 
 /**
- * Edits a contribution. The amount is never overwritten: `addAmount` (≥ 0) is
- * added to the current total in SQL. The original date and category are kept;
- * the entry can be moved to another (or a new) contributor of the same category.
+ * Edits a contribution. Amounts are never overwritten or merged: `addAmount`
+ * (> 0) is recorded as a NEW, separate entry dated today (own receipt), so the
+ * history stays itemized while the contributor's total sums up. The edited
+ * entry keeps its amount, date and category; it can be moved to another (or a
+ * new) contributor of the same category.
  */
 export async function updateContribution(id: string, input: Omit<ContributionInput, "amount"> & { addAmount: number }) {
   await requireAdmin();
   try {
     if (!Number.isFinite(input.addAmount) || input.addAmount < 0) throw new Error("Amount to add must be 0 or more");
+    const db = getDb();
+    const [existing] = await db.select({ category: d.category, isPublished: d.isPublished })
+      .from(d).where(and(eq(d.id, id), inBook(input.category))).limit(1);
+    if (!existing) throw new Error("Contribution not found in this category");
     const fields = contributionFields(input);
     const contributor = await resolveContributor(input);
-    const updated = await getDb().update(d).set({
-      ...fields, amount: sql`${d.amount} + ${Math.round(input.addAmount)}`,
-      contributorId: contributor.id, donorName: contributor.name,
-      phone: contributor.phone ?? "", isAnonymous: contributor.isAnonymous,
-    }).where(and(eq(d.id, id), inBook(input.category))).returning({ id: d.id });
-    if (updated.length === 0) throw new Error("Contribution not found in this category");
+    const person = { contributorId: contributor.id, donorName: contributor.name, phone: contributor.phone ?? "", isAnonymous: contributor.isAnonymous };
+    await db.update(d).set({
+      ...fields, ...person,
+      ...(contributor.isAnonymous ? { isPublished: false } : {}),
+    }).where(eq(d.id, id));
+    if (input.addAmount > 0) {
+      await db.insert(d).values({
+        id: `don_${randomUUID()}`, receiptNo: generateReceiptNo(), ...fields, ...person,
+        category: existing.category ?? input.category, amount: Math.round(input.addAmount), date: todayIST(),
+        // Same visibility as the entry it was added from — never public if anonymous
+        isPublished: !!existing.isPublished && !contributor.isAnonymous, status: "SUCCESS",
+      });
+    }
     revalidate();
     return { success: true };
   } catch (error) {
@@ -171,7 +191,8 @@ async function applyAnonymous(contributorId: string, anonymous: boolean) {
   const db = getDb();
   await db.batch([
     db.update(c).set({ isAnonymous: anonymous, updatedAt: new Date() }).where(eq(c.id, contributorId)),
-    db.update(d).set({ isAnonymous: anonymous }).where(eq(d.contributorId, contributorId)),
+    // Anonymous entries are admin-only: they are unpublished, never public
+    db.update(d).set(anonymous ? { isAnonymous: true, isPublished: false } : { isAnonymous: false }).where(eq(d.contributorId, contributorId)),
   ]);
 }
 
@@ -201,7 +222,7 @@ export async function updateContributor(id: string, data: { name: string; phone?
     const db = getDb();
     await db.batch([
       db.update(c).set({ name, phone, notes: data.notes?.trim() || null, isAnonymous: data.isAnonymous, updatedAt: new Date() }).where(eq(c.id, id)),
-      db.update(d).set({ donorName: name, phone: phone ?? "", isAnonymous: data.isAnonymous }).where(eq(d.contributorId, id)),
+      db.update(d).set({ donorName: name, phone: phone ?? "", isAnonymous: data.isAnonymous, ...(data.isAnonymous ? { isPublished: false } : {}) }).where(eq(d.contributorId, id)),
     ]);
     revalidate();
     return { success: true };
@@ -231,9 +252,10 @@ export async function deleteContributor(id: string) {
 export async function setContributionPublished(id: string, category: ContributionCategory, publish: boolean) {
   await requireAdmin();
   try {
+    // Publishing an anonymous entry is refused: untick Anonymous in Edit first
     const updated = await getDb().update(d).set({ isPublished: publish })
-      .where(and(eq(d.id, id), inBook(category))).returning({ id: d.id });
-    if (updated.length === 0) throw new Error("Contribution not found in this category");
+      .where(and(eq(d.id, id), inBook(category), publish ? notAnonymous : undefined)).returning({ id: d.id });
+    if (updated.length === 0) throw new Error(publish ? "Anonymous entries stay in the admin panel — untick Anonymous in Edit to publish" : "Contribution not found in this category");
     revalidate();
     return { success: true };
   } catch (error) {
@@ -242,11 +264,11 @@ export async function setContributionPublished(id: string, category: Contributio
   }
 }
 
-/** Publish or unpublish every contribution of ONE category. */
+/** Publish or unpublish every NON-anonymous contribution of ONE category (anonymous entries are never touched). */
 export async function setAllContributionsPublished(category: ContributionCategory, publish: boolean) {
   await requireAdmin();
   try {
-    await getDb().update(d).set({ isPublished: publish }).where(inBook(category));
+    await getDb().update(d).set({ isPublished: publish }).where(and(inBook(category), notAnonymous));
     revalidate();
     return { success: true, newState: publish };
   } catch (error) {
