@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { CalendarDays, Save } from "lucide-react";
 import { setPublicYears } from "@/lib/actions/admin";
+import { describeYears } from "@/lib/contributions";
 
 /**
  * Chooses which years' chanda, donations and events the public site shows.
@@ -55,6 +56,13 @@ export default function YearVisibility({ years, initial }: { years: number[]; in
         ))}
       </div>
       {message && <p className={"text-xs font-bold " + (message.ok ? "text-emerald-300" : "text-red-300")}>{message.text}</p>}
+      <p className="text-xs text-zinc-300">
+        Public pages will be labelled:{" "}
+        <span className="inline-block rounded-full bg-amber-500/15 border border-amber-500/40 px-2.5 py-0.5 font-bold text-amber-300">
+          {allYears ? "All Years" : selected.length ? `Total for ${describeYears(selected)}` : "—"}
+        </span>
+        <span className="block mt-1 text-zinc-500">Contributor profile pages always show each person&apos;s complete all-time history and total.</span>
+      </p>
       {!allYears && selected.length === 0 && <p className="text-xs text-amber-300">Select at least one year, or All Years.</p>}
       <button type="button" onClick={save} disabled={isPending || (!allYears && selected.length === 0)}
         className="px-6 py-2.5 rounded-xl bg-amber-500 text-zinc-950 font-bold text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 hover:bg-amber-400 disabled:opacity-60">

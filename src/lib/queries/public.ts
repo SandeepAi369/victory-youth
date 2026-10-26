@@ -294,11 +294,12 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
 }
 
 /**
- * A named contributor's public profile: their published, non-anonymous
- * contributions in the visible years. Returns null for an anonymous (or
- * unknown) contributor, so an anonymous person never has a public page.
+ * A named contributor's public profile: their complete, all-time history of
+ * published, non-anonymous contributions (deliberately NOT limited to the
+ * public year selection). Returns null for an anonymous (or unknown)
+ * contributor, so an anonymous person never has a public page.
  */
-export async function getPublicContributor(id: string, years: PublicYears = null) {
+export async function getPublicContributor(id: string) {
   try {
     const db = getDb();
     const [person] = await db.select({ name: ctr.name }).from(ctr)
@@ -308,7 +309,7 @@ export async function getPublicContributor(id: string, years: PublicYears = null
       .select({ id: d.id, amount: d.amount, category: d.category, purpose: d.purpose, date: d.date })
       .from(d)
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
-      .where(and(eq(d.contributorId, id), publishedContributions("ALL", years), sql`NOT ${isAnonymousContribution}`))
+      .where(and(eq(d.contributorId, id), publishedContributions("ALL", null), sql`NOT ${isAnonymousContribution}`))
       .orderBy(desc(d.date), desc(d.createdAt));
     if (contributions.length === 0) return null;
     const total = contributions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);

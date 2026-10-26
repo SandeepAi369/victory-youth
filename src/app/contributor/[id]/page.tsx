@@ -1,19 +1,32 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getPublicContributor, getPublicYears } from "@/lib/queries/public";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { getPublicContributor } from "@/lib/queries/public";
+import { ArrowLeft, Infinity as AllTime } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
 const inr = (n: number) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
 const CATEGORY_LABEL: Record<string, string> = { CHANDA: "Chanda", DONATION: "Donation", SPONSORSHIP: "Sponsorship", OTHER: "Other" };
 
-/** Public contribution history of one named contributor (visible years only). */
+/**
+ * Public profile of one named contributor: their complete all-time history and
+ * all-time total (unlike the global totals, which follow the admin's year selection).
+ */
 export default async function ContributorPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const years = await getPublicYears();
-  const person = await getPublicContributor(id, years);
+  const person = await getPublicContributor(id);
   if (!person) notFound();
+
+  // Group by year, newest first, with a subtotal per year
+  const byYear = new Map<string, { total: number; rows: typeof person.contributions }>();
+  for (const c of person.contributions) {
+    const year = c.date?.slice(0, 4) || "Undated";
+    const group = byYear.get(year) ?? { total: 0, rows: [] };
+    group.total += Number(c.amount) || 0;
+    group.rows.push(c);
+    byYear.set(year, group);
+  }
+  const firstYear = [...byYear.keys()].filter((y) => y !== "Undated").sort()[0];
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -33,31 +46,43 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
               <div className="w-12 h-12 rounded-full bg-white/25 flex items-center justify-center font-black text-xl">{person.name[0]}</div>
               <div>
                 <p className="text-xl font-black">{person.name}</p>
-                <p className="text-sm text-white/80">{person.contributions.length} contribution{person.contributions.length === 1 ? "" : "s"}</p>
+                <p className="text-sm text-white/80">
+                  {person.contributions.length} contribution{person.contributions.length === 1 ? "" : "s"}
+                  {firstYear ? ` · since ${firstYear}` : ""}
+                </p>
               </div>
             </div>
-            {years && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-                <CalendarDays className="w-3.5 h-3.5" /> {years.join(", ")}
-              </span>
-            )}
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 ring-1 ring-white/30 px-3 py-1 text-xs font-bold">
+              <AllTime className="w-3.5 h-3.5" /> All-time
+            </span>
           </div>
-          <p className="text-sm text-white/80 mt-4">Total contributed</p>
+          <p className="text-sm text-white/80 mt-4">All-time total contribution</p>
           <p className="text-3xl font-black">{inr(person.total)}</p>
+          <p className="text-[11px] text-white/70 mt-1">Includes every year — not only the year shown on the main pages.</p>
         </div>
 
-        <h2 className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-3">Contribution history</h2>
-        <ul className="space-y-2">
-          {person.contributions.map((c) => (
-            <li key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
-              <div className="min-w-0">
-                <p className="font-bold text-stone-900 dark:text-white">{c.date || "—"}</p>
-                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{CATEGORY_LABEL[c.category ?? ""] ?? c.category} · {c.purpose}</p>
+        <h2 className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-3">Complete contribution history</h2>
+        <div className="space-y-5">
+          {[...byYear.entries()].map(([year, group]) => (
+            <section key={year} aria-label={`Contributions in ${year}`}>
+              <div className="flex items-baseline justify-between mb-2 px-1">
+                <h3 className="font-black text-stone-900 dark:text-white">{year}</h3>
+                <span className="text-xs font-bold text-stone-500 dark:text-stone-400">{inr(group.total)}</span>
               </div>
-              <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">{inr(c.amount)}</span>
-            </li>
+              <ul className="space-y-2">
+                {group.rows.map((c) => (
+                  <li key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
+                    <div className="min-w-0">
+                      <p className="font-bold text-stone-900 dark:text-white">{c.date || "—"}</p>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{CATEGORY_LABEL[c.category ?? ""] ?? c.category} · {c.purpose}</p>
+                    </div>
+                    <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">{inr(c.amount)}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
           ))}
-        </ul>
+        </div>
       </div>
     </main>
   );

@@ -3,6 +3,10 @@
   "name": "victory-youth",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-08",
+  // esbuild's keepNames inserts __name(...) calls into functions; next-themes
+  // serialises its theme function into an inline <script>, where __name does
+  // not exist ("__name is not defined" → dark-mode flash). Keep it off.
+  "keep_names": false,
   "compatibility_flags": [
     "nodejs_compat",
     "nodejs_compat_populate_process_env"
