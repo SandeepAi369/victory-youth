@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DonorName } from "@/components/public/DonorName";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getPublishedChanda, getContributionTotals, getPublicYears, type PublicYears } from "@/lib/queries/public";
 import { ContributionTotals } from "@/components/public/ContributionTotals";
@@ -46,7 +47,7 @@ export default async function ChandaPage({ searchParams }: { searchParams: Promi
                   {d.donorName?.[0] || "?"}
                 </div>
                 <div>
-                  <p className="font-bold text-stone-900 dark:text-white">{d.donorName}</p>
+                  <DonorName name={d.donorName} contributorId={d.contributorId} />
                   <p className="text-xs text-stone-500 dark:text-stone-400">{d.purpose || "Chanda"} · {d.date}</p>
                 </div>
               </div>

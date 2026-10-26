@@ -11,6 +11,7 @@ import type { NewAssociationSettingsRow } from "@/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { errorMessage } from "@/lib/utils";
+import { currentYearIST } from "@/lib/contributions";
 
 function handleError(operation: string, error: unknown): { success: false; error: string } {
   console.error(`Error ${operation}:`, error);
@@ -70,7 +71,7 @@ export async function updateAssociationSettings(data: Partial<NewAssociationSett
 /** Years that have contributions or events, plus the current year, newest first. */
 export async function getYearsWithData(): Promise<number[]> {
   await requireAdmin();
-  const years = new Set([new Date().getFullYear()]);
+  const years = new Set([currentYearIST()]);
   try {
     const rows = await getDb().all<{ year: number | null }>(sql`
       SELECT DISTINCT cast(substr(coalesce(date, date(created_at, 'unixepoch')), 1, 4) as integer) AS year FROM donations
@@ -82,11 +83,12 @@ export async function getYearsWithData(): Promise<number[]> {
   return [...years].sort((a, b) => b - a);
 }
 
-/** Years shown on the public site; an empty list means all years. */
-export async function setPublicYears(years: number[]) {
+/** Years shown on the public site: a non-empty list of years, or "ALL". */
+export async function setPublicYears(years: number[] | "ALL") {
   await requireAdmin();
-  const clean = [...new Set(years.map(Number))].filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999).sort();
-  const result = await updateAssociationSettings({ publicYears: clean.length > 0 ? clean : null });
+  const clean = years === "ALL" ? "ALL" : [...new Set(years.map(Number))].filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999).sort();
+  if (clean !== "ALL" && clean.length === 0) return { success: false as const, error: "Select at least one year, or All Years" };
+  const result = await updateAssociationSettings({ publicYears: clean });
   if (result.success) for (const path of ["/chanda", "/donations", "/events"]) revalidatePath(path);
   return result;
 }

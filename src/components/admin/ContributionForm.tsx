@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { X, UserPlus, UserX, Search, Check } from "lucide-react";
-import { PAYMENT_MODES, type ContributionCategory } from "@/lib/contributions";
+import { PAYMENT_MODES, todayIST, type ContributionCategory } from "@/lib/contributions";
 import type { ContributionInput } from "@/lib/actions/contributors";
 
 export type ContributorOption = {
@@ -14,7 +14,7 @@ export type ContributionDraft = {
   paymentMode: string; date: string; purpose: string;
 };
 
-export const today = () => new Date().toISOString().split("T")[0];
+export const today = todayIST;
 
 export function emptyDraft(category: string, contributorId: string | null = null): ContributionDraft {
   return { contributorId, category, amount: "", paymentMode: "CASH", date: today(), purpose: "" };
@@ -67,7 +67,7 @@ export function ContributionForm({
       newContributor: selected ? undefined : { name: newPerson!.name, phone: newPerson!.phone },
       isAnonymous: anonymous,
       category: form.category, amount: parseInt(form.amount) || 0,
-      paymentMode: form.paymentMode, date: form.date, purpose: form.purpose,
+      paymentMode: form.paymentMode, purpose: form.purpose,
     });
   };
 
@@ -153,7 +153,7 @@ export function ContributionForm({
               </select>
             </div>
             <div>
-              <label className={label}>Date *</label>
+              <label className={label}>Date (set automatically)</label>
               <input type="date" required value={form.date} readOnly className={input + " cursor-not-allowed opacity-70"} />
             </div>
           </div>

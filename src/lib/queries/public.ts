@@ -8,6 +8,7 @@
 import { getDb, getMediaDb, schema } from "@/db";
 import type { AssociationSettingsRow } from "@/db/schema";
 import { eq, desc, and, ne, or, sql, type SQLWrapper } from "drizzle-orm";
+import { currentYearIST } from "@/lib/contributions";
 
 const d = schema.donations;
 const ctr = schema.contributors;
@@ -25,17 +26,21 @@ const isAnonymousContribution = sql`(coalesce(${d.isAnonymous}, 0) = 1 OR coales
  */
 const publicDonorName = sql<string>`CASE WHEN ${isAnonymousContribution} THEN 'Anonymous Devotee' ELSE ${d.donorName} END`;
 
+/** Contributor id for the public profile link — NULL for anonymous entries, so they can't be linked or grouped. */
+const publicContributorId = sql<string | null>`CASE WHEN ${isAnonymousContribution} THEN NULL ELSE ${d.contributorId} END`;
+
 // ============================================
 // YEAR-WISE VISIBILITY (admin setting public_years)
 // ============================================
 
-/** Years the admin made visible on the public site, or null for all years. */
+/** Years visible on the public site, or null for all years. */
 export type PublicYears = number[] | null;
 
+/** The admin's choice: a list of years, or "ALL"; anything else (not set yet) means the current year. */
 function parsePublicYears(value: unknown): PublicYears {
-  if (!Array.isArray(value)) return null;
-  const years = value.map(Number).filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999);
-  return years.length > 0 ? years : null;
+  if (value === "ALL") return null;
+  const years = Array.isArray(value) ? value.map(Number).filter((y) => Number.isInteger(y) && y >= 1900 && y <= 9999) : [];
+  return years.length > 0 ? years : [currentYearIST()];
 }
 
 export async function getPublicYears(existingSettings?: AssociationSettingsRow | null): Promise<PublicYears> {
@@ -268,6 +273,7 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
     return await db
       .select({
         donorName: publicDonorName,
+        contributorId: publicContributorId,
         amount: d.amount,
         category: d.category,
         date: d.date,
@@ -284,6 +290,32 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
   } catch (error) {
     console.error("❌ getPublishedDonations error:", error);
     return [];
+  }
+}
+
+/**
+ * A named contributor's public profile: their published, non-anonymous
+ * contributions in the visible years. Returns null for an anonymous (or
+ * unknown) contributor, so an anonymous person never has a public page.
+ */
+export async function getPublicContributor(id: string, years: PublicYears = null) {
+  try {
+    const db = getDb();
+    const [person] = await db.select({ name: ctr.name }).from(ctr)
+      .where(and(eq(ctr.id, id), eq(ctr.isAnonymous, false))).limit(1);
+    if (!person) return null;
+    const contributions = await db
+      .select({ id: d.id, amount: d.amount, category: d.category, purpose: d.purpose, date: d.date })
+      .from(d)
+      .leftJoin(ctr, eq(ctr.id, d.contributorId))
+      .where(and(eq(d.contributorId, id), publishedContributions("ALL", years), sql`NOT ${isAnonymousContribution}`))
+      .orderBy(desc(d.date), desc(d.createdAt));
+    if (contributions.length === 0) return null;
+    const total = contributions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
+    return { name: person.name, contributions, total };
+  } catch (error) {
+    console.error("❌ getPublicContributor error:", error);
+    return null;
   }
 }
 
@@ -320,6 +352,7 @@ export async function getPublishedChanda(limit = 100, search = "", years: Public
       .select({
         id: d.id,
         donorName: publicDonorName,
+        contributorId: publicContributorId,
         amount: d.amount,
         purpose: d.purpose,
         date: d.date,

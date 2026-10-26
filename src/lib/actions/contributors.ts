@@ -5,7 +5,7 @@ import { getDb, schema } from "@/db";
 import { eq, desc, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
-import { CONTRIBUTION_CATEGORIES, type ContributionCategory } from "@/lib/contributions";
+import { CONTRIBUTION_CATEGORIES, todayIST, type ContributionCategory } from "@/lib/contributions";
 
 /**
  * Contributor profiles: one row per person, linked from every donation /
@@ -77,7 +77,6 @@ export type ContributionInput = {
   category: string;
   amount: number;
   paymentMode: string;
-  date: string;
   purpose?: string;
 };
 
@@ -112,7 +111,7 @@ function contributionFields(input: ContributionInput) {
   const defaultPurpose = input.category === "CHANDA" ? "Monthly Chanda" : input.category === "SPONSORSHIP" ? "Sponsorship" : "General Donation";
   return {
     category: input.category, amount: Math.round(input.amount), paymentMode: input.paymentMode,
-    date: input.date, purpose: input.purpose?.trim() || defaultPurpose,
+    purpose: input.purpose?.trim() || defaultPurpose,
   };
 }
 
@@ -124,7 +123,8 @@ export async function addContribution(input: ContributionInput) {
     const contributor = await resolveContributor(input);
     const receiptNo = generateReceiptNo();
     await getDb().insert(d).values({
-      id: `don_${randomUUID()}`, receiptNo, ...fields,
+      // The date is always set here (today, India time) — never taken from the browser
+      id: `don_${randomUUID()}`, receiptNo, ...fields, date: todayIST(),
       contributorId: contributor.id, donorName: contributor.name, phone: contributor.phone ?? "",
       isAnonymous: contributor.isAnonymous, status: "SUCCESS", isPublished: false,
     });
@@ -136,7 +136,7 @@ export async function addContribution(input: ContributionInput) {
   }
 }
 
-/** Edits a contribution; it can also be moved to another (or a new) contributor. */
+/** Edits a contribution (its original date is kept); it can also be moved to another (or a new) contributor. */
 export async function updateContribution(id: string, input: ContributionInput) {
   await requireAdmin();
   try {
