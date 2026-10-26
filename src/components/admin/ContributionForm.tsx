@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { X, UserPlus, UserX, Search, Check } from "lucide-react";
+import { X, Check } from "lucide-react";
 import { PAYMENT_MODES, todayIST, type ContributionCategory } from "@/lib/contributions";
 import type { ContributionInput } from "@/lib/actions/contributors";
 
@@ -45,34 +45,31 @@ export function ContributionForm({
   onSubmit: (input: ContributionInput) => void;
 }) {
   const [form, setForm] = useState(initial);
+  const noun = category === "CHANDA" ? "chanda" : "donation";
   const editing = currentAmount !== undefined;
   const added = parseInt(form.amount) || 0;
-  const [query, setQuery] = useState("");
-  const [newPerson, setNewPerson] = useState<{ name: string; phone: string } | null>(null);
+  // A plain Name + Phone form. Existing profiles of this category are only
+  // SUGGESTED while typing a matching name; ignoring them creates a new person.
+  const [person, setPerson] = useState({ name: "", phone: "" });
   const selected = contributors.find((c) => c.id === form.contributorId) ?? null;
   const [anonymous, setAnonymous] = useState(selected?.isAnonymous ?? false);
 
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return contributors.slice(0, 8);
-    return contributors.filter((c) => c.name.toLowerCase().includes(q) || (c.phone ?? "").includes(q)).slice(0, 8);
-  }, [contributors, query]);
-  const exactMatch = contributors.some((c) => c.name.toLowerCase() === query.trim().toLowerCase());
+  const typed = person.name.trim().toLowerCase();
+  const suggestions = useMemo(
+    () => (typed.length < 2 ? [] : contributors.filter((c) => c.name.toLowerCase().includes(typed)).slice(0, 4)),
+    [contributors, typed],
+  );
+  const sameName = suggestions.find((c) => c.name.toLowerCase() === typed);
 
-  const pick = (c: ContributorOption) => {
-    setForm({ ...form, contributorId: c.id }); setAnonymous(c.isAnonymous); setNewPerson(null); setQuery("");
-  };
-  const startNew = () => {
-    setForm({ ...form, contributorId: null }); setAnonymous(false); setNewPerson({ name: query.trim(), phone: "" }); setQuery("");
-  };
-  const clearPerson = () => { setForm({ ...form, contributorId: null }); setNewPerson(null); };
+  const pick = (c: ContributorOption) => { setForm({ ...form, contributorId: c.id }); setAnonymous(c.isAnonymous); setPerson({ name: "", phone: "" }); };
+  const clearPerson = () => { setForm({ ...form, contributorId: null }); setAnonymous(false); };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selected && !newPerson?.name.trim()) return;
+    if (!selected && !person.name.trim()) return;
     onSubmit({
       contributorId: selected?.id,
-      newContributor: selected ? undefined : { name: newPerson!.name, phone: newPerson!.phone },
+      newContributor: selected ? undefined : { name: person.name, phone: person.phone },
       isAnonymous: anonymous,
       category, amount: added,
       paymentMode: form.paymentMode, purpose: form.purpose,
@@ -91,55 +88,46 @@ export function ContributionForm({
           <button type="button" onClick={onCancel} aria-label="Close" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Contributor */}
-          <div>
-            <label className={label}>Contributor *</label>
-            {selected ? (
+          {/* Contributor: a chosen profile, or plain Name + Phone for a new person */}
+          {selected ? (
+            <div>
+              <label className={label}>Name</label>
               <div className="flex items-center justify-between gap-2 rounded-lg border bg-muted/40 px-3 py-2">
                 <div className="min-w-0">
                   <p className="font-bold truncate">{selected.name}</p>
-                  <p className="text-xs text-muted-foreground">{selected.phone || "No phone"} · {selected.count} contribution{selected.count === 1 ? "" : "s"}</p>
+                  <p className="text-xs text-muted-foreground">{selected.phone || "No phone"} · {selected.count} {noun}{selected.count === 1 ? "" : "s"} so far</p>
                 </div>
                 <button type="button" onClick={clearPerson} className="text-xs font-bold text-primary hover:underline shrink-0">Change</button>
               </div>
-            ) : newPerson ? (
-              <div className="space-y-2 rounded-lg border border-dashed p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-primary flex items-center gap-1"><UserPlus className="w-3.5 h-3.5" /> New contributor</span>
-                  <button type="button" onClick={clearPerson} className="text-xs font-bold text-muted-foreground hover:underline">Pick existing instead</button>
-                </div>
-                <input type="text" required autoFocus value={newPerson.name} onChange={(e) => setNewPerson({ ...newPerson, name: e.target.value })} className={input} placeholder="Full name" />
-                <input type="tel" value={newPerson.phone} onChange={(e) => setNewPerson({ ...newPerson, phone: e.target.value })} className={input} placeholder="Phone (optional)" />
-              </div>
-            ) : (
-              <div className="rounded-lg border">
-                <div className="flex items-center gap-2 px-3 border-b">
-                  <Search className="w-4 h-4 text-muted-foreground" />
-                  <input type="text" autoFocus value={query} onChange={(e) => setQuery(e.target.value)}
-                    className="w-full bg-transparent py-2 outline-none" placeholder="Search name or phone…" aria-label="Search contributors" />
-                </div>
-                <ul className="max-h-48 overflow-y-auto divide-y" role="listbox">
-                  {matches.map((c) => (
-                    <li key={c.id}>
-                      <button type="button" onClick={() => pick(c)} className="w-full text-left px-3 py-2 hover:bg-muted flex items-center justify-between gap-2">
-                        <span className="min-w-0">
-                          <span className="font-medium block truncate">{c.name}</span>
-                          <span className="text-xs text-muted-foreground">{c.phone || "No phone"} · {c.count} contribution{c.count === 1 ? "" : "s"}</span>
-                        </span>
-                        {c.isAnonymous && <UserX className="w-4 h-4 text-violet-600 shrink-0" aria-label="Anonymous" />}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className={label} htmlFor="person-name">Name *</label>
+                <input id="person-name" type="text" required autoFocus autoComplete="off" value={person.name}
+                  onChange={(e) => setPerson({ ...person, name: e.target.value })} className={input} placeholder="Full name" />
+                {suggestions.length > 0 && (
+                  <div className="mt-2 rounded-lg border border-amber-300 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-800 p-2 space-y-1">
+                    <p className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
+                      {sameName ? `"${sameName.name}" already has a ${noun} profile — add to it?` : "Already in the list — add to an existing person?"}
+                    </p>
+                    {suggestions.map((c) => (
+                      <button key={c.id} type="button" onClick={() => pick(c)}
+                        className="w-full text-left px-2 py-1.5 rounded-md hover:bg-amber-100 dark:hover:bg-amber-900/40 flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate"><b>{c.name}</b> <span className="text-xs text-muted-foreground">{c.phone || "No phone"} · {c.count} {noun}{c.count === 1 ? "" : "s"}</span></span>
+                        <span className="text-xs font-bold text-primary shrink-0">Use</span>
                       </button>
-                    </li>
-                  ))}
-                  {matches.length === 0 && <li className="px-3 py-2 text-xs text-muted-foreground">No contributor matches &ldquo;{query}&rdquo;.</li>}
-                </ul>
-                {!exactMatch && (
-                  <button type="button" onClick={startNew} className="w-full px-3 py-2 border-t text-sm font-bold text-primary hover:bg-muted flex items-center gap-2">
-                    <UserPlus className="w-4 h-4" /> {query.trim() ? <>Add new contributor &ldquo;{query.trim()}&rdquo;</> : "Add new contributor"}
-                  </button>
+                    ))}
+                    <p className="text-[11px] text-muted-foreground">Or just continue — a new person will be added.</p>
+                  </div>
                 )}
               </div>
-            )}
-          </div>
+              <div className="sm:col-span-2">
+                <label className={label} htmlFor="person-phone">Phone</label>
+                <input id="person-phone" type="tel" value={person.phone} onChange={(e) => setPerson({ ...person, phone: e.target.value })} className={input} placeholder="9876543210 (optional)" />
+              </div>
+            </div>
+          )}
 
           {editing && (
             <div className="rounded-xl border bg-muted/40 p-3 space-y-2">
@@ -192,7 +180,7 @@ export function ContributionForm({
           </label>
           <div className="flex gap-2 justify-end pt-4 border-t">
             <button type="button" onClick={onCancel} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
-            <button type="submit" disabled={isPending || (!selected && !newPerson?.name.trim())} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50 flex items-center gap-1.5">
+            <button type="submit" disabled={isPending || (!selected && !person.name.trim())} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50 flex items-center gap-1.5">
               <Check className="w-4 h-4" /> {isPending ? "Saving..." : "Save"}
             </button>
           </div>
