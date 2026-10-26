@@ -6,12 +6,11 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Pencil, Trash2, Lock, Phone, StickyNote } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { ContributionForm, emptyDraft, today, type ContributionDraft, type ContributorOption } from "@/components/admin/ContributionForm";
-import { PublishSwitch, AnonymousMark } from "@/components/admin/ContributionControls";
+import { AnonymousMark } from "@/components/admin/ContributionControls";
 import { ProfileForm, type ProfileDraft } from "@/components/admin/ProfileForm";
 import type { ContributionEntry } from "@/components/admin/ContributionsAdmin";
 import {
   addContribution, updateContribution, deleteContribution, updateContributor, deleteContributor,
-  setContributionPublished,
 } from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
@@ -37,17 +36,8 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
   const unit = noun.toLowerCase();
 
   const total = data.reduce((s, e) => s + (e.amount || 0), 0);
-  const published = data.filter((e) => e.isPublished);
-  const publishedTotal = published.reduce((s, e) => s + (e.amount || 0), 0);
   const lastDate = data.map((e) => e.date).filter(Boolean).sort().at(-1);
 
-  const handleEntryPublish = (e: ContributionEntry) => {
-    execute({
-      optimisticUpdate: (prev) => prev.map((d) => d.id === e.id ? { ...d, isPublished: !e.isPublished } : d),
-      serverAction: () => setContributionPublished(e.id, category, !e.isPublished),
-      successMsg: e.isPublished ? "Unpublished" : "Published",
-    });
-  };
   const handleDelete = (e: ContributionEntry) => {
     if (!confirm(`Permanently delete this ${inr(e.amount)} entry?`)) return;
     execute({
@@ -106,10 +96,9 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
       </div>
 
       {/* Totals for this person only */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Total ({unit})</p><p className="text-2xl font-black text-emerald-600">{inr(total)}</p></div>
         <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Entries</p><p className="text-2xl font-black">{data.length}</p></div>
-        <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Published</p><p className="text-2xl font-black">{published.length}/{data.length}</p><p className="text-xs text-muted-foreground">{inr(publishedTotal)}</p></div>
         <div className="rounded-xl border bg-card p-4"><p className="text-xs text-muted-foreground">Last entry</p><p className="text-lg font-bold">{lastDate || "—"}</p></div>
       </div>
 
@@ -118,7 +107,7 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b">
           <h2 className="font-bold">{noun} entries</h2>
           {profile.isAnonymous && data.length > 0 && (
-            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Lock className="w-3.5 h-3.5" /> Anonymous — entries stay unpublished</span>
+            <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Lock className="w-3.5 h-3.5" /> Anonymous — hidden from the public site</span>
           )}
         </div>
         <ul className="divide-y divide-border" aria-label={`${profile.name}'s ${unit} entries`}>
@@ -137,7 +126,6 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
               </div>
               <p className="font-black text-emerald-600 text-right">{inr(e.amount)}</p>
               <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-2">
-                <PublishSwitch published={!!e.isPublished} locked={!!e.isAnonymous} disabled={isPending} onToggle={() => handleEntryPublish(e)} />
                 <button onClick={() => openEdit(e)} disabled={isPending} aria-label="Edit entry" title="Edit entry" className="p-1.5 rounded-lg text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => handleDelete(e)} disabled={isPending} aria-label="Delete entry" title="Delete entry" className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
               </div>
