@@ -1,25 +1,19 @@
 "use client";
 
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { UserPlus, Pencil, Trash2, CirclePlus, ChevronDown, ChevronRight } from "lucide-react";
+import { UserPlus, ChevronRight } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
-import { ContributionForm, emptyDraft } from "@/components/admin/ContributionForm";
-import { PublishSwitch, AnonymousMark } from "@/components/admin/ContributionControls";
+import { AnonymousMark } from "@/components/admin/ContributionControls";
 import { ProfileForm, type ProfileDraft } from "@/components/admin/ProfileForm";
-import {
-  addContribution, createContributor, updateContributor, deleteContributor,
-  getContributorHistory, setContributionPublished,
-} from "@/lib/actions/contributors";
+import { createContributor } from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
 type Contributor = {
   id: string; name: string; phone: string | null; isAnonymous: boolean; notes: string | null;
   count: number; total: number; lastDate: string | null;
 };
-type HistoryRow = Awaited<ReturnType<typeof getContributorHistory>>["rows"][number];
-type Profile = ProfileDraft;
 
 const inr = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
@@ -28,60 +22,17 @@ const TABS: { category: ContributionCategory; label: string; href: string }[] = 
   { category: "DONATION", label: "Donations", href: "/admin/contributors?tab=donations" },
 ];
 
-/** Contributor profiles of ONE category (Chanda and Donations are separate tabs / books). */
+/**
+ * Contributor profiles of ONE category (Chanda and Donations are separate tabs).
+ * One row per person; clicking opens their own full-page profile.
+ */
 export default function ContributorsClient({ category, initialData }: { category: ContributionCategory; initialData: Contributor[] }) {
   const book = category === "CHANDA" ? "Chanda" : "Donations";
-  const noun = category === "CHANDA" ? "Chanda" : "Donation";
+  const noun = category === "CHANDA" ? "chanda" : "donation";
   const { data, isPending, execute } = useAdminAction<Contributor>(initialData);
   const [search, setSearch] = useState("");
   const visible = filterRows(data, search, (c) => [c.name, c.phone, c.notes]);
-  const [contributionFor, setContributionFor] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
-  const [history, setHistory] = useState<Record<string, HistoryRow[] | "loading" | "error">>({});
-
-  const loadHistory = async (id: string) => {
-    setHistory((h) => ({ ...h, [id]: "loading" }));
-    const res = await getContributorHistory(id);
-    setHistory((h) => ({ ...h, [id]: res.success ? res.rows : "error" }));
-  };
-  const toggleHistory = (id: string) => {
-    if (expanded === id) return setExpanded(null);
-    setExpanded(id);
-    void loadHistory(id);
-  };
-
-  const handleTogglePublish = (contributorId: string, row: HistoryRow) => {
-    const next = !row.isPublished;
-    setHistory((h) => {
-      const rows = h[contributorId];
-      return Array.isArray(rows) ? { ...h, [contributorId]: rows.map((r) => r.id === row.id ? { ...r, isPublished: next } : r) } : h;
-    });
-    execute({
-      serverAction: () => setContributionPublished(row.id, category, next),
-      successMsg: next ? "Published" : "Unpublished",
-      onSuccess: () => void loadHistory(contributorId),
-    });
-  };
-
-  const handleDelete = (c: Contributor) => {
-    if (!confirm(`Delete the profile of ${c.name}?`)) return;
-    execute({
-      optimisticUpdate: (prev) => prev.filter((p) => p.id !== c.id),
-      serverAction: () => deleteContributor(c.id),
-      successMsg: "Contributor deleted",
-    });
-  };
-
-  const handleProfileSubmit = ({ id, ...fields }: Profile) => {
-    execute({
-      optimisticUpdate: id ? (prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p) : undefined,
-      // Ticking Anonymous unpublishes this profile's entries — refresh the open history
-      onSuccess: () => { setProfile(null); if (id && expanded === id) void loadHistory(id); },
-      serverAction: () => id ? updateContributor(id, fields) : createContributor({ ...fields, category }),
-      successMsg: id ? "Contributor updated" : "Contributor added",
-    });
-  };
+  const [creating, setCreating] = useState<ProfileDraft | null>(null);
 
   const totalAmount = data.reduce((s, c) => s + Number(c.total || 0), 0);
   const anonymousCount = data.filter((c) => c.isAnonymous).length;
@@ -95,7 +46,7 @@ export default function ContributorsClient({ category, initialData }: { category
             {book}: {data.length} profiles · {anonymousCount} anonymous · {inr(totalAmount)} in total
           </p>
         </div>
-        <button onClick={() => setProfile({ id: null, name: "", phone: "", notes: "", isAnonymous: false })} disabled={isPending}
+        <button onClick={() => setCreating({ id: null, name: "", phone: "", notes: "", isAnonymous: false })} disabled={isPending}
           className="px-4 py-2 font-medium text-sm rounded-xl flex items-center gap-2 bg-primary text-primary-foreground hover:opacity-90 disabled:opacity-50">
           <UserPlus className="w-4 h-4" /> New {book} Contributor
         </button>
@@ -111,24 +62,14 @@ export default function ContributorsClient({ category, initialData }: { category
         ))}
       </div>
 
-      {contributionFor && (
-        <ContributionForm
-          title={`Add ${noun}`}
-          contributors={data} category={category}
-          initial={emptyDraft(contributionFor)} isPending={isPending}
-          onCancel={() => setContributionFor(null)}
-          onSubmit={(input) => execute({
-            serverAction: () => addContribution(input),
-            successMsg: `${noun} added`,
-            // History is re-fetched whenever a row is expanded again
-            onSuccess: () => { setExpanded(null); setContributionFor(null); },
-          })}
-        />
-      )}
-
-      {profile && (
-        <ProfileForm category={category} initial={profile} isPending={isPending}
-          onCancel={() => setProfile(null)} onSubmit={handleProfileSubmit} />
+      {creating && (
+        <ProfileForm category={category} initial={creating} isPending={isPending}
+          onCancel={() => setCreating(null)}
+          onSubmit={({ name, phone, notes, isAnonymous }) => execute({
+            serverAction: () => createContributor({ name, phone, notes, isAnonymous, category }),
+            successMsg: "Contributor added",
+            onSuccess: () => setCreating(null),
+          })} />
       )}
 
       <AdminSearch value={search} onChange={setSearch} placeholder={`Search ${book.toLowerCase()} contributors by name, phone or notes…`} shown={visible.length} total={data.length} />
@@ -136,56 +77,27 @@ export default function ContributorsClient({ category, initialData }: { category
       <div className="bg-card border rounded-2xl shadow-sm">
         <ul className="divide-y divide-border">
           {search && visible.length === 0 && data.length > 0 && <li className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</li>}
-          {data.length === 0 && <li className="px-4 py-12 text-center text-muted-foreground">No {book.toLowerCase()} contributors yet. They are created when you add a {noun.toLowerCase()}.</li>}
-          {visible.map((c) => {
-            const rows = history[c.id];
-            return (
-              <Fragment key={c.id}>
-                <li className="px-4 py-3 grid grid-cols-[1fr_auto] items-center gap-x-4 gap-y-2 hover:bg-muted/40 transition-colors">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <button onClick={() => toggleHistory(c.id)} aria-label="Show contributions" aria-expanded={expanded === c.id} className="p-0.5 rounded hover:bg-muted text-muted-foreground shrink-0">
-                        {expanded === c.id ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                      </button>
-                      <span className="font-bold truncate">{c.name}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground ml-6 truncate">
-                      {c.phone || "No phone"} · {c.count} {noun.toLowerCase()}{c.count === 1 ? "" : "s"}{c.lastDate ? ` · last ${c.lastDate}` : ""}{c.notes ? ` · ${c.notes}` : ""}
-                    </p>
-                  </div>
-                  <p className="font-black text-emerald-600 text-right">{inr(c.total)}</p>
-                  <div className="col-span-2 flex items-center justify-end gap-2">
-                    <button onClick={() => setContributionFor(c.id)} disabled={isPending} title={`Add ${noun} for ${c.name}`}
-                      className="mr-auto px-2.5 py-1 rounded-lg text-[11px] font-bold text-primary border border-primary/30 hover:bg-primary/10 inline-flex items-center gap-1 disabled:opacity-50">
-                      <CirclePlus className="w-3.5 h-3.5" /> Add {noun}
-                    </button>
-                    <AnonymousMark anonymous={c.isAnonymous} />
-                    <button onClick={() => setProfile({ id: c.id, name: c.name, phone: c.phone ?? "", notes: c.notes ?? "", isAnonymous: c.isAnonymous })} disabled={isPending} aria-label="Edit" title="Edit" className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => handleDelete(c)} disabled={isPending || c.count > 0} aria-label="Delete" title={c.count > 0 ? "Has entries — cannot delete" : "Delete"} className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-30"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </li>
-                {expanded === c.id && (
-                  <li className="bg-muted/30 px-4 py-3">
-                    {rows === "loading" && <p className="text-xs text-muted-foreground">Loading…</p>}
-                    {rows === "error" && <p className="text-xs text-red-600">Could not load entries.</p>}
-                    {Array.isArray(rows) && rows.length === 0 && <p className="text-xs text-muted-foreground">No entries yet.</p>}
-                    {Array.isArray(rows) && rows.length > 0 && (
-                      <ul className="divide-y divide-border text-xs" aria-label={`${c.name}'s ${book.toLowerCase()} entries`}>
-                        {rows.map((r) => (
-                          <li key={r.id} className="py-2 flex flex-wrap items-center gap-x-3 gap-y-1">
-                            <span className="font-mono text-muted-foreground">{r.date || "-"}</span>
-                            <span className="font-bold text-emerald-600">{inr(r.amount)}</span>
-                            <span className="text-muted-foreground truncate">{r.purpose}</span>
-                            <span className="ml-auto"><PublishSwitch published={!!r.isPublished} locked={c.isAnonymous} disabled={isPending} onToggle={() => handleTogglePublish(c.id, r)} /></span>
-                          </li>
-                        ))}
-                      </ul>
-                    )}
-                  </li>
-                )}
-              </Fragment>
-            );
-          })}
+          {data.length === 0 && <li className="px-4 py-12 text-center text-muted-foreground">No {book.toLowerCase()} contributors yet. They are created when you add a {noun}.</li>}
+          {visible.map((c) => (
+            <li key={c.id} data-person={c.name}>
+              <Link href={`/admin/contributors/${c.id}?from=contributors`} aria-label={`Open ${c.name}'s profile`}
+                className="group px-4 py-3 flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors">
+                <div className="min-w-0">
+                  <p className="font-bold flex items-center gap-1">
+                    <span className="truncate">{c.name}</span>
+                    <ChevronRight className="w-4 h-4 shrink-0 text-primary transition-transform group-hover:translate-x-0.5" aria-hidden />
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {c.count} {noun}{c.count === 1 ? "" : "s"}{c.lastDate ? ` · last ${c.lastDate}` : ""} · {c.phone || "No phone"}{c.notes ? ` · ${c.notes}` : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <AnonymousMark anonymous={c.isAnonymous} />
+                  <span className="font-black text-emerald-600 w-24 text-right">{inr(c.total)}</span>
+                </div>
+              </Link>
+            </li>
+          ))}
         </ul>
       </div>
     </div>
