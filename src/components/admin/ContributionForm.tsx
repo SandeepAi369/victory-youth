@@ -6,7 +6,7 @@ import { PAYMENT_MODES, todayIST, type ContributionCategory } from "@/lib/contri
 import type { ContributionInput } from "@/lib/actions/contributors";
 
 export type ContributorOption = {
-  id: string; name: string; phone: string | null; isAnonymous: boolean; count: number;
+  id: string; name: string; phone: string | null; isAnonymous: boolean; count: number; notes?: string | null;
 };
 
 export type ContributionDraft = {

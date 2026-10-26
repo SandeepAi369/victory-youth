@@ -2,11 +2,12 @@
 
 import { Fragment, useState } from "react";
 import Link from "next/link";
-import { UserPlus, Pencil, Trash2, CirclePlus, ChevronDown, ChevronRight, X } from "lucide-react";
+import { UserPlus, Pencil, Trash2, CirclePlus, ChevronDown, ChevronRight } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 import { ContributionForm, emptyDraft } from "@/components/admin/ContributionForm";
 import { PublishSwitch, AnonymousMark } from "@/components/admin/ContributionControls";
+import { ProfileForm, type ProfileDraft } from "@/components/admin/ProfileForm";
 import {
   addContribution, createContributor, updateContributor, deleteContributor,
   getContributorHistory, setContributionPublished,
@@ -18,7 +19,7 @@ type Contributor = {
   count: number; total: number; lastDate: string | null;
 };
 type HistoryRow = Awaited<ReturnType<typeof getContributorHistory>>["rows"][number];
-type Profile = { id: string | null; name: string; phone: string; notes: string; isAnonymous: boolean };
+type Profile = ProfileDraft;
 
 const inr = (n: number) => "₹" + Math.round(n || 0).toLocaleString("en-IN");
 
@@ -72,10 +73,7 @@ export default function ContributorsClient({ category, initialData }: { category
     });
   };
 
-  const handleProfileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!profile) return;
-    const { id, ...fields } = profile;
+  const handleProfileSubmit = ({ id, ...fields }: Profile) => {
     execute({
       optimisticUpdate: id ? (prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p) : undefined,
       // Ticking Anonymous unpublishes this profile's entries — refresh the open history
@@ -87,7 +85,6 @@ export default function ContributorsClient({ category, initialData }: { category
 
   const totalAmount = data.reduce((s, c) => s + Number(c.total || 0), 0);
   const anonymousCount = data.filter((c) => c.isAnonymous).length;
-  const input = "w-full bg-background border rounded-lg px-3 py-2";
 
   return (
     <div className="space-y-6">
@@ -130,40 +127,8 @@ export default function ContributorsClient({ category, initialData }: { category
       )}
 
       {profile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={(e) => e.target === e.currentTarget && setProfile(null)}>
-          <div className="w-full max-w-md bg-card rounded-2xl border border-border shadow-2xl p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">{profile.id ? `Edit ${book} Contributor` : `New ${book} Contributor`}</h2>
-              <button type="button" onClick={() => setProfile(null)} aria-label="Close" className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><X className="w-5 h-5" /></button>
-            </div>
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Name *</label>
-                <input type="text" required autoFocus value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} className={input} placeholder="Full name" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Phone</label>
-                <input type="tel" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} className={input} placeholder="9876543210" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Notes (admin only)</label>
-                <input type="text" value={profile.notes} onChange={(e) => setProfile({ ...profile, notes: e.target.value })} className={input} placeholder="e.g. Pays chanda monthly" />
-              </div>
-              <label className="flex items-start gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={profile.isAnonymous} onChange={(e) => setProfile({ ...profile, isAnonymous: e.target.checked })} className="mt-0.5" />
-                <span>
-                  <span className="font-bold">Anonymous contributor</span>
-                  <span className="block text-xs text-muted-foreground">All of this profile&apos;s {book.toLowerCase()} entries stay in the admin panel only — never shown on the public site.</span>
-                </span>
-              </label>
-              {profile.id && <p className="text-xs text-muted-foreground">Changes apply to all of this profile&apos;s {book.toLowerCase()} entries and receipts.</p>}
-              <div className="flex gap-2 justify-end pt-4 border-t">
-                <button type="button" onClick={() => setProfile(null)} className="px-4 py-2 text-sm font-medium hover:bg-muted rounded-xl">Cancel</button>
-                <button type="submit" disabled={isPending} className="px-6 py-2 bg-primary text-primary-foreground text-sm font-bold rounded-xl disabled:opacity-50">{isPending ? "Saving..." : "Save"}</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ProfileForm category={category} initial={profile} isPending={isPending}
+          onCancel={() => setProfile(null)} onSubmit={handleProfileSubmit} />
       )}
 
       <AdminSearch value={search} onChange={setSearch} placeholder={`Search ${book.toLowerCase()} contributors by name, phone or notes…`} shown={visible.length} total={data.length} />
