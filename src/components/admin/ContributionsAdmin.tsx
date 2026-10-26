@@ -1,11 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Pencil, Trash2, Eye, EyeOff, User, UserX, CirclePlus } from "lucide-react";
+import { Plus, Pencil, Trash2, Eye, EyeOff, CirclePlus } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
 import { ContributionForm, emptyDraft, today, type ContributionDraft, type ContributorOption } from "@/components/admin/ContributionForm";
-import { addContribution, updateContribution, setContributorAnonymous } from "@/lib/actions/contributors";
+import { PublishSwitch, AnonymousMark } from "@/components/admin/ContributionControls";
+import {
+  addContribution, updateContribution, deleteContribution,
+  setContributionPublished, setAllContributionsPublished,
+} from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
 export type ContributionEntry = {
@@ -14,43 +18,40 @@ export type ContributionEntry = {
   date: string | null; isPublished: boolean | null; isAnonymous: boolean | null; contributorId: string | null;
 };
 
-type Result = Promise<{ success: boolean; error?: string }>;
-
-/** Admin list + add/edit for one kind of contribution (the Chanda and Donations pages). */
+/**
+ * Admin list + add/edit for ONE category (the Chanda and Donations pages).
+ * Every action is scoped to that category on the server as well.
+ */
 export function ContributionsAdmin({
-  title, subtitle, noun, category, initialData, contributors, actions,
+  title, subtitle, noun, category, initialData, contributors,
 }: {
   title: string; subtitle: string; noun: string;
   /** The one category this page records — there is no category choice */
   category: ContributionCategory;
   initialData: ContributionEntry[];
   contributors: ContributorOption[];
-  actions: {
-    remove: (id: string) => Result;
-    togglePublish: (id: string, publish: boolean) => Result;
-    setAllVisibility: (publish: boolean) => Promise<{ success: boolean; newState: boolean; error?: string }>;
-  };
 }) {
   const { data, isPending, execute } = useAdminAction<ContributionEntry>(initialData);
   const [search, setSearch] = useState("");
-  const visible = filterRows(data, search, (e) => [e.donorName, e.receiptNo, e.phone, e.purpose, e.category, e.paymentMode]);
-  const [form, setForm] = useState<{ editingId: string | null; draft: ContributionDraft } | null>(null);
+  const visible = filterRows(data, search, (e) => [e.donorName, e.receiptNo, e.phone, e.purpose, e.paymentMode]);
+  const [form, setForm] = useState<{ editing: ContributionEntry | null; draft: ContributionDraft } | null>(null);
 
   const isAllPublished = data.length > 0 && data.every((e) => e.isPublished);
-  // Each row's isAnonymous is a synced copy of its contributor's flag
-  const anonymousOf = (e: ContributionEntry) => !!e.isAnonymous;
+  const total = data.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const publishedCount = data.filter((e) => e.isPublished).length;
 
-  const openNew = (contributorId: string | null = null) => setForm({ editingId: null, draft: emptyDraft(contributorId) });
+  const openNew = (contributorId: string | null = null) => setForm({ editing: null, draft: emptyDraft(contributorId) });
   const openEdit = (e: ContributionEntry) => setForm({
-    editingId: e.id,
-    draft: { contributorId: e.contributorId, amount: String(e.amount), paymentMode: e.paymentMode || "CASH", date: e.date || today(), purpose: e.purpose || "" },
+    editing: e,
+    // In edit mode the amount box is the amount to ADD, so it starts empty
+    draft: { contributorId: e.contributorId, amount: "", paymentMode: e.paymentMode || "CASH", date: e.date || today(), purpose: e.purpose || "" },
   });
 
   const handleMasterToggle = () => {
     const newState = !isAllPublished;
     execute({
       optimisticUpdate: (prev) => prev.map((d) => ({ ...d, isPublished: newState })),
-      serverAction: () => actions.setAllVisibility(newState),
+      serverAction: () => setAllContributionsPublished(category, newState),
       successMsg: newState ? `All ${noun} entries published` : `All ${noun} entries unpublished`,
     });
   };
@@ -59,7 +60,7 @@ export function ContributionsAdmin({
     if (!confirm("Permanently delete this entry?")) return;
     execute({
       optimisticUpdate: (prev) => prev.filter((d) => d.id !== id),
-      serverAction: () => actions.remove(id),
+      serverAction: () => deleteContribution(id, category),
       successMsg: "Deleted",
     });
   };
@@ -67,19 +68,8 @@ export function ContributionsAdmin({
   const handleTogglePublish = (id: string, current: boolean) => {
     execute({
       optimisticUpdate: (prev) => prev.map((d) => d.id === id ? { ...d, isPublished: !current } : d),
-      serverAction: () => actions.togglePublish(id, !current),
+      serverAction: () => setContributionPublished(id, category, !current),
       successMsg: current ? "Unpublished" : "Published",
-    });
-  };
-
-  /** Anonymity belongs to the contributor: every row of that person flips together. */
-  const handleToggleAnonymous = (e: ContributionEntry) => {
-    if (!e.contributorId) return;
-    const next = !anonymousOf(e);
-    execute({
-      optimisticUpdate: (prev) => prev.map((d) => d.contributorId === e.contributorId ? { ...d, isAnonymous: next } : d),
-      serverAction: () => setContributorAnonymous(e.contributorId!, next),
-      successMsg: next ? `${e.donorName} is now anonymous on all contributions` : `${e.donorName}'s name is now shown on all contributions`,
     });
   };
 
@@ -90,17 +80,18 @@ export function ContributionsAdmin({
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold">{title}</h1>
-          <p className="text-muted-foreground text-sm">{subtitle} · Total: ₹{data.reduce((sum, e) => sum + (e.amount || 0), 0).toLocaleString("en-IN")}</p>
+          <p className="text-muted-foreground text-sm">
+            {subtitle} · Total: ₹{total.toLocaleString("en-IN")} · {publishedCount}/{data.length} published
+          </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
           {data.length > 0 && (
-            <button onClick={handleMasterToggle} disabled={isPending}
+            <button onClick={handleMasterToggle} disabled={isPending} title={`Publish or unpublish ALL ${noun.toLowerCase()} entries`}
               className={btn("font-bold border " + (isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"))}>
               {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllPublished ? "✓ Published" : "Unpublished"}
+              {isAllPublished ? "All Published" : "Publish All"}
             </button>
           )}
-          <div className="w-px h-6 bg-border" />
           <button onClick={() => openNew()} disabled={isPending} className={btn("font-medium bg-primary text-primary-foreground hover:opacity-90")}>
             <Plus className="w-4 h-4" /> Add {noun}
           </button>
@@ -109,12 +100,15 @@ export function ContributionsAdmin({
 
       {form && (
         <ContributionForm
-          title={form.editingId ? `Edit ${noun}` : `New ${noun}`}
-          contributors={contributors} category={category} initial={form.draft} isPending={isPending}
+          title={form.editing ? `Edit ${noun}` : `New ${noun}`}
+          contributors={contributors} category={category} initial={form.draft}
+          currentAmount={form.editing ? form.editing.amount : undefined} isPending={isPending}
           onCancel={() => setForm(null)}
-          onSubmit={(input) => execute({
-            serverAction: () => form.editingId ? updateContribution(form.editingId, input) : addContribution(input),
-            successMsg: form.editingId ? "Updated" : `${noun} added`,
+          onSubmit={({ amount, ...input }) => execute({
+            serverAction: () => form.editing
+              ? updateContribution(form.editing.id, { ...input, addAmount: amount })
+              : addContribution({ ...input, amount }),
+            successMsg: form.editing ? (amount > 0 ? `₹${amount.toLocaleString("en-IN")} added` : "Updated") : `${noun} added`,
             onSuccess: () => setForm(null),
           })}
         />
@@ -122,63 +116,41 @@ export function ContributionsAdmin({
 
       <AdminSearch value={search} onChange={setSearch} placeholder={`Search ${noun.toLowerCase()} by name, receipt no., phone or purpose…`} shown={visible.length} total={data.length} />
 
-      <div className="bg-card border rounded-2xl overflow-hidden shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
-            <thead className="bg-muted/50 text-muted-foreground font-medium border-b">
-              <tr>
-                <th className="px-4 py-3">Contributor</th>
-                <th className="px-4 py-3">Amount</th>
-                <th className="px-4 py-3">Date</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {search && visible.length === 0 && data.length > 0 && <tr><td colSpan={10} className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</td></tr>}
-              {data.length === 0 && <tr><td colSpan={10} className="px-4 py-12 text-center text-muted-foreground">No {noun.toLowerCase()} entries yet.</td></tr>}
-              {visible.map((e) => {
-                const anonymous = anonymousOf(e);
-                return (
-                  <tr key={e.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5">
-                        <p className="font-bold text-foreground">{e.donorName}</p>
-                        {e.contributorId && (
-                          <button onClick={() => openNew(e.contributorId)} disabled={isPending} title={`Add another contribution for ${e.donorName}`} aria-label={`Add contribution for ${e.donorName}`}
-                            className="p-0.5 text-primary hover:bg-primary/10 rounded-md disabled:opacity-50">
-                            <CirclePlus className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                      {anonymous && <p className="text-[10px] font-bold text-violet-600 flex items-center gap-1"><UserX className="w-3 h-3" /> Anonymous on public site</p>}
-                      {e.receiptNo && <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo}</p>}
-                    </td>
-                    <td className="px-4 py-3 font-bold text-emerald-600">₹{e.amount?.toLocaleString("en-IN")}</td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs">{e.date || "-"}</td>
-                    <td className="px-4 py-3">
-                      <button onClick={() => handleTogglePublish(e.id, !!e.isPublished)} disabled={isPending}
-                        className={"px-2.5 py-1 rounded-full text-[10px] font-bold border disabled:opacity-50 " + (e.isPublished ? "bg-emerald-50 text-emerald-600 border-emerald-200 hover:bg-emerald-100" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200")}>
-                        {e.isPublished ? "PUBLISHED" : "DRAFT"}
-                      </button>
-                      <button onClick={() => handleToggleAnonymous(e)} disabled={isPending || !e.contributorId} title="Hide or show this person's name on ALL their contributions"
-                        className={"ml-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold border disabled:opacity-50 inline-flex items-center gap-1 " + (anonymous ? "bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100" : "bg-stone-100 text-stone-500 border-stone-200 hover:bg-stone-200")}>
-                        {anonymous ? <UserX className="w-3 h-3" /> : <User className="w-3 h-3" />}
-                        {anonymous ? "ANONYMOUS" : "NAMED"}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button onClick={() => openEdit(e)} disabled={isPending} aria-label="Edit" className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
-                        <button onClick={() => handleDelete(e.id)} disabled={isPending} aria-label="Delete" className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      <div className="bg-card border rounded-2xl shadow-sm">
+        <div className="hidden md:grid grid-cols-[1fr_7rem_18rem] gap-4 px-4 py-3 bg-muted/50 text-muted-foreground text-sm font-medium border-b rounded-t-2xl">
+          <span>Contributor</span><span className="text-right">Amount</span><span className="text-right">Publish · Anonymous · Actions</span>
         </div>
+        <ul className="divide-y divide-border">
+          {search && visible.length === 0 && data.length > 0 && <li className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</li>}
+          {data.length === 0 && <li className="px-4 py-12 text-center text-muted-foreground">No {noun.toLowerCase()} entries yet.</li>}
+          {visible.map((e) => (
+            <li key={e.id} className="px-4 py-3 grid grid-cols-[1fr_auto] md:grid-cols-[1fr_7rem_18rem] items-center gap-x-4 gap-y-2 hover:bg-muted/40 transition-colors">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-foreground truncate">{e.donorName}</p>
+                  {e.contributorId && (
+                    <button onClick={() => openNew(e.contributorId)} disabled={isPending} title={`Add another ${noun.toLowerCase()} for ${e.donorName}`} aria-label={`Add contribution for ${e.donorName}`}
+                      className="p-0.5 text-primary hover:bg-primary/10 rounded-md disabled:opacity-50 shrink-0">
+                      <CirclePlus className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {e.date || "-"} · {(e.paymentMode || "").replace("_", " ")}{e.purpose ? ` · ${e.purpose}` : ""}
+                </p>
+                {e.receiptNo && <p className="text-[10px] text-muted-foreground font-mono">{e.receiptNo}</p>}
+              </div>
+              <p className="font-black text-emerald-600 text-right">₹{e.amount?.toLocaleString("en-IN")}</p>
+              {/* Controls: always on screen (their own row on phones) */}
+              <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-2">
+                <PublishSwitch published={!!e.isPublished} disabled={isPending} onToggle={() => handleTogglePublish(e.id, !!e.isPublished)} />
+                <AnonymousMark anonymous={!!e.isAnonymous} />
+                <button onClick={() => openEdit(e)} disabled={isPending} aria-label="Edit" title="Edit" className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
+                <button onClick={() => handleDelete(e.id)} disabled={isPending} aria-label="Delete" title="Delete" className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>
+              </div>
+            </li>
+          ))}
+        </ul>
       </div>
     </div>
   );

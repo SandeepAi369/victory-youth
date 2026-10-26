@@ -1,16 +1,7 @@
 "use server";
-import { errorMessage } from "@/lib/utils";
 import { requireAdmin } from "@/lib/admin-session";
 import { getDb, schema } from "@/db";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
-
-function revalidate() {
-  revalidatePath("/admin/chanda");
-  revalidatePath("/chanda");
-  revalidatePath("/donations");
-  revalidatePath("/");
-}
 
 export async function getChandaEntries() {
   await requireAdmin();
@@ -23,49 +14,5 @@ export async function getChandaEntries() {
   } catch (error) {
     console.error("getChandaEntries error:", error);
     return [];
-  }
-}
-
-export async function deleteChanda(id: string) {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.delete(schema.donations).where(eq(schema.donations.id, id));
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("deleteChanda error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
-
-export async function toggleChandaPublish(id: string, publish: boolean) {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.update(schema.donations).set({ isPublished: publish }).where(eq(schema.donations.id, id));
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("toggleChandaPublish error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
-
-/** Master toggle: publish or unpublish ALL chanda entries at once */
-export async function setAllChandaVisibility(
-  publish: boolean
-): Promise<{ success: boolean; newState: boolean; error?: string }> {
-  await requireAdmin();
-  try {
-    const db = getDb();
-    await db.update(schema.donations)
-      .set({ isPublished: publish })
-      .where(eq(schema.donations.category, "CHANDA"));
-    revalidate();
-    return { success: true, newState: publish };
-  } catch (error) {
-    console.error("setAllChandaVisibility error:", error);
-    return { success: false, newState: !publish, error: errorMessage(error) };
   }
 }
