@@ -35,8 +35,9 @@ export function ContributionForm({
   category: ContributionCategory;
   initial: ContributionDraft;
   /**
-   * Edit mode: the entry's current total. The form then asks for an amount to
-   * ADD (never overwrites), and `amount` in onSubmit is that added amount.
+   * Edit mode: the contributor's current total in this category. The form then
+   * asks for an amount to ADD — recorded as a new, separate entry dated today
+   * (never overwrites or merges) — and `amount` in onSubmit is that amount.
    */
   currentAmount?: number;
   isPending: boolean;
@@ -149,6 +150,7 @@ export function ContributionForm({
               <div>
                 <label className={label} htmlFor="add-amount">Add amount (₹)</label>
                 <input id="add-amount" type="number" min={0} value={form.amount} onChange={(e) => setForm({ ...form, amount: e.target.value })} className={input} placeholder="0" />
+                <p className="mt-1 text-[11px] text-muted-foreground">Saved as a separate entry dated today, with its own receipt.</p>
               </div>
               <div className="flex items-baseline justify-between text-sm">
                 <span className="text-muted-foreground">New total</span>

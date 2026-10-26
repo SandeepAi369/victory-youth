@@ -1,19 +1,24 @@
 "use client";
 
-import { Eye, EyeOff, SquareCheck, Square } from "lucide-react";
+import { Eye, EyeOff, Lock, SquareCheck, Square } from "lucide-react";
 
-/** Clearly labelled publish on/off switch for one money entry. */
-export function PublishSwitch({ published, disabled, onToggle }: { published: boolean; disabled?: boolean; onToggle: () => void }) {
+/**
+ * Clearly labelled publish on/off switch for one money entry. `locked` (an
+ * anonymous entry) shows it as unpublished and unclickable: anonymous entries
+ * stay in the admin panel until Anonymous is unticked in Edit.
+ */
+export function PublishSwitch({ published, disabled, locked, onToggle }: { published: boolean; disabled?: boolean; locked?: boolean; onToggle: () => void }) {
+  if (locked) published = false;
   return (
-    <button type="button" role="switch" aria-checked={published} onClick={onToggle} disabled={disabled}
-      title={published ? "Published — click to unpublish" : "Unpublished — click to publish"}
+    <button type="button" role="switch" aria-checked={published} onClick={onToggle} disabled={disabled || locked}
+      title={locked ? "Anonymous — admin only. Untick Anonymous in Edit to publish." : published ? "Published — click to unpublish" : "Unpublished — click to publish"}
       className={"inline-flex items-center gap-1.5 pl-1 pr-2.5 py-1 rounded-full border text-[11px] font-bold transition-colors disabled:opacity-50 " +
         (published ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700"
           : "bg-stone-100 text-stone-600 border-stone-300 hover:bg-stone-200 dark:bg-stone-800 dark:text-stone-300 dark:border-stone-600")}>
       <span className={"relative inline-flex h-4 w-7 rounded-full transition-colors " + (published ? "bg-emerald-500" : "bg-stone-400")}>
         <span className={"absolute top-0.5 h-3 w-3 rounded-full bg-white shadow transition-all " + (published ? "left-3.5" : "left-0.5")} />
       </span>
-      {published ? <Eye className="w-3.5 h-3.5" aria-hidden /> : <EyeOff className="w-3.5 h-3.5" aria-hidden />}
+      {locked ? <Lock className="w-3.5 h-3.5" aria-hidden /> : published ? <Eye className="w-3.5 h-3.5" aria-hidden /> : <EyeOff className="w-3.5 h-3.5" aria-hidden />}
       {published ? "Published" : "Unpublished"}
     </button>
   );

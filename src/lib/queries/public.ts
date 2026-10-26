@@ -14,20 +14,12 @@ const d = schema.donations;
 const ctr = schema.contributors;
 
 /**
- * A contribution is anonymous when its own flag OR its contributor's flag is
- * set (the two are kept in sync; checking both fails closed). Every donation
- * query below LEFT JOINs contributors so this can be evaluated.
+ * Anonymous entries are ADMIN-ONLY: public queries exclude them entirely (no
+ * name, no amount, no label). An entry is anonymous when its own flag OR its
+ * contributor's flag is set — both are checked, so it fails closed. Every
+ * donation query below LEFT JOINs contributors so this can be evaluated.
  */
 const isAnonymousContribution = sql`(coalesce(${d.isAnonymous}, 0) = 1 OR coalesce(${ctr.isAnonymous}, 0) = 1)`;
-
-/**
- * Public donor name: anonymous donations are masked inside the SQL query, so
- * the real name never leaves the database for public pages.
- */
-const publicDonorName = sql<string>`CASE WHEN ${isAnonymousContribution} THEN 'Anonymous Devotee' ELSE ${d.donorName} END`;
-
-/** Contributor id for the public profile link — NULL for anonymous entries, so they can't be linked or grouped. */
-const publicContributorId = sql<string | null>`CASE WHEN ${isAnonymousContribution} THEN NULL ELSE ${d.contributorId} END`;
 
 // ============================================
 // YEAR-WISE VISIBILITY (admin setting public_years)
@@ -104,17 +96,16 @@ async function getPublicStats(existingSettings?: AssociationSettingsRow | null, 
     return {
       totalMembers: Number(memberRows[0]?.count ?? 0),
       // Donation progress (vs. the donation target) counts Donations only
-      totalAmount: donationTotals.grandTotal,
-      anonymousAmount: donationTotals.anonymousTotal,
-      totalDonations: donationTotals.totalCount,
-      chandaAmount: chandaTotals.grandTotal,
+      totalAmount: donationTotals.total,
+      totalDonations: donationTotals.count,
+      chandaAmount: chandaTotals.total,
       totalEvents: Number(eventRows[0]?.count ?? 0),
       donationTarget: Math.round(Number(settings?.donationTarget ?? 2500000)),
     };
   } catch (error) {
     console.error("❌ getPublicStats error:", error);
     return {
-      totalMembers: 0, totalAmount: 0, anonymousAmount: 0, totalDonations: 0, chandaAmount: 0,
+      totalMembers: 0, totalAmount: 0, totalDonations: 0, chandaAmount: 0,
       totalEvents: 0, donationTarget: 2500000,
     };
   }
@@ -234,40 +225,29 @@ export async function getPublishedGallery(limit: number = 12) {
 /** Chanda and Donations are independent: every public query covers exactly one of them, never both. */
 export type ContributionKind = "CHANDA" | "DONATIONS";
 
-/** Published contributions of one kind (chanda vs. everything else) in the visible years. */
+/** Published, non-anonymous contributions of one kind (chanda vs. everything else) in the visible years. */
 function publishedContributions(kind: ContributionKind, years: PublicYears) {
   return and(
     eq(d.isPublished, true),
     kind === "CHANDA" ? eq(d.category, "CHANDA") : ne(d.category, "CHANDA"),
+    sql`NOT ${isAnonymousContribution}`,
     inPublicYears(contributionDate, years),
   );
 }
 
-/**
- * Totals for a public page, split into named and anonymous contributions —
- * summed in SQL over ALL matching rows, not just the ones listed on the page.
- */
+/** Total of the published, non-anonymous contributions of one kind — summed in SQL over ALL matching rows. */
 export async function getContributionTotals(kind: ContributionKind, years: PublicYears = null) {
-  const empty = { publicTotal: 0, publicCount: 0, anonymousTotal: 0, anonymousCount: 0, grandTotal: 0, totalCount: 0 };
   try {
     const db = getDb();
     const [row] = await db
-      .select({
-        publicTotal: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 0 ELSE ${d.amount} END), 0)`,
-        publicCount: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 0 ELSE 1 END), 0)`,
-        anonymousTotal: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN ${d.amount} ELSE 0 END), 0)`,
-        anonymousCount: sql<number>`coalesce(sum(CASE WHEN ${isAnonymousContribution} THEN 1 ELSE 0 END), 0)`,
-      })
+      .select({ total: sql<number>`coalesce(sum(${d.amount}), 0)`, count: sql<number>`count(*)` })
       .from(d)
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
       .where(publishedContributions(kind, years));
-    if (!row) return empty;
-    const publicTotal = Math.round(Number(row.publicTotal)), anonymousTotal = Math.round(Number(row.anonymousTotal));
-    const publicCount = Number(row.publicCount), anonymousCount = Number(row.anonymousCount);
-    return { publicTotal, publicCount, anonymousTotal, anonymousCount, grandTotal: publicTotal + anonymousTotal, totalCount: publicCount + anonymousCount };
+    return { total: Math.round(Number(row?.total ?? 0)), count: Number(row?.count ?? 0) };
   } catch (error) {
     console.error("❌ getContributionTotals error:", error);
-    return empty;
+    return { total: 0, count: 0 };
   }
 }
 
@@ -276,8 +256,8 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
     const db = getDb();
     return await db
       .select({
-        donorName: publicDonorName,
-        contributorId: publicContributorId,
+        donorName: d.donorName,
+        contributorId: d.contributorId,
         amount: d.amount,
         category: d.category,
         date: d.date,
@@ -286,8 +266,7 @@ export async function getPublishedDonations(limit = 20, search = "", years: Publ
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
       .where(and(
         publishedContributions("DONATIONS", years),
-        // Search the MASKED name, so an anonymous donor can never be found by their real name
-        search ? or(contains(publicDonorName, search), contains(d.purpose, search), contains(d.category, search)) : undefined
+        search ? or(contains(d.donorName, search), contains(d.purpose, search), contains(d.category, search)) : undefined
       ))
       .orderBy(desc(d.createdAt))
       .limit(limit);
@@ -314,7 +293,7 @@ export async function getPublicContributor(id: string) {
       .select({ id: d.id, amount: d.amount, category: d.category, purpose: d.purpose, date: d.date })
       .from(d)
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
-      .where(and(eq(d.contributorId, id), publishedContributions(kind, null), sql`NOT ${isAnonymousContribution}`))
+      .where(and(eq(d.contributorId, id), publishedContributions(kind, null)))
       .orderBy(desc(d.date), desc(d.createdAt));
     if (contributions.length === 0) return null;
     const total = contributions.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
@@ -357,8 +336,8 @@ export async function getPublishedChanda(limit = 100, search = "", years: Public
     return await db
       .select({
         id: d.id,
-        donorName: publicDonorName,
-        contributorId: publicContributorId,
+        donorName: d.donorName,
+        contributorId: d.contributorId,
         amount: d.amount,
         purpose: d.purpose,
         date: d.date,
@@ -367,7 +346,7 @@ export async function getPublishedChanda(limit = 100, search = "", years: Public
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
       .where(and(
         publishedContributions("CHANDA", years),
-        search ? or(contains(publicDonorName, search), contains(d.purpose, search)) : undefined
+        search ? or(contains(d.donorName, search), contains(d.purpose, search)) : undefined
       ))
       .orderBy(desc(d.createdAt))
       .limit(limit);
@@ -509,7 +488,7 @@ export async function getHomepageData() {
     return {
       settings: null,
       years: null,
-      stats: { totalDonations: 0, totalAmount: 0, anonymousAmount: 0, chandaAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
+      stats: { totalDonations: 0, totalAmount: 0, chandaAmount: 0, totalMembers: 0, totalEvents: 0, donationTarget: 2500000 },
       hero: {
         title: "Victory Youth",
         subtitleEn: "50th Golden Jubilee Celebrations",

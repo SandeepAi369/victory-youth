@@ -36,8 +36,11 @@ export function ContributionsAdmin({
   const visible = filterRows(data, search, (e) => [e.donorName, e.receiptNo, e.phone, e.purpose, e.paymentMode]);
   const [form, setForm] = useState<{ editing: ContributionEntry | null; draft: ContributionDraft } | null>(null);
 
-  const isAllPublished = data.length > 0 && data.every((e) => e.isPublished);
+  // The global Publish/Unpublish button only ever touches NON-anonymous entries
+  const named = data.filter((e) => !e.isAnonymous);
+  const allNamedPublished = named.length > 0 && named.every((e) => e.isPublished);
   const total = data.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const profileTotal = (contributorId: string | null) => data.filter((e) => e.contributorId === contributorId).reduce((sum, e) => sum + (e.amount || 0), 0);
   const publishedCount = data.filter((e) => e.isPublished).length;
 
   const openNew = (contributorId: string | null = null) => setForm({ editing: null, draft: emptyDraft(contributorId) });
@@ -48,11 +51,11 @@ export function ContributionsAdmin({
   });
 
   const handleMasterToggle = () => {
-    const newState = !isAllPublished;
+    const newState = !allNamedPublished;
     execute({
-      optimisticUpdate: (prev) => prev.map((d) => ({ ...d, isPublished: newState })),
+      optimisticUpdate: (prev) => prev.map((d) => d.isAnonymous ? d : { ...d, isPublished: newState }),
       serverAction: () => setAllContributionsPublished(category, newState),
-      successMsg: newState ? `All ${noun} entries published` : `All ${noun} entries unpublished`,
+      successMsg: newState ? `${noun} entries published (anonymous entries untouched)` : `${noun} entries unpublished (anonymous entries untouched)`,
     });
   };
 
@@ -85,11 +88,12 @@ export function ContributionsAdmin({
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">
-          {data.length > 0 && (
-            <button onClick={handleMasterToggle} disabled={isPending} title={`Publish or unpublish ALL ${noun.toLowerCase()} entries`}
-              className={btn("font-bold border " + (isAllPublished ? "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200" : "bg-red-100 text-red-700 border-red-300 hover:bg-red-200"))}>
-              {isAllPublished ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-              {isAllPublished ? "All Published" : "Publish All"}
+          {named.length > 0 && (
+            <button onClick={handleMasterToggle} disabled={isPending}
+              title={`${allNamedPublished ? "Unpublish" : "Publish"} every non-anonymous ${noun.toLowerCase()} entry. Anonymous entries are never affected.`}
+              className={btn("font-bold border " + (allNamedPublished ? "bg-red-100 text-red-700 border-red-300 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200"))}>
+              {allNamedPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              {allNamedPublished ? "Unpublish" : "Publish"}
             </button>
           )}
           <button onClick={() => openNew()} disabled={isPending} className={btn("font-medium bg-primary text-primary-foreground hover:opacity-90")}>
@@ -102,13 +106,13 @@ export function ContributionsAdmin({
         <ContributionForm
           title={form.editing ? `Edit ${noun}` : `New ${noun}`}
           contributors={contributors} category={category} initial={form.draft}
-          currentAmount={form.editing ? form.editing.amount : undefined} isPending={isPending}
+          currentAmount={form.editing ? profileTotal(form.editing.contributorId) : undefined} isPending={isPending}
           onCancel={() => setForm(null)}
           onSubmit={({ amount, ...input }) => execute({
             serverAction: () => form.editing
               ? updateContribution(form.editing.id, { ...input, addAmount: amount })
               : addContribution({ ...input, amount }),
-            successMsg: form.editing ? (amount > 0 ? `₹${amount.toLocaleString("en-IN")} added` : "Updated") : `${noun} added`,
+            successMsg: form.editing ? (amount > 0 ? `₹${amount.toLocaleString("en-IN")} added as a new entry` : "Updated") : `${noun} added`,
             onSuccess: () => setForm(null),
           })}
         />
@@ -143,7 +147,7 @@ export function ContributionsAdmin({
               <p className="font-black text-emerald-600 text-right">₹{e.amount?.toLocaleString("en-IN")}</p>
               {/* Controls: always on screen (their own row on phones) */}
               <div className="col-span-2 md:col-span-1 flex items-center justify-end gap-2">
-                <PublishSwitch published={!!e.isPublished} disabled={isPending} onToggle={() => handleTogglePublish(e.id, !!e.isPublished)} />
+                <PublishSwitch published={!!e.isPublished} locked={!!e.isAnonymous} disabled={isPending} onToggle={() => handleTogglePublish(e.id, !!e.isPublished)} />
                 <AnonymousMark anonymous={!!e.isAnonymous} />
                 <button onClick={() => openEdit(e)} disabled={isPending} aria-label="Edit" title="Edit" className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg disabled:opacity-50"><Pencil className="w-4 h-4" /></button>
                 <button onClick={() => handleDelete(e.id)} disabled={isPending} aria-label="Delete" title="Delete" className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-50"><Trash2 className="w-4 h-4" /></button>

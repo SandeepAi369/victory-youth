@@ -78,9 +78,10 @@ export default function ContributorsClient({ category, initialData }: { category
     const { id, ...fields } = profile;
     execute({
       optimisticUpdate: id ? (prev) => prev.map((p) => p.id === id ? { ...p, ...fields } : p) : undefined,
+      // Ticking Anonymous unpublishes this profile's entries — refresh the open history
+      onSuccess: () => { setProfile(null); if (id && expanded === id) void loadHistory(id); },
       serverAction: () => id ? updateContributor(id, fields) : createContributor({ ...fields, category }),
       successMsg: id ? "Contributor updated" : "Contributor added",
-      onSuccess: () => setProfile(null),
     });
   };
 
@@ -210,7 +211,7 @@ export default function ContributorsClient({ category, initialData }: { category
                             <span className="font-mono text-muted-foreground">{r.date || "-"}</span>
                             <span className="font-bold text-emerald-600">{inr(r.amount)}</span>
                             <span className="text-muted-foreground truncate">{r.purpose}</span>
-                            <span className="ml-auto"><PublishSwitch published={!!r.isPublished} disabled={isPending} onToggle={() => handleTogglePublish(c.id, r)} /></span>
+                            <span className="ml-auto"><PublishSwitch published={!!r.isPublished} locked={c.isAnonymous} disabled={isPending} onToggle={() => handleTogglePublish(c.id, r)} /></span>
                           </li>
                         ))}
                       </ul>

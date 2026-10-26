@@ -20,16 +20,8 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
     ? { label: "Chanda", href: "/chanda", noun: "chanda" }
     : { label: "Donations", href: "/donations", noun: "donation" };
 
-  // Group by year, newest first, with a subtotal per year
-  const byYear = new Map<string, { total: number; rows: typeof person.contributions }>();
-  for (const c of person.contributions) {
-    const year = c.date?.slice(0, 4) || "Undated";
-    const group = byYear.get(year) ?? { total: 0, rows: [] };
-    group.total += Number(c.amount) || 0;
-    group.rows.push(c);
-    byYear.set(year, group);
-  }
-  const firstYear = [...byYear.keys()].filter((y) => y !== "Undated").sort()[0];
+  const years = person.contributions.map((c) => c.date?.slice(0, 4)).filter(Boolean).sort();
+  const firstYear = years[0];
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -65,27 +57,18 @@ export default async function ContributorPage({ params }: { params: Promise<{ id
         </div>
 
         <h2 className="text-sm font-bold text-stone-500 dark:text-stone-400 mb-3">Complete {book.noun} history</h2>
-        <div className="space-y-5">
-          {[...byYear.entries()].map(([year, group]) => (
-            <section key={year} aria-label={`Contributions in ${year}`}>
-              <div className="flex items-baseline justify-between mb-2 px-1">
-                <h3 className="font-black text-stone-900 dark:text-white">{year}</h3>
-                <span className="text-xs font-bold text-stone-500 dark:text-stone-400">{inr(group.total)}</span>
+        {/* Itemized: one row per entry exactly as recorded — never grouped or summed */}
+        <ul className="space-y-2">
+          {person.contributions.map((c) => (
+            <li key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
+              <div className="min-w-0">
+                <p className="font-bold text-stone-900 dark:text-white">{c.date || "—"}</p>
+                <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{c.purpose}</p>
               </div>
-              <ul className="space-y-2">
-                {group.rows.map((c) => (
-                  <li key={c.id} className="flex items-center justify-between gap-3 p-4 rounded-xl bg-white dark:bg-stone-800 border border-amber-100 dark:border-stone-700 shadow-sm">
-                    <div className="min-w-0">
-                      <p className="font-bold text-stone-900 dark:text-white">{c.date || "—"}</p>
-                      <p className="text-xs text-stone-500 dark:text-stone-400 truncate">{c.purpose}</p>
-                    </div>
-                    <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">{inr(c.amount)}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
+              <span className="font-black text-emerald-600 dark:text-emerald-400 shrink-0">{inr(c.amount)}</span>
+            </li>
           ))}
-        </div>
+        </ul>
       </div>
     </main>
   );
