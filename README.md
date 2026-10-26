@@ -1,5 +1,9 @@
 # Victory Youth
 
+[![Live website](https://img.shields.io/badge/Live%20website-victory--youth.bswd.workers.dev-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://victory-youth.bswd.workers.dev)
+
+**Live website:** https://victory-youth.bswd.workers.dev
+
 [![CI](https://github.com/SandeepAi369/victory-youth/actions/workflows/ci.yml/badge.svg)](https://github.com/SandeepAi369/victory-youth/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-orange.svg)](LICENSE)
 ![Next.js 16](https://img.shields.io/badge/Next.js-16-black)
