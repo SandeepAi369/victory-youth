@@ -36,7 +36,7 @@ This Code of Conduct applies within all community spaces, and also applies when 
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at the project maintainer, privately: send a direct message to [@SandeepAi369](https://github.com/SandeepAi369) on GitHub, or use the repository's private reporting form (**Security** tab → **Report a vulnerability**) and mark it as a Code of Conduct report. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at [@SandeepAi369](https://github.com/SandeepAi369) on GitHub. All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the reporter of any incident.
 
