@@ -274,19 +274,6 @@ export async function deleteContribution(id: string, category: ContributionCateg
   }
 }
 
-/** Publish or unpublish ALL of one person's entries in ONE category (anonymous entries are never published). */
-export async function setPersonPublished(contributorId: string, category: ContributionCategory, publish: boolean) {
-  await requireAdmin();
-  try {
-    await getDb().update(d).set({ isPublished: publish })
-      .where(and(eq(d.contributorId, contributorId), inBook(category), publish ? notAnonymous : undefined));
-    revalidate();
-    return { success: true };
-  } catch (error) {
-    console.error("setPersonPublished error:", error);
-    return { success: false, error: errorMessage(error) };
-  }
-}
 
 /** One contributor profile and ALL of its entries (its own category only), for the admin profile page. */
 export async function getContributorProfile(id: string) {
@@ -309,5 +296,18 @@ export async function getContributorProfile(id: string) {
   } catch (error) {
     console.error("getContributorProfile error:", error);
     return null;
+  }
+}
+
+/** The list tick: make a profile anonymous (its entries are unpublished — admin only) or public again. */
+export async function setContributorAnonymous(contributorId: string, anonymous: boolean) {
+  await requireAdmin();
+  try {
+    await applyAnonymous(contributorId, anonymous);
+    revalidate();
+    return { success: true };
+  } catch (error) {
+    console.error("setContributorAnonymous error:", error);
+    return { success: false, error: errorMessage(error) };
   }
 }

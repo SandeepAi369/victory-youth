@@ -6,8 +6,8 @@ import { Plus, Eye, EyeOff, ChevronRight } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch } from "@/components/admin/AdminSearch";
 import { ContributionForm, emptyDraft, type ContributorOption } from "@/components/admin/ContributionForm";
-import { AnonymousMark } from "@/components/admin/ContributionControls";
-import { addContribution, setAllContributionsPublished } from "@/lib/actions/contributors";
+import { AnonymousToggle } from "@/components/admin/ContributionControls";
+import { addContribution, setAllContributionsPublished, setContributorAnonymous } from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
 export type ContributionEntry = {
@@ -85,6 +85,17 @@ export function ContributionsAdmin({
     });
   };
 
+  const handleAnonymous = (p: Person) => {
+    if (!p.contributorId) return;
+    const next = !p.anonymous;
+    execute({
+      // Anonymous entries are admin-only, so ticking also unpublishes them
+      optimisticUpdate: (prev) => prev.map((d) => d.contributorId === p.contributorId ? { ...d, isAnonymous: next, isPublished: next ? false : d.isPublished } : d),
+      serverAction: () => setContributorAnonymous(p.contributorId!, next),
+      successMsg: next ? `${p.name} is now anonymous — hidden from the public site` : `${p.name}'s name is public again (publish the entries to show them)`,
+    });
+  };
+
   const btn = (extra: string) => "px-4 py-2 text-sm rounded-xl flex items-center gap-2 transition-all " + (isPending ? "opacity-50 cursor-not-allowed pointer-events-none " : "") + extra;
 
   return (
@@ -139,20 +150,19 @@ export function ContributionsAdmin({
                     {count} {unit}{count === 1 ? "" : "s"}{p.lastDate ? ` · last ${p.lastDate}` : ""}{p.phone ? ` · ${p.phone}` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <AnonymousMark anonymous={p.anonymous} />
-                  <span className="font-black text-emerald-600 w-24 text-right">{inr(p.total)}</span>
-                </div>
+                <span className="font-black text-emerald-600 shrink-0 text-right">{inr(p.total)}</span>
               </>
             );
-            const row = "group px-4 py-3 flex items-center justify-between gap-4";
+            const row = "group flex-1 min-w-0 pl-4 py-3 flex items-center justify-between gap-4";
             return (
-              <li key={p.key} data-person={p.name}>
+              <li key={p.key} data-person={p.name} className="flex items-center gap-2 pr-3 hover:bg-muted/50 transition-colors">
                 {p.contributorId ? (
-                  <Link href={`/admin/contributors/${p.contributorId}?from=${from}`} className={row + " hover:bg-muted/50 transition-colors"} aria-label={`Open ${p.name}'s profile`}>{body}</Link>
+                  <Link href={`/admin/contributors/${p.contributorId}?from=${from}`} className={row} aria-label={`Open ${p.name}'s profile`}>{body}</Link>
                 ) : (
                   <div className={row}>{body}</div>
                 )}
+                {/* The tick is its own control — it never opens the profile */}
+                {p.contributorId && <AnonymousToggle anonymous={p.anonymous} name={p.name} disabled={isPending} onToggle={() => handleAnonymous(p)} />}
               </li>
             );
           })}

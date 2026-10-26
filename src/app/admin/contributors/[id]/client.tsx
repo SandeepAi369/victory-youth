@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Pencil, Trash2, Eye, EyeOff, Lock, Phone, StickyNote } from "lucide-react";
+import { ArrowLeft, Plus, Pencil, Trash2, Lock, Phone, StickyNote } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { ContributionForm, emptyDraft, today, type ContributionDraft, type ContributorOption } from "@/components/admin/ContributionForm";
 import { PublishSwitch, AnonymousMark } from "@/components/admin/ContributionControls";
@@ -11,7 +11,7 @@ import { ProfileForm, type ProfileDraft } from "@/components/admin/ProfileForm";
 import type { ContributionEntry } from "@/components/admin/ContributionsAdmin";
 import {
   addContribution, updateContribution, deleteContribution, updateContributor, deleteContributor,
-  setContributionPublished, setPersonPublished,
+  setContributionPublished,
 } from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
@@ -39,17 +39,8 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
   const total = data.reduce((s, e) => s + (e.amount || 0), 0);
   const published = data.filter((e) => e.isPublished);
   const publishedTotal = published.reduce((s, e) => s + (e.amount || 0), 0);
-  const allPublished = data.length > 0 && published.length === data.length;
   const lastDate = data.map((e) => e.date).filter(Boolean).sort().at(-1);
 
-  const handlePersonPublish = () => {
-    const next = !allPublished;
-    execute({
-      optimisticUpdate: (prev) => prev.map((e) => e.isAnonymous ? e : { ...e, isPublished: next }),
-      serverAction: () => setPersonPublished(profile.id, category, next),
-      successMsg: next ? `All of ${profile.name}'s entries published` : `All of ${profile.name}'s entries unpublished`,
-    });
-  };
   const handleEntryPublish = (e: ContributionEntry) => {
     execute({
       optimisticUpdate: (prev) => prev.map((d) => d.id === e.id ? { ...d, isPublished: !e.isPublished } : d),
@@ -126,14 +117,9 @@ export default function ProfileClient({ profile, initialEntries, contributors, b
       <div className="rounded-2xl border bg-card shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-b">
           <h2 className="font-bold">{noun} entries</h2>
-          {data.length > 0 && (profile.isAnonymous ? (
+          {profile.isAnonymous && data.length > 0 && (
             <span className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground"><Lock className="w-3.5 h-3.5" /> Anonymous — entries stay unpublished</span>
-          ) : (
-            <button onClick={handlePersonPublish} disabled={isPending}
-              className={btn + " " + (allPublished ? "bg-red-100 text-red-700 border-red-300 hover:bg-red-200" : "bg-emerald-100 text-emerald-700 border-emerald-300 hover:bg-emerald-200")}>
-              {allPublished ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />} {allPublished ? "Unpublish" : "Publish"}
-            </button>
-          ))}
+          )}
         </div>
         <ul className="divide-y divide-border" aria-label={`${profile.name}'s ${unit} entries`}>
           {data.length === 0 && (

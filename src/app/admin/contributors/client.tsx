@@ -5,9 +5,9 @@ import Link from "next/link";
 import { UserPlus, ChevronRight } from "lucide-react";
 import { useAdminAction } from "@/lib/hooks/useAdminAction";
 import { AdminSearch, filterRows } from "@/components/admin/AdminSearch";
-import { AnonymousMark } from "@/components/admin/ContributionControls";
+import { AnonymousToggle } from "@/components/admin/ContributionControls";
 import { ProfileForm, type ProfileDraft } from "@/components/admin/ProfileForm";
-import { createContributor } from "@/lib/actions/contributors";
+import { createContributor, setContributorAnonymous } from "@/lib/actions/contributors";
 import type { ContributionCategory } from "@/lib/contributions";
 
 type Contributor = {
@@ -33,6 +33,15 @@ export default function ContributorsClient({ category, initialData }: { category
   const [search, setSearch] = useState("");
   const visible = filterRows(data, search, (c) => [c.name, c.phone, c.notes]);
   const [creating, setCreating] = useState<ProfileDraft | null>(null);
+
+  const handleAnonymous = (c: Contributor) => {
+    const next = !c.isAnonymous;
+    execute({
+      optimisticUpdate: (prev) => prev.map((x) => x.id === c.id ? { ...x, isAnonymous: next } : x),
+      serverAction: () => setContributorAnonymous(c.id, next),
+      successMsg: next ? `${c.name} is now anonymous — hidden from the public site` : `${c.name}'s name is public again (publish the entries to show them)`,
+    });
+  };
 
   const totalAmount = data.reduce((s, c) => s + Number(c.total || 0), 0);
   const anonymousCount = data.filter((c) => c.isAnonymous).length;
@@ -79,9 +88,9 @@ export default function ContributorsClient({ category, initialData }: { category
           {search && visible.length === 0 && data.length > 0 && <li className="px-4 py-8 text-center text-muted-foreground text-sm">No matches for &ldquo;{search}&rdquo;.</li>}
           {data.length === 0 && <li className="px-4 py-12 text-center text-muted-foreground">No {book.toLowerCase()} contributors yet. They are created when you add a {noun}.</li>}
           {visible.map((c) => (
-            <li key={c.id} data-person={c.name}>
+            <li key={c.id} data-person={c.name} className="flex items-center gap-2 pr-3 hover:bg-muted/50 transition-colors">
               <Link href={`/admin/contributors/${c.id}?from=contributors`} aria-label={`Open ${c.name}'s profile`}
-                className="group px-4 py-3 flex items-center justify-between gap-4 hover:bg-muted/50 transition-colors">
+                className="group flex-1 min-w-0 pl-4 py-3 flex items-center justify-between gap-4">
                 <div className="min-w-0">
                   <p className="font-bold flex items-center gap-1">
                     <span className="truncate">{c.name}</span>
@@ -91,11 +100,10 @@ export default function ContributorsClient({ category, initialData }: { category
                     {c.count} {noun}{c.count === 1 ? "" : "s"}{c.lastDate ? ` · last ${c.lastDate}` : ""} · {c.phone || "No phone"}{c.notes ? ` · ${c.notes}` : ""}
                   </p>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  <AnonymousMark anonymous={c.isAnonymous} />
-                  <span className="font-black text-emerald-600 w-24 text-right">{inr(c.total)}</span>
-                </div>
+                <span className="font-black text-emerald-600 shrink-0 text-right">{inr(c.total)}</span>
               </Link>
+              {/* The tick is its own control — it never opens the profile */}
+              <AnonymousToggle anonymous={c.isAnonymous} name={c.name} disabled={isPending} onToggle={() => handleAnonymous(c)} />
             </li>
           ))}
         </ul>
