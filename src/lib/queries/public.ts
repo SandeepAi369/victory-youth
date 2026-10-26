@@ -251,27 +251,36 @@ export async function getContributionTotals(kind: ContributionKind, years: Publi
   }
 }
 
-export async function getPublishedDonations(limit = 20, search = "", years: PublicYears = null) {
+/**
+ * The public main list: ONE row per person (never one row per payment), with
+ * their total, number of contributions and latest date in the visible years.
+ * The itemized history is only on their profile page. Search matches the
+ * name or any of the person's purposes; the row total still covers all of
+ * their visible contributions.
+ */
+export async function getPublishedContributors(kind: ContributionKind, years: PublicYears = null, search = "", limit = 100) {
   try {
     const db = getDb();
+    // Entries without a profile (very old data) stand on their own
+    const person = sql<string>`coalesce(${d.contributorId}, ${d.id})`;
     return await db
       .select({
-        donorName: d.donorName,
-        contributorId: d.contributorId,
-        amount: d.amount,
-        category: d.category,
-        date: d.date,
+        key: person,
+        contributorId: sql<string | null>`max(${d.contributorId})`,
+        name: sql<string>`max(${d.donorName})`,
+        total: sql<number>`coalesce(sum(${d.amount}), 0)`,
+        count: sql<number>`count(*)`,
+        lastDate: sql<string | null>`max(${d.date})`,
       })
       .from(d)
       .leftJoin(ctr, eq(ctr.id, d.contributorId))
-      .where(and(
-        publishedContributions("DONATIONS", years),
-        search ? or(contains(d.donorName, search), contains(d.purpose, search), contains(d.category, search)) : undefined
-      ))
-      .orderBy(desc(d.createdAt))
+      .where(publishedContributions(kind, years))
+      .groupBy(person)
+      .having(search ? or(contains(sql`max(${d.donorName})`, search), sql`max(CASE WHEN ${contains(d.purpose, search)} THEN 1 ELSE 0 END) = 1`) : undefined)
+      .orderBy(sql`max(${d.createdAt}) DESC`)
       .limit(limit);
   } catch (error) {
-    console.error("❌ getPublishedDonations error:", error);
+    console.error("❌ getPublishedContributors error:", error);
     return [];
   }
 }
@@ -326,33 +335,6 @@ export async function getReceiptDonation(idOrReceiptNo: string) {
   } catch (error) {
     console.error("❌ getReceiptDonation error:", error);
     return null;
-  }
-}
-
-export async function getPublishedChanda(limit = 100, search = "", years: PublicYears = null) {
-  try {
-    const db = getDb();
-    // Only the columns the public chanda page shows — no phone, address or PAN
-    return await db
-      .select({
-        id: d.id,
-        donorName: d.donorName,
-        contributorId: d.contributorId,
-        amount: d.amount,
-        purpose: d.purpose,
-        date: d.date,
-      })
-      .from(d)
-      .leftJoin(ctr, eq(ctr.id, d.contributorId))
-      .where(and(
-        publishedContributions("CHANDA", years),
-        search ? or(contains(d.donorName, search), contains(d.purpose, search)) : undefined
-      ))
-      .orderBy(desc(d.createdAt))
-      .limit(limit);
-  } catch (error) {
-    console.error("❌ getPublishedChanda error:", error);
-    return [];
   }
 }
 
@@ -478,7 +460,7 @@ export async function getHomepageData() {
         getPublishedEvents("", years),
         getPublishedNotices(3),
         getPublishedNotes(5),
-        getPublishedDonations(20, "", years),
+        getPublishedContributors("DONATIONS", years, "", 6),
         getPublishedBanners(),
       getHeroImages(),
       ]);

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { DonorName } from "@/components/public/DonorName";
+import { PersonRow } from "@/components/public/PersonRow";
 import { YearScope, yearScopeNote } from "@/components/public/ContributionTotals";
 import { getHomepageData } from "@/lib/queries/public";
 import { Footer } from "@/components/public/Footer";
@@ -401,20 +401,8 @@ export default async function HomePage() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {publishedDonations.slice(0, 6).map((d, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-xl bg-white dark:bg-stone-800 border border-orange-100 dark:border-stone-700 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center text-orange-600 dark:text-orange-400 font-bold text-lg">
-                      {d.donorName?.[0] || "?"}
-                    </div>
-                    <div>
-                      <DonorName name={d.donorName} contributorId={d.contributorId} />
-                      <p className="text-xs text-stone-500 dark:text-stone-400">{d.category || "General"} · {d.date}</p>
-                    </div>
-                  </div>
-                  <span className="font-black text-emerald-600 dark:text-emerald-400">₹{Math.round(Number(d.amount) || 0).toLocaleString("en-IN")}</span>
-                </div>
-              ))}
+              {/* One row per person (latest first); itemized history is on their profile */}
+              {publishedDonations.map((p) => <PersonRow key={p.key} person={p} noun="donation" tone="orange" />)}
             </div>
           </div>
         </section>
