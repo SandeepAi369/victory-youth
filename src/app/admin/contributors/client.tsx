@@ -153,7 +153,7 @@ export default function ContributorsClient({ category, initialData }: { category
                 <input type="checkbox" checked={profile.isAnonymous} onChange={(e) => setProfile({ ...profile, isAnonymous: e.target.checked })} className="mt-0.5" />
                 <span>
                   <span className="font-bold">Anonymous contributor</span>
-                  <span className="block text-xs text-muted-foreground">Shown as &quot;Anonymous Devotee&quot; on all of this profile&apos;s {book.toLowerCase()} entries.</span>
+                  <span className="block text-xs text-muted-foreground">All of this profile&apos;s {book.toLowerCase()} entries stay in the admin panel only — never shown on the public site.</span>
                 </span>
               </label>
               {profile.id && <p className="text-xs text-muted-foreground">Changes apply to all of this profile&apos;s {book.toLowerCase()} entries and receipts.</p>}

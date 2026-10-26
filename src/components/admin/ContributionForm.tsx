@@ -174,7 +174,7 @@ export function ContributionForm({
             <span>
               <span className="font-bold">Anonymous contributor</span>
               <span className="block text-xs text-muted-foreground">
-                Applies to <b>all</b> of this profile&apos;s {category === "CHANDA" ? "chanda" : "donation"} entries, past and future — shown as &quot;Anonymous Devotee&quot; on the public site.
+                Applies to <b>all</b> of this profile&apos;s {noun} entries, past and future. Anonymous entries stay in the admin panel only — they are never shown on the public site.
               </span>
             </span>
           </label>
