@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
-import { getPublishedChanda } from "@/lib/queries/public";
+import { getPublishedChanda, getContributionTotals, getPublicYears, type PublicYears } from "@/lib/queries/public";
+import { ContributionTotals } from "@/components/public/ContributionTotals";
 import { ArrowLeft } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -8,13 +9,14 @@ export const dynamic = "force-dynamic";
 export default async function ChandaPage({ searchParams }: { searchParams: Promise<{ q?: string | string[] }> }) {
   const q = searchQuery(await searchParams);
   let chandas: Awaited<ReturnType<typeof getPublishedChanda>> = [];
+  let totals: Awaited<ReturnType<typeof getContributionTotals>> | null = null;
+  let years: PublicYears = null;
   try {
-    chandas = await getPublishedChanda(100, q);
+    years = await getPublicYears();
+    [chandas, totals] = await Promise.all([getPublishedChanda(100, q, years), getContributionTotals("CHANDA", years)]);
   } catch (e) {
     console.error("Chanda page error:", e);
   }
-
-  const totalAmount = chandas.reduce((sum: number, c) => sum + (Number(c.amount) || 0), 0);
 
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
@@ -30,12 +32,7 @@ export default async function ChandaPage({ searchParams }: { searchParams: Promi
       <div className="container mx-auto max-w-4xl px-4 py-8">
 
         <SearchBox basePath="/chanda" query={q} resultCount={chandas.length} placeholder="Search chanda by name or purpose…" />
-        {/* Summary Card */}
-        <div className="bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl p-6 mb-8 text-white shadow-lg">
-          <p className="text-sm font-medium text-white/80">Total Chanda Collected</p>
-          <p className="text-3xl font-black mt-1">₹{Math.round(totalAmount).toLocaleString("en-IN")}</p>
-          <p className="text-sm text-white/70 mt-1">{chandas.length} contributions</p>
-        </div>
+        {totals && <ContributionTotals label="Chanda Collected" totals={totals} years={years} gradient="from-amber-500 to-orange-600" />}
 
         {chandas.length === 0 && (
           <div className="text-center py-20 text-stone-400">No chanda entries published yet.</div>

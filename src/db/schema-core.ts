@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, index } from "drizzle-orm/sqlite-core";
 import { type InferSelectModel, type InferInsertModel } from "drizzle-orm";
 import { boolean, timestamp, json, now, emptyJsonObject, emptyJsonArray } from "./columns";
 
@@ -101,6 +101,9 @@ export const associationSettings = sqliteTable("association_settings", {
   telegramUrl: text("telegram_url"),
   whatsappNumber: text("whatsapp_number"),
   
+  // Years shown on the public site, e.g. [2025, 2026]; NULL or [] = all years
+  publicYears: json("public_years").$type<number[]>(),
+
   // System
   isMaintenanceMode: boolean("is_maintenance_mode").default(false),
   updatedAt: timestamp("updated_at").default(now),
@@ -161,6 +164,21 @@ export const rolesAudit = sqliteTable("roles_audit", {
 });
 
 // ============================================
+// 4a. CONTRIBUTORS (one profile per person; their donations link to it)
+// ============================================
+
+export const contributors = sqliteTable("contributors", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  // Hides the name on EVERY contribution of this person on the public site
+  isAnonymous: boolean("is_anonymous").notNull().default(false),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").default(now),
+  updatedAt: timestamp("updated_at").default(now),
+}, (t) => [index("contributors_name_idx").on(t.name)]);
+
+// ============================================
 // 4. DONATIONS TABLE
 // ============================================
 
@@ -168,6 +186,8 @@ export const donations = sqliteTable("donations", {
   id: text("id").primaryKey(),
   receiptNo: text("receipt_no").notNull().unique(),
   donorId: text("donor_id"),
+  // Contributor profile; donorName/phone/isAnonymous are kept in sync with it
+  contributorId: text("contributor_id").references(() => contributors.id),
   donorName: text("donor_name").notNull(),
   phone: text("phone").notNull(),
   donorPhone: text("donor_phone"),
@@ -206,7 +226,7 @@ export const donations = sqliteTable("donations", {
   
   date: text("date"),
   createdAt: timestamp("created_at").default(now),
-});
+}, (t) => [index("donations_contributor_idx").on(t.contributorId)]);
 
 // ============================================
 // 5. TRANSACTIONS (Ledger & Cash Book)
@@ -617,6 +637,8 @@ export type AssociationSettingsRow = InferSelectModel<typeof associationSettings
 export type NewAssociationSettingsRow = InferInsertModel<typeof associationSettings>;
 export type MemberRow = InferSelectModel<typeof members>;
 export type NewMemberRow = InferInsertModel<typeof members>;
+export type ContributorRow = InferSelectModel<typeof contributors>;
+export type NewContributorRow = InferInsertModel<typeof contributors>;
 export type DonationRow = InferSelectModel<typeof donations>;
 export type NewDonationRow = InferInsertModel<typeof donations>;
 export type TransactionRow = InferSelectModel<typeof transactions>;

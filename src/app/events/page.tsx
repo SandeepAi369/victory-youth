@@ -1,7 +1,7 @@
 import { errorMessage } from "@/lib/utils";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import Link from "next/link";
-import { getPublishedEvents } from "@/lib/queries/public";
+import { getPublishedEvents, getPublicYears } from "@/lib/queries/public";
 import { ArrowLeft, Calendar } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +11,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
   let events: Awaited<ReturnType<typeof getPublishedEvents>> = [];
   let error = "";
   try {
-    events = await getPublishedEvents(q);
+    events = await getPublishedEvents(q, await getPublicYears());
   } catch (e) {
     error = errorMessage(e) || "Failed to load events.";
     console.error("Events page error:", e);

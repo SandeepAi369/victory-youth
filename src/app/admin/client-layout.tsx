@@ -6,7 +6,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import {
   LayoutDashboard, IndianRupee, HandCoins, BarChart3,
   Users, Calendar, Image, Bell, StickyNote, Package, Settings, LogOut, Menu, X,
-  Presentation, Clapperboard, UserCheck,
+  Presentation, Clapperboard, UserCheck, Contact,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { logoutAction } from "@/app/login/actions";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/chanda", label: "Chanda", icon: IndianRupee },
   { href: "/admin/donations", label: "Donations", icon: HandCoins },
+  { href: "/admin/contributors", label: "Contributors", icon: Contact },
   { href: "/admin/summary", label: "Summary", icon: BarChart3 },
   { href: "/admin/members", label: "Members", icon: Users },
   { href: "/admin/active-members", label: "Active Members", icon: UserCheck },
