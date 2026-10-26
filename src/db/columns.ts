@@ -3,7 +3,6 @@ import { integer, text } from "drizzle-orm/sqlite-core";
 
 /**
  * SQLite (Turso) equivalents of the Postgres column types this schema used.
- * See schema_postgres_backup.txt for the original Postgres definitions.
  */
 
 // Postgres boolean → INTEGER 0/1, read back as true/false

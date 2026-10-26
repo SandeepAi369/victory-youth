@@ -5,7 +5,6 @@ import { boolean, timestamp, json, now, emptyJsonArray } from "./columns";
 /**
  * MEDIA database schema (Turso / SQLite).
  * Cloudinary media references and their metadata: gallery, gallery categories, banners, hero images, documents.
- * Converted from the Postgres schema kept in schema_postgres_backup.txt.
  */
 
 // ============================================
