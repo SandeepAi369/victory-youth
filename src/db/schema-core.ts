@@ -101,8 +101,8 @@ export const associationSettings = sqliteTable("association_settings", {
   telegramUrl: text("telegram_url"),
   whatsappNumber: text("whatsapp_number"),
   
-  // Years shown on the public site, e.g. [2025, 2026]; NULL or [] = all years
-  publicYears: json("public_years").$type<number[]>(),
+  // Years shown on the public site: e.g. [2025, 2026], or "ALL"; NULL = the current year
+  publicYears: json("public_years").$type<number[] | "ALL">(),
 
   // System
   isMaintenanceMode: boolean("is_maintenance_mode").default(false),

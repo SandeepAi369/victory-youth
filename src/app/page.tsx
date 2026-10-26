@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DonorName } from "@/components/public/DonorName";
 import { getHomepageData } from "@/lib/queries/public";
 import { Footer } from "@/components/public/Footer";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -400,7 +401,7 @@ export default async function HomePage() {
                       {d.donorName?.[0] || "?"}
                     </div>
                     <div>
-                      <p className="font-bold text-stone-900 dark:text-white">{d.donorName}</p>
+                      <DonorName name={d.donorName} contributorId={d.contributorId} />
                       <p className="text-xs text-stone-500 dark:text-stone-400">{d.category || "General"} · {d.date}</p>
                     </div>
                   </div>

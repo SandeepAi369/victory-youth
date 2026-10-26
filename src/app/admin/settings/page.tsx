@@ -1,6 +1,7 @@
 import { getAssociationSettings, getYearsWithData } from "@/lib/actions/admin";
 import SettingsForm, { type SettingsFormValues } from "./client";
 import YearVisibility from "./year-visibility";
+import { currentYearIST } from "@/lib/contributions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ export default async function AdminSettingsPage() {
     contactEmail: row?.contactEmail ?? "",
   };
 
-  const publicYears = Array.isArray(row?.publicYears) && row.publicYears.length > 0 ? row.publicYears : null;
+  // Not set yet = the current year (the public default)
+  const publicYears = row?.publicYears === "ALL" ? "ALL" : Array.isArray(row?.publicYears) && row.publicYears.length > 0 ? row.publicYears : [currentYearIST()];
 
   return (
     <div className="space-y-6">
