@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopLoader } from "@/components/TopLoader";
+import { SITE_URL } from "@/lib/site";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -27,11 +28,16 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Ganesh BNS - Victory Youth Association (Gudem Gally)",
   description: "50+ Years Golden Jubilee (1974-2026) - Victory Youth Association - Golden Jubilee Ganesh Utsav",
   manifest: "/manifest.json",
   icons: {
     icon: "/favicon.ico",
+  },
+  verification: {
+    google: "2R9DtUX6a_boIAFQBxR6HWtCc9kjWjG0_nt2p8b7Iys",
+    other: { "msvalidate.01": "ECA8BF589C8F8491C8A4F359BC23F0B6" },
   },
 };
 
