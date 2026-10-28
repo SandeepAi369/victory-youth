@@ -38,7 +38,6 @@ export const metadata: Metadata = {
   keywords: SITE_KEYWORDS,
   applicationName: SITE_NAME,
   category: "community",
-  alternates: { canonical: "/" },
   openGraph: {
     title: "Victory Youth Association, Banswada | Ganesh Utsav since 1974",
     description:

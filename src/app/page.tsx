@@ -13,6 +13,9 @@ import { SITE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
+// Canonical lives here, not in the root layout, so other pages never inherit "/".
+export const metadata = { alternates: { canonical: "/" } };
+
 export default async function HomePage() {
   const { settings, years, stats, hero, events, publishedDonations, notes, banners, heroImages } = await getHomepageData();
 
