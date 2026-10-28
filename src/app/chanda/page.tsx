@@ -4,6 +4,9 @@ import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getPublishedContributors, getContributionTotals, getPublicYears, type PublicYears } from "@/lib/queries/public";
 import { ContributionTotals } from "@/components/public/ContributionTotals";
 import { ArrowLeft } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/chanda", "Chanda Collection", "Chanda collected for Ganesh Utsav by Victory Youth Association, Gudem Gally, Banswada. Every contribution listed openly, with yearly totals.");
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +29,7 @@ export default async function ChandaPage({ searchParams }: { searchParams: Promi
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">🪙 Chanda Collection</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">🪙 Chanda Collection</h1>
         </div>
       </nav>
 

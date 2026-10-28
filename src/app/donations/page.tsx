@@ -5,6 +5,9 @@ import Link from "next/link";
 import { getPublishedContributors, getContributionTotals, getPublicYears, type PublicYears } from "@/lib/queries/public";
 import { ContributionTotals } from "@/components/public/ContributionTotals";
 import { ArrowLeft } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/donations", "Donations & Donors", "Donors supporting the Golden Jubilee Ganesh Utsav of Victory Youth Association, Banswada. Transparent donation totals and progress towards the festival target.");
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +32,7 @@ export default async function DonationsPage({ searchParams }: { searchParams: Pr
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">🙏 Our Generous Donors</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">🙏 Our Generous Donors</h1>
         </div>
       </nav>
 

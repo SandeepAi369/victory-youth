@@ -3,6 +3,9 @@ import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import Link from "next/link";
 import { getPublishedNotices, getPublishedNotes } from "@/lib/queries/public";
 import { ArrowLeft } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/notices", "Notices & Updates", "Latest notices and announcements from Victory Youth Association, Gudem Gally, Banswada, about the Ganesh festival and community events.");
 
 export const dynamic = "force-dynamic";
 
@@ -38,7 +41,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">📢 Notices & Updates</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">📢 Notices & Updates</h1>
         </div>
       </nav>
 

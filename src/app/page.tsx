@@ -9,6 +9,7 @@ import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
 import { BannerCarousel } from "@/components/public/BannerCarousel";
 import { HeroCarousel } from "@/components/public/HeroCarousel";
 import { Sparkles, Calendar, Heart } from "lucide-react";
+import { SITE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -32,8 +33,48 @@ export default async function HomePage() {
     { emoji: "🖼️", title: "Gallery", desc: "Festival Memories", href: "/gallery", gradient: "from-purple-500 to-violet-600" },
   ];
 
+  // Structured data so search engines know who and where the association is.
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "NGO",
+        "@id": `${SITE_URL}/#organization`,
+        name: SITE_NAME,
+        alternateName: ["Victory Youth", "Ganesh BNS"],
+        url: SITE_URL,
+        logo: `${SITE_URL}/favicon.ico`,
+        image: `${SITE_URL}${SITE_IMAGE}`,
+        foundingDate: "1974",
+        description: "Youth association in Gudem Gally, Banswada, Telangana, celebrating Ganesh Chaturthi (Ganesh Utsav) since 1974.",
+        address: {
+          "@type": "PostalAddress",
+          streetAddress: "Gudem Gally",
+          addressLocality: "Banswada",
+          addressRegion: "Telangana",
+          addressCountry: "IN",
+        },
+        email: settings?.contactEmail ?? undefined,
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${SITE_URL}/#website`,
+        name: SITE_NAME,
+        url: SITE_URL,
+        inLanguage: "en-IN",
+        publisher: { "@id": `${SITE_URL}/#organization` },
+      },
+    ],
+  };
+
   return (
     <main className="min-h-screen bg-stone-50 dark:bg-stone-950">
+      <script
+        type="application/ld+json"
+        // Escape "<" so stored text can never close the script tag
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
+      />
+      <h1 className="sr-only">Victory Youth Association, Gudem Gally, Banswada: Golden Jubilee Ganesh Utsav since 1974</h1>
       {/* ===== STICKY NAV ===== */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">

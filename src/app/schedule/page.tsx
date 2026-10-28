@@ -1,3 +1,8 @@
+import type { Metadata } from "next";
+
+// Placeholder page: kept out of search results until it has a real schedule.
+export const metadata: Metadata = { title: "Event Schedule", robots: { index: false, follow: true } };
+
 export default function SchedulePage() {
   return (
     <div className="p-20 text-center">
