@@ -5,6 +5,10 @@ import { ArrowLeft, Infinity as AllTime } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+// Personal page (name + amounts): visible on the site, never indexed by search
+// engines. Not blocked in robots.txt on purpose, so crawlers can read this tag.
+export const metadata = { robots: { index: false, follow: false } };
+
 const inr = (n: number) => "₹" + Math.round(Number(n) || 0).toLocaleString("en-IN");
 
 /** Public page of one committee member: all-time total and every payment, itemized. */
