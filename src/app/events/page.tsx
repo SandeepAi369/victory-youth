@@ -3,6 +3,9 @@ import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import Link from "next/link";
 import { getPublishedEvents, getPublicYears } from "@/lib/queries/public";
 import { ArrowLeft, Calendar } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/events", "Ganesh Utsav Events", "Events of the 11-day Ganesh Utsav by Victory Youth Association, Banswada: pooja, celebrations and community programmes, day by day.");
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +27,7 @@ export default async function EventsPage({ searchParams }: { searchParams: Promi
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">📅 Festival Schedule</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">📅 Festival Schedule</h1>
         </div>
       </nav>
 

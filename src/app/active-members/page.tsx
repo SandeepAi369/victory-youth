@@ -2,6 +2,9 @@ import Link from "next/link";
 import { ArrowLeft, UserCheck } from "lucide-react";
 import { getPublicActiveMembers } from "@/lib/queries/public";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/active-members", "Active Members", "Active members and volunteers of Victory Youth Association, Banswada, who help run the Ganesh Utsav every year.");
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +19,7 @@ export default async function ActiveMembersPage({ searchParams }: { searchParams
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">🙋 Active Members</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">🙋 Active Members</h1>
         </div>
       </nav>
 

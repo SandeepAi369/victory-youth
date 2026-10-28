@@ -10,7 +10,6 @@ const PUBLIC_PATHS = [
   "/members",
   "/active-members",
   "/events",
-  "/schedule",
   "/gallery",
   "/notices",
   "/notes",

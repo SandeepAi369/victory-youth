@@ -2,6 +2,9 @@ import { errorMessage } from "@/lib/utils";
 import Link from "next/link";
 import { getPublishedGallery } from "@/lib/queries/public";
 import { ArrowLeft, CalendarDays, ImageIcon } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/gallery", "Photo Gallery", "Photos from Ganesh Utsav celebrations of Victory Youth Association, Banswada: idol, pooja, processions and community events.");
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +50,7 @@ export default async function GalleryPage() {
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">🖼️ Photo Gallery</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">🖼️ Photo Gallery</h1>
         </div>
       </nav>
 

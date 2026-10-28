@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SearchBox, searchQuery } from "@/components/public/SearchBox";
 import { getPublicCommittee } from "@/lib/queries/public";
 import { ArrowLeft, Users, ChevronRight } from "lucide-react";
+import { pageMetadata } from "@/lib/site";
+
+export const metadata = pageMetadata("/members", "Committee Members", "Committee of Victory Youth Association, Gudem Gally, Banswada, the youth team organising Ganesh Chaturthi celebrations since 1974.");
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +23,7 @@ export default async function MembersPage({ searchParams }: { searchParams: Prom
           <Link href="/" className="flex items-center gap-2 text-sm text-stone-600 dark:text-stone-400 hover:text-orange-600 transition-colors">
             <ArrowLeft className="w-4 h-4" /> Back
           </Link>
-          <span className="text-lg font-bold text-stone-900 dark:text-white">👥 Committee Members</span>
+          <h1 className="text-lg font-bold text-stone-900 dark:text-white">👥 Committee Members</h1>
         </div>
       </nav>
 
