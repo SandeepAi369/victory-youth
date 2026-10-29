@@ -399,6 +399,24 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* ===== HERO VIDEO CLIP (Cloudinary‑optimised) ===== */}
+      <section className="py-8 px-4">
+        <div className="container mx-auto max-w-3xl flex justify-center">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full max-w-lg mx-auto rounded-lg object-cover shadow-lg"
+          >
+            <source
+              src="https://res.cloudinary.com/y5dnsgyb/video/upload/f_auto,q_auto/v1/victory-youth/victory-youth-hero-clip"
+              type="video/mp4"
+            />
+          </video>
+        </div>
+      </section>
+
       {/* ===== DONATION PROGRESS ===== */}
       {stats.donationTarget > 0 && (
         <section className="py-8 px-4">
