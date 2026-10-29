@@ -9,12 +9,34 @@ import { HamburgerNotesPanel } from "@/components/public/HamburgerNotesPanel";
 import { BannerCarousel } from "@/components/public/BannerCarousel";
 import { HeroCarousel } from "@/components/public/HeroCarousel";
 import { Sparkles, Calendar, Heart } from "lucide-react";
-import { SITE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
+import {
+  CONTACT_EMAIL,
+  HOME_DESCRIPTION,
+  HOME_TITLE,
+  SITE_GEO,
+  SITE_IMAGE,
+  SITE_NAME,
+  SITE_URL,
+  SOCIAL_LINKS,
+} from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
 // Canonical lives here, not in the root layout, so other pages never inherit "/".
-export const metadata = { alternates: { canonical: "/" } };
+export const metadata = {
+  title: { absolute: HOME_TITLE },
+  description: HOME_DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
+    url: "/",
+    siteName: SITE_NAME,
+    locale: "en_IN",
+    type: "website",
+    images: [{ url: SITE_IMAGE, alt: "Victory Youth Association, Gudem Gally, Banswada, Telangana" }],
+  },
+};
 
 export default async function HomePage() {
   const { settings, years, stats, hero, events, publishedDonations, notes, banners, heroImages } = await getHomepageData();
@@ -57,7 +79,22 @@ export default async function HomePage() {
           addressRegion: "Telangana",
           addressCountry: "IN",
         },
-        email: settings?.contactEmail ?? undefined,
+        email: settings?.contactEmail ?? CONTACT_EMAIL,
+        sameAs: [SOCIAL_LINKS.instagram, SOCIAL_LINKS.github, SOCIAL_LINKS.maps],
+        hasMap: SOCIAL_LINKS.maps,
+        geo: {
+          "@type": "GeoCoordinates",
+          latitude: SITE_GEO.latitude,
+          longitude: SITE_GEO.longitude,
+        },
+        contactPoint: {
+          "@type": "ContactPoint",
+          contactType: "customer support",
+          email: settings?.contactEmail ?? CONTACT_EMAIL,
+          telephone: settings?.contactPhone ?? undefined,
+          areaServed: "IN",
+          availableLanguage: ["English", "Telugu", "Hindi"],
+        },
       },
       {
         "@type": "WebSite",
@@ -77,7 +114,7 @@ export default async function HomePage() {
         // Escape "<" so stored text can never close the script tag
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }}
       />
-      <h1 className="sr-only">Victory Youth Association, Gudem Gally, Banswada: Golden Jubilee Ganesh Utsav since 1974</h1>
+      <h1 className="sr-only">Victory Youth: Victory Youth Association, Gudem Gally, Banswada. Golden Jubilee Ganesh Utsav since 1974</h1>
       {/* ===== STICKY NAV ===== */}
       <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-stone-950/80 backdrop-blur-xl border-b border-stone-200/50 dark:border-stone-800/50">
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -492,6 +529,22 @@ export default async function HomePage() {
               <span className="text-xs font-bold text-stone-600 dark:text-stone-400">Mail</span>
             </a>
           </div>
+        </div>
+      </section>
+
+      {/* ===== ABOUT (crawlable brand text) ===== */}
+      <section id="about-victory-youth" className="py-10 px-4">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="text-2xl font-black text-stone-800 dark:text-stone-100 mb-3">About Victory Youth</h2>
+          <p className="text-sm leading-relaxed text-stone-600 dark:text-stone-400">
+            Victory Youth, officially the Victory Youth Association, is a youth association based in Gudem Gally,
+            Banswada, Telangana. Since 1974, Victory Youth has organised the Ganesh Utsav (Ganesh Chaturthi) celebrations
+            in Banswada, with eleven days of events, pooja, community chanda and donations, and a photo gallery of
+            every festival. Follow Victory Youth on{" "}
+            <a href={SOCIAL_LINKS.instagram} target="_blank" rel="noopener noreferrer" className="underline">Instagram</a>{" "}
+            or find us on{" "}
+            <a href={SOCIAL_LINKS.maps} target="_blank" rel="noopener noreferrer" className="underline">Google Maps</a>.
+          </p>
         </div>
       </section>
 

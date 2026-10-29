@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { TopLoader } from "@/components/TopLoader";
-import { SITE_IMAGE, SITE_KEYWORDS, SITE_LOCATION, SITE_NAME, SITE_URL } from "@/lib/site";
+import { HOME_DESCRIPTION, HOME_TITLE, SITE_IMAGE, SITE_KEYWORDS, SITE_LOCATION, SITE_NAME, SITE_URL } from "@/lib/site";
 
 const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -30,18 +30,16 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "Victory Youth Association, Banswada | Ganesh Utsav since 1974",
+    default: HOME_TITLE,
     template: `%s | ${SITE_NAME}`,
   },
-  description:
-    "Victory Youth Association, Gudem Gally, Banswada (Telangana) has celebrated Ganesh Chaturthi since 1974. Golden Jubilee Ganesh Utsav: 11 days of events, pooja schedule, donations, chanda, committee and photo gallery.",
+  description: HOME_DESCRIPTION,
   keywords: SITE_KEYWORDS,
   applicationName: SITE_NAME,
   category: "community",
   openGraph: {
-    title: "Victory Youth Association, Banswada | Ganesh Utsav since 1974",
-    description:
-      "Golden Jubilee Ganesh Utsav by Victory Youth Association, Gudem Gally, Banswada: events, donations, chanda, committee and gallery.",
+    title: HOME_TITLE,
+    description: HOME_DESCRIPTION,
     url: "/",
     siteName: SITE_NAME,
     locale: "en_IN",
