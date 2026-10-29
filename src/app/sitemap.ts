@@ -1,13 +1,13 @@
 import type { MetadataRoute } from "next";
 import { SITE_URL } from "@/lib/site";
 
-// Section pages only. Per-person pages (/contributor/[id], /members/[id]) are
-// left out on purpose so search engines are not pointed at individual people.
+// Indexable section pages only. Per-person pages (/contributor/[id], /members/[id])
+// and the noindex /members listing are left out on purpose so search engines are
+// not pointed at individual people or sent mixed signals.
 const PUBLIC_PATHS = [
   "",
   "/chanda",
   "/donations",
-  "/members",
   "/active-members",
   "/events",
   "/gallery",
