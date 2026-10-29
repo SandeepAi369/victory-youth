@@ -130,10 +130,10 @@ export async function addHeroImage(secureUrl: string, publicId: string) {
   await requireAdmin();
   try {
     const db = getMediaDb();
-    // Check count — max 5
+    // Check count — max 10
     const existing = await db.select().from(schema.heroImages);
-    if (existing.length >= 5) {
-      return { success: false, error: "Maximum 5 hero images allowed" };
+    if (existing.length >= 10) {
+      return { success: false, error: "Maximum 10 hero images allowed" };
     }
     const id = `hero_${randomUUID()}`;
     const maxSort = existing.reduce((max, r) => Math.max(max, r.sortOrder ?? 0), 0);

@@ -113,16 +113,16 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
         <div>
           <h1 className="text-2xl font-bold">Story</h1>
           <p className="text-muted-foreground text-sm">
-            Manage hero images for the homepage carousel (max 5). Auto-scrolls every 3 seconds.
+            Manage hero images for the homepage carousel (max 10). Auto-scrolls every 3 seconds.
           </p>
         </div>
         <button
           onClick={() => { resetForm(); setShowUpload(true); }}
-          disabled={images.length >= 5}
+          disabled={images.length >= 10}
           className="px-4 py-2 bg-primary text-primary-foreground font-medium text-sm rounded-xl flex items-center gap-2 disabled:opacity-50"
         >
           <CloudUpload className="w-4 h-4" />
-          Upload Image ({images.length}/5)
+          Upload Image ({images.length}/10)
         </button>
       </div>
 
@@ -214,7 +214,7 @@ export function StoryClient({ initialHeroImages }: { initialHeroImages: HeroImag
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {images.length === 0 && (
           <p className="col-span-full text-center text-muted-foreground py-12">
-            No hero images yet. Click &quot;Upload Image&quot; to add your first (max 5).
+            No hero images yet. Click &quot;Upload Image&quot; to add your first (max 10).
           </p>
         )}
         {images.map((img, i) => (
