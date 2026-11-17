@@ -315,3 +315,9 @@ Contributions are welcome! Start with `npm run demo`, then read [CONTRIBUTING.md
 ## License
 
 Released under the [MIT License](LICENSE) © 2026 Sandeep CH.
+
+---
+
+## 💖 Sponsor & Support
+
+If you find this project useful, consider supporting my open-source work and systems research via [GitHub Sponsors](https://github.com/sponsors/SandeepAi369).
